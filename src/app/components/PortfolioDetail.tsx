@@ -259,13 +259,13 @@ export default function PortfolioDetail() {
                 <>
                   <button
                     onClick={(e) => { e.stopPropagation(); setMediaIndex(i => (i - 1 + allMedia.length) % allMedia.length); }}
-                    className="absolute left-4 md:left-10 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-[#f7f6f0] opacity-40 hover:opacity-100 transition-opacity text-xl"
+                    className="absolute left-2 md:left-8 top-1/2 -translate-y-1/2 w-16 h-16 flex items-center justify-center text-[#f7f6f0] opacity-50 hover:opacity-100 transition-opacity text-4xl"
                   >
                     ←
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); setMediaIndex(i => (i + 1) % allMedia.length); }}
-                    className="absolute right-4 md:right-10 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-[#f7f6f0] opacity-40 hover:opacity-100 transition-opacity text-xl"
+                    className="absolute right-2 md:right-8 top-1/2 -translate-y-1/2 w-16 h-16 flex items-center justify-center text-[#f7f6f0] opacity-50 hover:opacity-100 transition-opacity text-4xl"
                   >
                     →
                   </button>

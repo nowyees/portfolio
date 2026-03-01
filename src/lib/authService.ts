@@ -2,11 +2,18 @@ import {
     signInWithEmailAndPassword,
     signOut,
     onAuthStateChanged,
+    setPersistence,
+    browserLocalPersistence,
     type User,
 } from 'firebase/auth';
 import { auth } from './firebase';
 
 const ADMIN_EMAIL = 'ljwoong1104@gmail.com';
+
+// 로그인 유지 설정 (브라우저 종료 후에도 유지)
+if (auth) {
+    setPersistence(auth, browserLocalPersistence).catch(console.error);
+}
 
 /**
  * 이메일/비밀번호 로그인
