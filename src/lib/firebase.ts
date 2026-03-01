@@ -1,5 +1,7 @@
 import { initializeApp, type FirebaseApp } from 'firebase/app';
 import { getFirestore, type Firestore } from 'firebase/firestore';
+import { getAuth, type Auth } from 'firebase/auth';
+import { getStorage, type FirebaseStorage } from 'firebase/storage';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -13,6 +15,8 @@ const firebaseConfig = {
 // Firebase는 환경변수가 설정되어 있을 때만 초기화
 let app: FirebaseApp | null = null;
 let db: Firestore | null = null;
+let auth: Auth | null = null;
+let storage: FirebaseStorage | null = null;
 
 const isConfigured = Boolean(firebaseConfig.apiKey && firebaseConfig.projectId);
 
@@ -20,9 +24,11 @@ if (isConfigured) {
   try {
     app = initializeApp(firebaseConfig);
     db = getFirestore(app);
+    auth = getAuth(app);
+    storage = getStorage(app);
   } catch (error) {
     console.warn('Firebase initialization failed:', error);
   }
 }
 
-export { app, db, isConfigured };
+export { app, db, auth, storage, isConfigured };

@@ -1,4 +1,4 @@
-import { collection, getDocs, query, where, orderBy, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy, doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { db, isConfigured } from './firebase';
 
 export interface Project {
@@ -111,6 +111,47 @@ export async function getAllCategories(): Promise<string[]> {
         }
     }
     return Object.keys(FALLBACK_DATA);
+}
+
+/**
+ * 프로젝트 수정
+ */
+export async function updateProject(category: string, projectId: string, data: Partial<Project>): Promise<void> {
+    if (!isConfigured || !db) throw new Error('Firebase not configured');
+    const key = category.toLowerCase();
+    await setDoc(doc(db, 'portfolios', key, 'projects', projectId), data, { merge: true });
+}
+
+/**
+ * 새 프로젝트 추가
+ */
+export async function addProject(category: string, project: Project): Promise<string> {
+    if (!isConfigured || !db) throw new Error('Firebase not configured');
+    const key = category.toLowerCase();
+    const docId = `project-${project.id}`;
+    await setDoc(doc(db, 'portfolios', key, 'projects', docId), project);
+    return docId;
+}
+
+/**
+ * 프로젝트 삭제
+ */
+export async function deleteProject(category: string, projectId: string): Promise<void> {
+    if (!isConfigured || !db) throw new Error('Firebase not configured');
+    const key = category.toLowerCase();
+    await deleteDoc(doc(db, 'portfolios', key, 'projects', projectId));
+}
+
+/**
+ * 카테고리 정보 수정
+ */
+export async function updateCategoryInfo(
+    category: string,
+    data: { title?: string; subtitle?: string; description?: string }
+): Promise<void> {
+    if (!isConfigured || !db) throw new Error('Firebase not configured');
+    const key = category.toLowerCase();
+    await setDoc(doc(db, 'portfolios', key), data, { merge: true });
 }
 
 export { FALLBACK_DATA };
