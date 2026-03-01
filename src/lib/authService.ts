@@ -1,6 +1,5 @@
 import {
-    signInWithPopup,
-    GoogleAuthProvider,
+    signInWithEmailAndPassword,
     signOut,
     onAuthStateChanged,
     type User,
@@ -8,18 +7,21 @@ import {
 import { auth } from './firebase';
 
 const ADMIN_EMAIL = 'ljwoong1104@gmail.com';
-const googleProvider = new GoogleAuthProvider();
 
 /**
- * Google 로그인 → 관리자 이메일 확인
+ * 이메일/비밀번호 로그인
+ * ID는 자동으로 이메일로 변환 (ljwoong → ljwoong1104@gmail.com)
  */
-export async function adminLogin(): Promise<{ success: boolean; error?: string }> {
+export async function adminLogin(id: string, password: string): Promise<{ success: boolean; error?: string }> {
     if (!auth) {
         return { success: false, error: 'Firebase Auth가 설정되지 않았습니다.' };
     }
 
+    // ID → 이메일 변환
+    const email = id.includes('@') ? id : ADMIN_EMAIL;
+
     try {
-        const result = await signInWithPopup(auth, googleProvider);
+        const result = await signInWithEmailAndPassword(auth, email, password);
         if (result.user.email !== ADMIN_EMAIL) {
             await signOut(auth);
             return { success: false, error: '관리자 권한이 없는 계정입니다.' };
@@ -27,6 +29,12 @@ export async function adminLogin(): Promise<{ success: boolean; error?: string }
         return { success: true };
     } catch (error: any) {
         console.error('Admin login failed:', error);
+        if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+            return { success: false, error: '아이디 또는 비밀번호가 올바르지 않습니다.' };
+        }
+        if (error.code === 'auth/user-not-found') {
+            return { success: false, error: '등록되지 않은 계정입니다.' };
+        }
         return { success: false, error: error.message || '로그인에 실패했습니다.' };
     }
 }
