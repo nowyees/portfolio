@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import GridTrail from './GridTrail';
 import ContactDialog from './ContactDialog';
-import { getPortfolioByCategory, type CategoryData } from '../../lib/portfolioService';
+import { getPortfolioByCategory, type CategoryData, type MediaItem } from '../../lib/portfolioService';
+import { isVideoUrl } from '../../lib/storageService';
 
 export default function PortfolioDetail() {
   const { category } = useParams();
@@ -11,6 +12,7 @@ export default function PortfolioDetail() {
   const [data, setData] = useState<CategoryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState<number | null>(null);
+  const [mediaIndex, setMediaIndex] = useState(0);
   const [darkMode, setDarkMode] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -55,6 +57,18 @@ export default function PortfolioDetail() {
   const strokeColor = darkMode ? '#f7f6f0' : '#111';
   const borderColor = darkMode ? 'border-[#f7f6f0]/10' : 'border-[#111]/10';
   const cardBg = darkMode ? 'bg-[#1a1a1a]' : 'bg-[#e5e4de]';
+
+  // 선택된 프로젝트의 전체 미디어 리스트 구성
+  const getProjectMedia = (projectId: number): MediaItem[] => {
+    const project = data.projects.find(p => p.id === projectId);
+    if (!project) return [];
+    // 썸네일을 첫 번째 미디어로, 이후 media 배열 추가
+    const items: MediaItem[] = [{ url: project.image, type: 'image' }];
+    if (project.media && project.media.length > 0) {
+      items.push(...project.media);
+    }
+    return items;
+  };
 
   return (
     <div ref={containerRef} className={`min-h-screen ${bg} ${fg} font-sans ${selBg} ${selFg} transition-colors duration-500`}>
@@ -144,7 +158,7 @@ export default function PortfolioDetail() {
               viewport={{ once: true, margin: '-100px' }}
               transition={{ duration: 0.8, delay: i * 0.15, ease: [0.25, 1, 0.5, 1] }}
               className="group cursor-pointer"
-              onClick={() => setSelectedProject(project.id)}
+              onClick={() => { setSelectedProject(project.id); setMediaIndex(0); }}
             >
               <div className={`${project.aspect} overflow-hidden ${cardBg} relative`}>
                 <img
@@ -153,6 +167,12 @@ export default function PortfolioDetail() {
                   className="w-full h-full object-cover transition-transform duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-500" />
+                {/* Media count indicator */}
+                {project.media && project.media.length > 0 && (
+                  <div className="absolute bottom-3 right-3 bg-black/50 backdrop-blur-sm text-white text-[9px] px-2 py-1 uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity">
+                    +{project.media.length} more
+                  </div>
+                )}
               </div>
               <div className="mt-4 flex justify-between items-baseline">
                 <div>
@@ -183,47 +203,98 @@ export default function PortfolioDetail() {
         <span className="text-[10px] uppercase tracking-widest opacity-20">Jayden &mdash; {data.title} Design</span>
       </motion.div>
 
-      {/* Lightbox */}
+      {/* Media Lightbox */}
       <AnimatePresence>
         {selectedProject !== null && (() => {
           const project = data.projects.find(p => p.id === selectedProject);
           if (!project) return null;
+          const allMedia = getProjectMedia(selectedProject);
+          const currentMedia = allMedia[mediaIndex];
+          const hasMultiple = allMedia.length > 1;
+
           return (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.4 }}
-              className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-6 md:p-16 cursor-pointer"
+              className="fixed inset-0 z-[100] bg-black/90 flex flex-col items-center justify-center p-6 md:p-16 cursor-auto"
               onClick={() => setSelectedProject(null)}
             >
+              {/* Close button */}
+              <button
+                onClick={() => setSelectedProject(null)}
+                className="absolute top-6 right-6 md:top-8 md:right-12 text-[10px] uppercase tracking-widest text-[#f7f6f0] opacity-60 hover:opacity-100 transition-opacity z-10"
+              >
+                Close
+              </button>
+
+              {/* Media display */}
               <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                transition={{ duration: 0.4, ease: [0.25, 1, 0.5, 1] }}
-                className="relative max-w-5xl w-full max-h-[85vh]"
+                key={mediaIndex}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3 }}
+                className="relative max-w-5xl w-full flex-1 flex items-center justify-center min-h-0"
                 onClick={(e) => e.stopPropagation()}
               >
-                <img
-                  src={project.image}
-                  alt={project.title}
-                  className="w-full h-full object-contain max-h-[75vh]"
-                />
-                <div className="mt-6 flex justify-between items-baseline">
+                {currentMedia?.type === 'video' || (currentMedia && isVideoUrl(currentMedia.url)) ? (
+                  <video
+                    src={currentMedia.url}
+                    controls
+                    autoPlay
+                    className="max-w-full max-h-[70vh] object-contain"
+                  />
+                ) : (
+                  <img
+                    src={currentMedia?.url}
+                    alt={project.title}
+                    className="max-w-full max-h-[70vh] object-contain"
+                  />
+                )}
+              </motion.div>
+
+              {/* Navigation arrows */}
+              {hasMultiple && (
+                <>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setMediaIndex(i => (i - 1 + allMedia.length) % allMedia.length); }}
+                    className="absolute left-4 md:left-10 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-[#f7f6f0] opacity-40 hover:opacity-100 transition-opacity text-xl"
+                  >
+                    ←
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setMediaIndex(i => (i + 1) % allMedia.length); }}
+                    className="absolute right-4 md:right-10 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-[#f7f6f0] opacity-40 hover:opacity-100 transition-opacity text-xl"
+                  >
+                    →
+                  </button>
+                </>
+              )}
+
+              {/* Info + dots */}
+              <div className="mt-4 w-full max-w-5xl" onClick={(e) => e.stopPropagation()}>
+                <div className="flex justify-between items-baseline text-[#f7f6f0]">
                   <div>
                     <h3 className="text-[11px] md:text-[13px] uppercase tracking-widest">{project.title}</h3>
                     <p className="text-[10px] mt-1 opacity-40">{project.desc}</p>
                   </div>
                   <span className="text-[10px] font-mono opacity-30">{project.year}</span>
                 </div>
-              </motion.div>
-              <button
-                onClick={() => setSelectedProject(null)}
-                className="absolute top-6 right-6 md:top-8 md:right-12 text-[10px] uppercase tracking-widest opacity-60 hover:opacity-100 transition-opacity"
-              >
-                Close
-              </button>
+                {/* Dots indicator */}
+                {hasMultiple && (
+                  <div className="flex justify-center gap-2 mt-4">
+                    {allMedia.map((_, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setMediaIndex(idx)}
+                        className={`w-1.5 h-1.5 rounded-full transition-all ${idx === mediaIndex ? 'bg-white scale-125' : 'bg-white/30 hover:bg-white/50'
+                          }`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
             </motion.div>
           );
         })()}

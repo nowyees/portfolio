@@ -9,8 +9,9 @@ import {
     deleteProject,
     type Project,
     type CategoryData,
+    type MediaItem,
 } from '../../lib/portfolioService';
-import { uploadImage } from '../../lib/storageService';
+import { uploadImage, isVideoFile, isVideoUrl } from '../../lib/storageService';
 import type { User } from 'firebase/auth';
 
 const CATEGORIES = ['fashion', 'product', 'space', 'speculative'];
@@ -27,6 +28,7 @@ export default function AdminPage() {
     const [editingProject, setEditingProject] = useState<Project | null>(null);
     const [notification, setNotification] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const mediaFileInputRef = useRef<HTMLInputElement>(null);
     const [uploadingImage, setUploadingImage] = useState(false);
 
     // Auth 체크
@@ -56,21 +58,48 @@ export default function AdminPage() {
 
     const showNotification = (msg: string) => {
         setNotification(msg);
-        setTimeout(() => setNotification(null), 3000);
+        setTimeout(() => setNotification(null), 4000);
     };
 
-    const handleImageUpload = async (file: File) => {
+    const handleThumbnailUpload = async (file: File) => {
         setUploadingImage(true);
         try {
             const url = await uploadImage(file);
             if (editingProject) {
                 setEditingProject({ ...editingProject, image: url });
             }
-            showNotification('이미지 업로드 완료');
+            showNotification('썸네일 업로드 완료');
         } catch (err) {
-            showNotification('이미지 업로드 실패');
+            showNotification('썸네일 업로드 실패');
         }
         setUploadingImage(false);
+    };
+
+    const handleMediaUpload = async (files: FileList) => {
+        if (!editingProject) return;
+        setUploadingImage(true);
+        const newMedia: MediaItem[] = [...(editingProject.media || [])];
+
+        for (const file of Array.from(files)) {
+            try {
+                const url = await uploadImage(file);
+                const type = isVideoFile(file) ? 'video' : 'image';
+                newMedia.push({ url, type });
+            } catch (err) {
+                showNotification(`"${file.name}" 업로드 실패`);
+            }
+        }
+
+        setEditingProject({ ...editingProject, media: newMedia });
+        showNotification(`${files.length}개 미디어 업로드 완료`);
+        setUploadingImage(false);
+    };
+
+    const removeMedia = (index: number) => {
+        if (!editingProject) return;
+        const newMedia = [...(editingProject.media || [])];
+        newMedia.splice(index, 1);
+        setEditingProject({ ...editingProject, media: newMedia });
     };
 
     const handleSaveProject = async () => {
@@ -84,11 +113,12 @@ export default function AdminPage() {
             } else {
                 await addProject(activeCategory, editingProject);
             }
-            showNotification('저장 완료');
+            showNotification('저장 완료 ✓');
             setEditingProject(null);
             await loadData();
-        } catch (err) {
-            showNotification('저장 실패');
+        } catch (err: any) {
+            showNotification(`저장 실패: ${err.message || err}`);
+            console.error('Save error:', err);
         }
         setSaving(false);
     };
@@ -99,9 +129,10 @@ export default function AdminPage() {
         try {
             await deleteProject(activeCategory, `project-${project.id}`);
             showNotification('삭제 완료');
+            setEditingProject(null);
             await loadData();
-        } catch (err) {
-            showNotification('삭제 실패');
+        } catch (err: any) {
+            showNotification(`삭제 실패: ${err.message || err}`);
         }
         setSaving(false);
     };
@@ -115,6 +146,7 @@ export default function AdminPage() {
             desc: '',
             image: '',
             aspect: 'aspect-[3/4]',
+            media: [],
         });
     };
 
@@ -139,7 +171,7 @@ export default function AdminPage() {
 
     return (
         <div className="min-h-screen bg-[#f7f6f0] text-[#111] font-sans">
-            {/* Hidden file input */}
+            {/* Hidden file inputs */}
             <input
                 ref={fileInputRef}
                 type="file"
@@ -147,7 +179,19 @@ export default function AdminPage() {
                 className="hidden"
                 onChange={e => {
                     const file = e.target.files?.[0];
-                    if (file) handleImageUpload(file);
+                    if (file) handleThumbnailUpload(file);
+                    e.target.value = '';
+                }}
+            />
+            <input
+                ref={mediaFileInputRef}
+                type="file"
+                accept="image/*,video/*"
+                multiple
+                className="hidden"
+                onChange={e => {
+                    const files = e.target.files;
+                    if (files && files.length > 0) handleMediaUpload(files);
                     e.target.value = '';
                 }}
             />
@@ -159,7 +203,7 @@ export default function AdminPage() {
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
-                        className="fixed top-4 left-1/2 -translate-x-1/2 z-[200] bg-[#111] text-[#f7f6f0] px-6 py-3 text-[11px] uppercase tracking-widest"
+                        className="fixed top-4 left-1/2 -translate-x-1/2 z-[200] bg-[#111] text-[#f7f6f0] px-6 py-3 text-[11px] uppercase tracking-widest max-w-md text-center"
                     >
                         {notification}
                     </motion.div>
@@ -227,7 +271,7 @@ export default function AdminPage() {
                                     layout
                                     className={`group border border-[#111]/10 cursor-pointer transition-all hover:border-[#111]/30 ${editingProject?.id === project.id ? 'ring-2 ring-[#111]' : ''
                                         }`}
-                                    onClick={() => setEditingProject({ ...project })}
+                                    onClick={() => setEditingProject({ ...project, media: project.media || [] })}
                                 >
                                     <div className="aspect-[4/3] overflow-hidden bg-[#e5e4de] relative">
                                         {project.image ? (
@@ -235,6 +279,12 @@ export default function AdminPage() {
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center text-[10px] uppercase tracking-widest opacity-20">
                                                 No Image
+                                            </div>
+                                        )}
+                                        {/* Media count badge */}
+                                        {project.media && project.media.length > 0 && (
+                                            <div className="absolute top-2 right-2 bg-[#111] text-[#f7f6f0] text-[9px] px-2 py-0.5 uppercase tracking-wider">
+                                                {project.media.length} media
                                             </div>
                                         )}
                                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
@@ -289,8 +339,9 @@ export default function AdminPage() {
                                         </div>
 
                                         <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-6">
-                                            {/* Image Preview + Upload */}
+                                            {/* Thumbnail Preview + Upload */}
                                             <div>
+                                                <p className="text-[9px] uppercase tracking-widest mb-2 opacity-40">Thumbnail</p>
                                                 <div
                                                     className="aspect-[3/4] bg-[#e5e4de] overflow-hidden cursor-pointer relative group"
                                                     onClick={() => fileInputRef.current?.click()}
@@ -304,7 +355,7 @@ export default function AdminPage() {
                                                     )}
                                                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
                                                         <span className="text-[#f7f6f0] text-[10px] uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
-                                                            {uploadingImage ? 'Uploading...' : 'Change Image'}
+                                                            {uploadingImage ? 'Uploading...' : 'Change'}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -364,6 +415,40 @@ export default function AdminPage() {
                                                             </button>
                                                         ))}
                                                     </div>
+                                                </div>
+
+                                                {/* Media Gallery */}
+                                                <div>
+                                                    <label className="block text-[9px] uppercase tracking-widest mb-2 opacity-40">
+                                                        Detail Media ({editingProject.media?.length || 0})
+                                                    </label>
+                                                    <div className="flex gap-2 flex-wrap">
+                                                        {editingProject.media?.map((item, idx) => (
+                                                            <div key={idx} className="relative w-20 h-20 bg-[#e5e4de] group">
+                                                                {item.type === 'video' ? (
+                                                                    <div className="w-full h-full flex items-center justify-center text-[9px] uppercase opacity-40">
+                                                                        <span>▶ Video</span>
+                                                                    </div>
+                                                                ) : (
+                                                                    <img src={item.url} alt="" className="w-full h-full object-cover" />
+                                                                )}
+                                                                <button
+                                                                    onClick={() => removeMedia(idx)}
+                                                                    className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                >
+                                                                    ×
+                                                                </button>
+                                                            </div>
+                                                        ))}
+                                                        <button
+                                                            onClick={() => mediaFileInputRef.current?.click()}
+                                                            className="w-20 h-20 border border-dashed border-[#111]/20 flex items-center justify-center text-[16px] opacity-20 hover:opacity-40 transition-opacity"
+                                                            disabled={uploadingImage}
+                                                        >
+                                                            {uploadingImage ? '...' : '+'}
+                                                        </button>
+                                                    </div>
+                                                    <p className="text-[9px] opacity-20 mt-1">이미지 및 비디오 파일 업로드 가능</p>
                                                 </div>
 
                                                 <div className="flex gap-3 pt-2">

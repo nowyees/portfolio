@@ -1,6 +1,11 @@
 import { collection, getDocs, query, where, orderBy, doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { db, isConfigured } from './firebase';
 
+export interface MediaItem {
+    url: string;
+    type: 'image' | 'video';
+}
+
 export interface Project {
     id: number;
     title: string;
@@ -8,6 +13,7 @@ export interface Project {
     desc: string;
     image: string;
     aspect: string;
+    media?: MediaItem[];
 }
 
 export interface CategoryData {
