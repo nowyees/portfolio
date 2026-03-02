@@ -149,7 +149,7 @@ export default function PortfolioDetail() {
 
       {/* Gallery Grid */}
       <div className="px-6 md:px-16 pb-32 relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           {data.projects.map((project, i) => (
             <motion.div
               key={project.id}
