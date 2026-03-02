@@ -206,29 +206,22 @@ export default function PortfolioDetail() {
       {/* Media Lightbox */}
       <AnimatePresence>
         {selectedProject !== null && (() => {
-          const projectIndex = data.projects.findIndex(p => p.id === selectedProject);
-          const project = data.projects[projectIndex];
+          const project = data.projects.find(p => p.id === selectedProject);
           if (!project) return null;
           const allMedia = getProjectMedia(selectedProject);
           const currentMedia = allMedia[mediaIndex];
-          const hasMultipleMedia = allMedia.length > 1;
-          const hasPrevProject = projectIndex > 0;
-          const hasNextProject = projectIndex < data.projects.length - 1;
+          const hasMultiple = allMedia.length > 1;
+          const hasPrev = mediaIndex > 0;
+          const hasNext = mediaIndex < allMedia.length - 1;
 
-          const goToPrevProject = (e: React.MouseEvent) => {
-            e.stopPropagation();
-            if (hasPrevProject) {
-              setSelectedProject(data.projects[projectIndex - 1].id);
-              setMediaIndex(0);
-            }
+          const goPrev = (e?: React.MouseEvent) => {
+            e?.stopPropagation();
+            if (hasPrev) setMediaIndex(i => i - 1);
           };
 
-          const goToNextProject = (e: React.MouseEvent) => {
-            e.stopPropagation();
-            if (hasNextProject) {
-              setSelectedProject(data.projects[projectIndex + 1].id);
-              setMediaIndex(0);
-            }
+          const goNext = (e?: React.MouseEvent) => {
+            e?.stopPropagation();
+            if (hasNext) setMediaIndex(i => i + 1);
           };
 
           return (
@@ -239,6 +232,25 @@ export default function PortfolioDetail() {
               transition={{ duration: 0.4 }}
               className="fixed inset-0 z-[100] bg-black/90 flex flex-col items-center justify-center p-6 md:p-16 cursor-auto"
               onClick={() => setSelectedProject(null)}
+              onWheel={(e) => {
+                if (!hasMultiple) return;
+                if (e.deltaY > 0 && hasNext) setMediaIndex(i => i + 1);
+                if (e.deltaY < 0 && hasPrev) setMediaIndex(i => i - 1);
+              }}
+              onTouchStart={(e) => {
+                const touch = e.touches[0];
+                (e.currentTarget as any).__touchStartY = touch.clientY;
+              }}
+              onTouchEnd={(e) => {
+                const startY = (e.currentTarget as any).__touchStartY;
+                if (startY === undefined) return;
+                const endY = e.changedTouches[0].clientY;
+                const diff = startY - endY;
+                if (Math.abs(diff) > 50) {
+                  if (diff > 0 && hasNext) setMediaIndex(i => i + 1);
+                  if (diff < 0 && hasPrev) setMediaIndex(i => i - 1);
+                }
+              }}
             >
               {/* Close button */}
               <button
@@ -248,16 +260,18 @@ export default function PortfolioDetail() {
                 Close
               </button>
 
-              {/* Project counter */}
-              <div className="absolute top-6 left-6 md:top-8 md:left-12 text-[10px] uppercase tracking-widest text-[#f7f6f0] opacity-30">
-                {projectIndex + 1} / {data.projects.length}
-              </div>
+              {/* Media counter */}
+              {hasMultiple && (
+                <div className="absolute top-6 left-6 md:top-8 md:left-12 text-[10px] uppercase tracking-widest text-[#f7f6f0] opacity-30">
+                  {mediaIndex + 1} / {allMedia.length}
+                </div>
+              )}
 
               {/* Media display */}
               <motion.div
                 key={`${selectedProject}-${mediaIndex}`}
-                initial={{ opacity: 0, x: 30 }}
-                animate={{ opacity: 1, x: 0 }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
                 className="relative max-w-5xl w-full flex-1 flex items-center justify-center min-h-0"
                 onClick={(e) => e.stopPropagation()}
@@ -278,23 +292,27 @@ export default function PortfolioDetail() {
                 )}
               </motion.div>
 
-              {/* Desktop arrows (sides) */}
-              <button
-                onClick={goToPrevProject}
-                className={`hidden md:flex absolute left-8 top-1/2 -translate-y-1/2 w-16 h-16 items-center justify-center text-[#f7f6f0] transition-opacity text-4xl ${hasPrevProject ? 'opacity-50 hover:opacity-100' : 'opacity-10 cursor-default'
-                  }`}
-              >
-                ←
-              </button>
-              <button
-                onClick={goToNextProject}
-                className={`hidden md:flex absolute right-8 top-1/2 -translate-y-1/2 w-16 h-16 items-center justify-center text-[#f7f6f0] transition-opacity text-4xl ${hasNextProject ? 'opacity-50 hover:opacity-100' : 'opacity-10 cursor-default'
-                  }`}
-              >
-                →
-              </button>
+              {/* Desktop arrows (sides) - navigate media */}
+              {hasMultiple && (
+                <>
+                  <button
+                    onClick={goPrev}
+                    className={`hidden md:flex absolute left-8 top-1/2 -translate-y-1/2 w-16 h-16 items-center justify-center text-[#f7f6f0] transition-opacity text-4xl ${hasPrev ? 'opacity-50 hover:opacity-100' : 'opacity-10 cursor-default'
+                      }`}
+                  >
+                    ←
+                  </button>
+                  <button
+                    onClick={goNext}
+                    className={`hidden md:flex absolute right-8 top-1/2 -translate-y-1/2 w-16 h-16 items-center justify-center text-[#f7f6f0] transition-opacity text-4xl ${hasNext ? 'opacity-50 hover:opacity-100' : 'opacity-10 cursor-default'
+                      }`}
+                  >
+                    →
+                  </button>
+                </>
+              )}
 
-              {/* Info + mobile arrows + media dots */}
+              {/* Info + mobile arrows + dots */}
               <div className="mt-4 w-full max-w-5xl" onClick={(e) => e.stopPropagation()}>
                 <div className="flex justify-between items-baseline text-[#f7f6f0]">
                   <div>
@@ -305,28 +323,30 @@ export default function PortfolioDetail() {
                 </div>
 
                 {/* Mobile arrows (bottom) */}
-                <div className="flex md:hidden justify-center items-center gap-8 mt-4">
-                  <button
-                    onClick={goToPrevProject}
-                    className={`w-12 h-12 flex items-center justify-center text-[#f7f6f0] transition-opacity text-3xl ${hasPrevProject ? 'opacity-60' : 'opacity-15'
-                      }`}
-                  >
-                    ←
-                  </button>
-                  <span className="text-[10px] text-[#f7f6f0] opacity-30">
-                    {projectIndex + 1} / {data.projects.length}
-                  </span>
-                  <button
-                    onClick={goToNextProject}
-                    className={`w-12 h-12 flex items-center justify-center text-[#f7f6f0] transition-opacity text-3xl ${hasNextProject ? 'opacity-60' : 'opacity-15'
-                      }`}
-                  >
-                    →
-                  </button>
-                </div>
+                {hasMultiple && (
+                  <div className="flex md:hidden justify-center items-center gap-8 mt-4">
+                    <button
+                      onClick={goPrev}
+                      className={`w-12 h-12 flex items-center justify-center text-[#f7f6f0] transition-opacity text-3xl ${hasPrev ? 'opacity-60' : 'opacity-15'
+                        }`}
+                    >
+                      ←
+                    </button>
+                    <span className="text-[10px] text-[#f7f6f0] opacity-30">
+                      {mediaIndex + 1} / {allMedia.length}
+                    </span>
+                    <button
+                      onClick={goNext}
+                      className={`w-12 h-12 flex items-center justify-center text-[#f7f6f0] transition-opacity text-3xl ${hasNext ? 'opacity-60' : 'opacity-15'
+                        }`}
+                    >
+                      →
+                    </button>
+                  </div>
+                )}
 
                 {/* Media dots */}
-                {hasMultipleMedia && (
+                {hasMultiple && (
                   <div className="flex justify-center gap-2 mt-3">
                     {allMedia.map((_, idx) => (
                       <button
@@ -347,6 +367,6 @@ export default function PortfolioDetail() {
 
       {/* Contact Dialog */}
       <ContactDialog open={contactOpen} onClose={() => setContactOpen(false)} dark={darkMode} />
-    </div>
+    </div >
   );
 }
