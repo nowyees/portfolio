@@ -105,18 +105,15 @@ export default function Home() {
       <div className="absolute inset-0 flex flex-col z-10 mix-blend-difference text-[#f7f6f0] pointer-events-none">
 
         {/* 네비게이션 */}
-        <nav className={`absolute top-0 w-full flex justify-between md:grid md:grid-cols-4 items-center p-6 md:px-12 pointer-events-auto transition-opacity duration-1000 z-50 ${appState === 'ready' ? 'opacity-100' : 'opacity-0'}`}>
-          <div className="flex justify-start">
-            <button onMouseEnter={() => handleMenuHover('LEE JAEWOONG')} onMouseLeave={handleMenuLeave} className={`text-[8px] md:text-xs font-bold md:font-medium uppercase tracking-wider md:tracking-widest md:cursor-none transition-opacity duration-200 ${cursorState.text === 'LEE JAEWOONG' ? 'md:opacity-0' : 'opacity-100'}`}>LEE JAEWOONG</button>
+        <nav className={`absolute top-0 w-full flex justify-between items-center px-6 pt-4 pb-0 md:px-12 pointer-events-auto transition-opacity duration-1000 z-50 ${appState === 'ready' ? 'opacity-100' : 'opacity-0'}`}>
+          <div className="flex-none">
+            <button onMouseEnter={() => handleMenuHover('LEE JAEWOONG')} onMouseLeave={handleMenuLeave} className={`text-[7px] md:text-[9px] font-bold md:font-medium uppercase tracking-wider md:tracking-widest md:cursor-none transition-opacity duration-200 ${cursorState.text === 'LEE JAEWOONG' ? 'md:opacity-0' : 'opacity-100'}`}>LEE JAEWOONG</button>
           </div>
-          <div className="flex justify-center md:justify-start md:pl-8 lg:pl-16">
-            <button onClick={() => setContactOpen(true)} onMouseEnter={() => handleMenuHover('CONTACT')} onMouseLeave={handleMenuLeave} className={`text-[8px] md:text-xs font-bold md:font-medium uppercase tracking-widest md:cursor-none transition-opacity duration-200 ${cursorState.text === 'CONTACT' ? 'md:opacity-0' : 'opacity-100'}`}>CONTACT</button>
-          </div>
-          <div className="flex justify-center md:justify-start md:pl-4 lg:pl-8">
-            <button onClick={() => setDarkMode(d => !d)} onMouseEnter={() => handleMenuHover('WHITE')} onMouseLeave={handleMenuLeave} className={`text-[8px] md:text-xs font-bold md:font-medium uppercase tracking-widest md:cursor-none transition-opacity duration-200 ${cursorState.text === 'WHITE' ? 'md:opacity-0' : 'opacity-100'}`}>WHITE</button>
-          </div>
-          <div className="flex justify-end">
-            <button onMouseEnter={() => handleMenuHover('PLAYGROUND')} onMouseLeave={handleMenuLeave} className={`text-[8px] md:text-xs font-bold md:font-medium uppercase tracking-widest md:cursor-none transition-opacity duration-200 ${cursorState.text === 'PLAYGROUND' ? 'md:opacity-0' : 'opacity-100'}`}>PLAYGROUND</button>
+
+          <div className="flex-1 flex justify-end items-center gap-6 md:gap-16">
+            <button onClick={() => setContactOpen(true)} onMouseEnter={() => handleMenuHover('CONTACT')} onMouseLeave={handleMenuLeave} className={`text-[7px] md:text-[9px] font-bold md:font-medium uppercase tracking-widest md:cursor-none transition-opacity duration-200 ${cursorState.text === 'CONTACT' ? 'md:opacity-0' : 'opacity-100'}`}>CONTACT</button>
+            <button onClick={() => setDarkMode(d => !d)} onMouseEnter={() => handleMenuHover('WHITE')} onMouseLeave={handleMenuLeave} className={`text-[7px] md:text-[9px] font-bold md:font-medium uppercase tracking-widest md:cursor-none transition-opacity duration-200 ${cursorState.text === 'WHITE' ? 'md:opacity-0' : 'opacity-100'}`}>WHITE</button>
+            <button onMouseEnter={() => handleMenuHover('PLAYGROUND')} onMouseLeave={handleMenuLeave} className={`text-[7px] md:text-[9px] font-bold md:font-medium uppercase tracking-widest md:cursor-none transition-opacity duration-200 ${cursorState.text === 'PLAYGROUND' ? 'md:opacity-0' : 'opacity-100'}`}>PLAYGROUND</button>
           </div>
         </nav>
 
