@@ -139,14 +139,20 @@ export default function Home() {
               </div>
 
               {/* Categories */}
-              <div className={`absolute top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 md:bottom-2 right-0 md:left-0 w-[240px] md:w-full flex justify-between px-0 md:px-12 text-[7px] md:text-[9px] uppercase tracking-wider md:tracking-widest transition-opacity duration-1000 delay-300 ${appState === 'ready' ? 'opacity-100' : 'opacity-0'}`}>
+              <div className={`absolute top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 md:bottom-2 right-0 md:left-0 w-[250px] md:w-full flex justify-between gap-1 px-0 md:px-12 text-[7px] md:text-[9px] uppercase tracking-wider md:tracking-widest transition-opacity duration-1000 delay-300 ${appState === 'ready' ? 'opacity-100' : 'opacity-0'}`}>
                 {WORDS.map((word, i) => (
                   <button
                     key={word}
                     ref={el => labelRefs.current[i] = el}
                     onMouseEnter={() => handleMenuHover(word)}
                     onMouseLeave={handleMenuLeave}
-                    className={`text-[5.5px] tracking-normal md:text-[9px] md:tracking-widest md:cursor-none transition-opacity duration-200 ${cursorState.text === word ? 'md:opacity-0' : 'opacity-100'}`}
+                    className={`
+                      text-[6.5px] tracking-tight md:text-[9px] md:tracking-widest md:cursor-none 
+                      transition-opacity duration-200 
+                      flex-1 md:flex-none py-1 md:py-0
+                      border border-current/20 md:border-transparent rounded-full md:rounded-none
+                      ${cursorState.text === word ? 'md:opacity-0' : 'opacity-100'}
+                    `}
                     onClick={() => handleWordClick(word)}
                   >
                     {word}
