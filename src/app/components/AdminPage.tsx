@@ -147,6 +147,8 @@ export default function AdminPage() {
             image: '',
             aspect: 'aspect-[3/4]',
             media: [],
+            externalLink: '',
+            showExternalLink: false,
         });
     };
 
@@ -240,8 +242,8 @@ export default function AdminPage() {
                             key={cat}
                             onClick={() => { setActiveCategory(cat); setEditingProject(null); }}
                             className={`px-5 py-3 text-[10px] uppercase tracking-widest transition-all border-b-2 -mb-[1px] ${activeCategory === cat
-                                    ? 'border-[#111] opacity-100'
-                                    : 'border-transparent opacity-30 hover:opacity-60'
+                                ? 'border-[#111] opacity-100'
+                                : 'border-transparent opacity-30 hover:opacity-60'
                                 }`}
                         >
                             {cat}
@@ -399,6 +401,24 @@ export default function AdminPage() {
                                                         className="w-full px-0 py-2 text-[13px] border-b border-[#111]/10 bg-transparent outline-none"
                                                     />
                                                 </div>
+                                                <div className="flex gap-4 items-center">
+                                                    <div className="flex-1">
+                                                        <label className="block text-[9px] uppercase tracking-widest mb-1 opacity-40">External Link</label>
+                                                        <input
+                                                            type="text"
+                                                            value={editingProject.externalLink || ''}
+                                                            onChange={e => setEditingProject({ ...editingProject, externalLink: e.target.value })}
+                                                            placeholder="https://..."
+                                                            className="w-full px-0 py-2 text-[13px] border-b border-[#111]/10 bg-transparent outline-none"
+                                                        />
+                                                    </div>
+                                                    <div className="flex items-center gap-2 mt-4 cursor-pointer" onClick={() => setEditingProject({ ...editingProject, showExternalLink: !editingProject.showExternalLink })}>
+                                                        <div className={`w-4 h-4 border transition-colors ${editingProject.showExternalLink ? 'bg-[#111] border-[#111]' : 'border-[#111]/30'} flex items-center justify-center`}>
+                                                            {editingProject.showExternalLink && <span className="text-[#f7f6f0] text-[10px]">✓</span>}
+                                                        </div>
+                                                        <span className="text-[9px] uppercase tracking-widest opacity-60 select-none">Show Link</span>
+                                                    </div>
+                                                </div>
                                                 <div>
                                                     <label className="block text-[9px] uppercase tracking-widest mb-1 opacity-40">Aspect Ratio</label>
                                                     <div className="flex gap-2">
@@ -407,8 +427,8 @@ export default function AdminPage() {
                                                                 key={opt}
                                                                 onClick={() => setEditingProject({ ...editingProject, aspect: opt })}
                                                                 className={`px-3 py-1 text-[10px] border transition-colors ${editingProject.aspect === opt
-                                                                        ? 'border-[#111] bg-[#111] text-[#f7f6f0]'
-                                                                        : 'border-[#111]/10 hover:border-[#111]/30'
+                                                                    ? 'border-[#111] bg-[#111] text-[#f7f6f0]'
+                                                                    : 'border-[#111]/10 hover:border-[#111]/30'
                                                                     }`}
                                                             >
                                                                 {opt.replace('aspect-[', '').replace(']', '')}

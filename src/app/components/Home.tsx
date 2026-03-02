@@ -1,181 +1,159 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
-import GridTrail from './GridTrail';
 import ContactDialog from './ContactDialog';
-import '../../lib/seedData'; // window.__seedFirestore 등록
+import { getAllProjects, type Project } from '../../lib/portfolioService';
+import '../../lib/seedData';
 
-// --- 단어 목록 ---
-const WORDS = ['FASHION', 'PRODUCT', 'SPACE', 'SPECULATIVE'];
-
-// 최초 방문 여부를 세션 단위로 추적
-let hasVisitedHome = false;
-
-// --- 홈 컴포넌트 ---
 export default function Home() {
   const navigate = useNavigate();
-  const [appState, setAppState] = useState(() => hasVisitedHome ? 'ready' : 'initial');
-  const [cursorState, setCursorState] = useState<{ type: string; text: string }>({ type: 'default', text: '' });
-  const [sliderValue, setSliderValue] = useState(50);
-  const [currentWord, setCurrentWord] = useState('SPACE');
-  const [darkMode, setDarkMode] = useState(false);
+  const [projects, setProjects] = useState<Array<Project & { category: string }>>([]);
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
   const [contactOpen, setContactOpen] = useState(false);
-  const cursorRef = useRef<HTMLDivElement>(null);
-  const sliderTrackRef = useRef<HTMLDivElement>(null);
-  const labelRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
-  // 랜딩: 깜빡이는 메타볼 원 → 3초 후 메인 콘텐츠 전환 (최초 방문 시에만)
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const imageRefs = useRef<(HTMLDivElement | null)[]>([]);
+
   useEffect(() => {
-    if (hasVisitedHome) return;
-    const t = setTimeout(() => {
-      setAppState('ready');
-      hasVisitedHome = true;
-    }, 3000);
-    return () => clearTimeout(t);
+    window.scrollTo(0, 0);
+    getAllProjects().then(res => {
+      setProjects(res);
+      if (res.length > 0) {
+        setActiveProjectId(`${res[0].category}-${res[0].id}`);
+      }
+    });
   }, []);
 
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (cursorRef.current) {
-        cursorRef.current.style.transform = `translate3d(calc(${e.clientX}px - 50%), calc(${e.clientY}px - 50%), 0)`;
-      }
+    observerRef.current = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          setActiveProjectId(entry.target.getAttribute('data-id'));
+        }
+      });
+    }, {
+      root: null,
+      rootMargin: '-40% 0px -40% 0px', // 트리거 기준선: 화면 상단/하단에서 40% 안쪽 (가운데 20% 영역)
+      threshold: 0
+    });
 
-      if (appState === 'ready' && sliderTrackRef.current) {
-        const rect = sliderTrackRef.current.getBoundingClientRect();
-        let relativeX = e.clientX - rect.left;
-        let percent = (relativeX / rect.width) * 100;
-        percent = Math.max(0, Math.min(100, percent));
+    imageRefs.current.forEach(ref => {
+      if (ref) observerRef.current?.observe(ref);
+    });
 
-        // 4개 단어 위치에 스냅
-        const index = Math.min(3, Math.floor(percent / 25));
-        const snappedPercent = index * 25 + 12.5;
-        setSliderValue(snappedPercent);
-        setCurrentWord(WORDS[index]);
-      }
-    };
+    return () => observerRef.current?.disconnect();
+  }, [projects]);
 
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [appState]);
-
-  const handleMenuHover = (text: string) => setCursorState({ type: 'text', text });
-  const handleMenuLeave = () => setCursorState({ type: 'default', text: '' });
-
-  const handleWordClick = (word: string) => {
-    navigate(`/portfolio/${word.toLowerCase()}`);
-  };
-
-
+  const activeProject = projects.find(p => `${p.category}-${p.id}` === activeProjectId) || projects[0];
 
   return (
-    <div className="relative w-screen h-screen bg-[#f7f6f0] overflow-hidden md:cursor-none selection:bg-[#111] selection:text-[#f7f6f0] font-sans flex flex-col">
-
-      <style dangerouslySetInnerHTML={{
-        __html: `
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-        .animate-blink { animation: blink 1s step-end infinite; }
-      `}} />
-
-      {/* 그리드 + 트레일 + 슬라이더 바 (동일 캔버스, 메타볼 합체) */}
-      <GridTrail dark={darkMode} sliderValue={sliderValue} sliderTrackRef={sliderTrackRef} ready={appState === 'ready'} labelRefs={labelRefs} appState={appState} />
-
-      {/* 모핑 마우스 커서 */}
-      {/* Custom cursor - hidden on mobile */}
-      {appState !== 'initial' && (
-        <div
-          ref={cursorRef}
-          className="fixed top-0 left-0 pointer-events-none z-50 items-center justify-center will-change-transform mix-blend-difference hidden md:flex"
-          style={{ transform: 'translate3d(-100px, -100px, 0)' }}
-        >
-          <div
-            className={`transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] flex items-center justify-center overflow-hidden
-              ${cursorState.type === 'default' ? 'w-5 h-5 rounded-full bg-[#f7f6f0]' : ''}
-              ${cursorState.type === 'text' ? 'h-8 px-5 bg-[#f7f6f0] rounded-full' : ''}
-            `}
-          >
-            {cursorState.type === 'text' && (
-              <span className="text-[#111] text-[10px] md:text-xs font-medium uppercase tracking-widest whitespace-nowrap">
-                {cursorState.text}
-              </span>
-            )}
-          </div>
+    <div className="relative w-full min-h-screen bg-[#f7f6f0] text-[#111] font-sans selection:bg-[#111] selection:text-[#f7f6f0]">
+      {/* Navigation */}
+      <nav className="fixed top-0 w-full flex justify-between items-center px-6 pt-4 pb-0 md:px-12 z-50">
+        <div className="flex-none">
+          <button onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }) }} className="text-[7px] md:text-[9px] font-bold md:font-medium uppercase tracking-wider md:tracking-widest transition-opacity hover:opacity-50">LEE JAEWOONG</button>
         </div>
-      )}
-
-      {/* 콘텐츠 영역 */}
-      <div className="absolute inset-0 flex flex-col z-10 mix-blend-difference text-[#f7f6f0] pointer-events-none">
-
-        {/* 네비게이션 */}
-        <nav className={`absolute top-0 w-full flex justify-between items-center px-6 pt-4 pb-0 md:px-12 pointer-events-auto transition-opacity duration-1000 z-50 ${appState === 'ready' ? 'opacity-100' : 'opacity-0'}`}>
-          <div className="flex-none">
-            <button onMouseEnter={() => handleMenuHover('LEE JAEWOONG')} onMouseLeave={handleMenuLeave} className={`text-[7px] md:text-[9px] font-bold md:font-medium uppercase tracking-wider md:tracking-widest md:cursor-none transition-opacity duration-200 ${cursorState.text === 'LEE JAEWOONG' ? 'md:opacity-0' : 'opacity-100'}`}>LEE JAEWOONG</button>
-          </div>
-
-          <div className="flex-1 flex justify-end items-center gap-6 md:gap-16">
-            <button onClick={() => setContactOpen(true)} onMouseEnter={() => handleMenuHover('CONTACT')} onMouseLeave={handleMenuLeave} className={`text-[7px] md:text-[9px] font-bold md:font-medium uppercase tracking-widest md:cursor-none transition-opacity duration-200 ${cursorState.text === 'CONTACT' ? 'md:opacity-0' : 'opacity-100'}`}>CONTACT</button>
-            <button onClick={() => setDarkMode(d => !d)} onMouseEnter={() => handleMenuHover('WHITE')} onMouseLeave={handleMenuLeave} className={`text-[7px] md:text-[9px] font-bold md:font-medium uppercase tracking-widest md:cursor-none transition-opacity duration-200 ${cursorState.text === 'WHITE' ? 'md:opacity-0' : 'opacity-100'}`}>WHITE</button>
-            <button onMouseEnter={() => handleMenuHover('PLAYGROUND')} onMouseLeave={handleMenuLeave} className={`text-[7px] md:text-[9px] font-bold md:font-medium uppercase tracking-widest md:cursor-none transition-opacity duration-200 ${cursorState.text === 'PLAYGROUND' ? 'md:opacity-0' : 'opacity-100'}`}>PLAYGROUND</button>
-          </div>
-        </nav>
-
-        {/* Top Section */}
-        <div className={`flex-1 flex items-center justify-center border-b border-[#f7f6f0]/30 transition-opacity duration-1000 ${appState === 'ready' ? 'opacity-100' : 'opacity-0'}`}>
+        <div className="flex-1 flex justify-end items-center gap-6 md:gap-16">
+          <button onClick={() => navigate('/freedive')} className="text-[7px] md:text-[9px] font-bold md:font-medium uppercase tracking-widest transition-opacity hover:opacity-50">FREE DIVE</button>
         </div>
+      </nav>
 
-        {/* Middle Section (Slider) */}
-        <div className={`flex-1 flex items-center justify-center px-4 md:px-16 relative pointer-events-auto`}>
-
-          <div className={`flex flex-row items-center justify-between w-full relative transition-opacity duration-1000 ${appState === 'ready' ? 'opacity-100' : 'opacity-0'}`}>
-            {/* Left Number */}
-            <span className={`text-[6vw] md:text-[5vw] font-bold md:font-normal font-mono leading-none md:mr-0 z-10 transition-opacity duration-1000 ${appState === 'ready' ? 'opacity-100' : 'opacity-0'}`}>
-              {`0${Math.min(4, Math.max(1, Math.floor(sliderValue / 25) + 1))}`}
-            </span>
-
-            {/* Slider Container */}
-            <div
-              className="flex-1 max-w-5xl mx-2 md:mx-16 relative h-16 md:h-32 flex items-center md:cursor-none justify-end md:justify-center"
-            >
-              <p className={`hidden md:block absolute top-2 left-1/2 -translate-x-1/2 w-full text-center text-[8px] md:text-[9px] uppercase tracking-wider md:tracking-widest transition-opacity duration-1000 delay-300 ${appState === 'ready' ? 'opacity-100' : 'opacity-0'}`}>
-                HELLO. I'M <span className="inline-block min-w-[7em]">{currentWord}</span> DESIGNER JAYDEN
-              </p>
-
-              {/* 슬라이더 트랙 - 모바일에서는 영역을 줄임 */}
-              <div ref={sliderTrackRef} className={`w-full max-w-[280px] md:max-w-none h-4 relative transition-opacity duration-1000 ${appState === 'ready' ? 'opacity-100' : 'opacity-0'}`}>
+      <div className="flex flex-col md:flex-row w-full h-full relative">
+        {/* Left Column (Sticky Info) - Desktop Only */}
+        <div className="w-full md:w-[45%] h-screen sticky top-0 flex flex-col justify-center p-8 md:pl-24 lg:pl-32 z-10 hidden md:flex border-r border-[#111]/5">
+          {activeProject && (
+            <div className="w-full max-w-[280px] lg:max-w-xs transition-opacity duration-500">
+              <div className="flex justify-between items-end mb-12 font-bold text-[10px] md:text-xs uppercase tracking-widest">
+                <span>PROJECT</span>
+                <span>{activeProject.year}</span>
               </div>
 
-              {/* Categories */}
-              <div className={`absolute top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 md:bottom-2 right-0 md:left-0 w-[270px] md:w-full flex justify-between px-0 md:px-12 text-[7px] md:text-[9px] font-bold md:font-normal uppercase tracking-wider md:tracking-widest transition-opacity duration-1000 delay-300 ${appState === 'ready' ? 'opacity-100' : 'opacity-0'}`}>
-                {WORDS.map((word, i) => (
-                  <button
-                    key={word}
-                    ref={el => labelRefs.current[i] = el}
-                    onMouseEnter={() => handleMenuHover(word)}
-                    onMouseLeave={handleMenuLeave}
-                    className={`
-                      text-[7px] tracking-tight md:text-[9px] md:tracking-widest md:cursor-none 
-                      transition-opacity duration-200 
-                      ${cursorState.text === word ? 'md:opacity-0' : 'opacity-100'}
-                    `}
-                    onClick={() => handleWordClick(word)}
+              <div className="mb-16">
+                <p className="text-[10px] leading-[1.8] opacity-80 text-justify">
+                  {activeProject.desc}
+                </p>
+              </div>
+
+              {activeProject.showExternalLink && activeProject.externalLink && (
+                <div className="mt-8">
+                  <a
+                    href={activeProject.externalLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[9px] font-bold uppercase tracking-widest border-b border-[#111] pb-0.5 hover:opacity-50 transition-opacity"
                   >
-                    {word}
-                  </button>
-                ))}
+                    {'>'} Link
+                  </a>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="absolute bottom-6 left-8 md:bottom-12 md:left-24 lg:left-32">
+            <button
+              onClick={() => setContactOpen(true)}
+              className="text-[8px] md:text-[10px] font-bold uppercase tracking-widest hover:opacity-50 transition-opacity"
+            >
+              Contact me
+            </button>
+          </div>
+        </div>
+
+        {/* Right Column (Scrollable Images) */}
+        <div className="w-full md:w-[55%] flex flex-col items-center py-32 md:py-48 px-6 md:px-12 z-0">
+          {projects.map((project, idx) => (
+            <div
+              key={`${project.category}-${project.id}`}
+              data-id={`${project.category}-${project.id}`}
+              ref={(el) => { imageRefs.current[idx] = el; }}
+              className="w-full max-w-2xl mb-32 md:mb-64 cursor-pointer group"
+              onClick={() => navigate(`/portfolio/${project.category}`)}
+            >
+              <div className={`w-full ${project.aspect || 'aspect-[4/5]'} bg-[#e5e4de] overflow-hidden relative`}>
+                <img
+                  src={project.image}
+                  alt={project.title}
+                  loading="lazy"
+                  className="w-full h-full object-cover transition-transform duration-[1.5s] ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:scale-[1.03]"
+                />
+              </div>
+
+              {/* Mobile Info Overlay */}
+              <div className="md:hidden mt-6 flex flex-col items-center text-center">
+                <div className="flex justify-between w-full font-bold text-[9px] uppercase tracking-widest mb-4">
+                  <span>PROJECT</span>
+                  <span>{project.year}</span>
+                </div>
+                <p className="text-[9px] leading-relaxed opacity-80 text-left w-full mb-6">
+                  {project.desc}
+                </p>
+                {project.showExternalLink && project.externalLink && (
+                  <a
+                    href={project.externalLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[9px] font-bold uppercase tracking-widest border-b border-[#111] pb-0.5 hover:opacity-50 transition-opacity self-start"
+                    onClick={(e) => e.stopPropagation()} // Prevent clicking link from also navigating to portfolio
+                  >
+                    {'>'} Link
+                  </a>
+                )}
               </div>
             </div>
+          ))}
 
-            {/* Hidden right spacer (Desktop only) */}
-            <span className={`hidden md:block text-[7vw] md:text-[5vw] font-mono leading-none invisible`}>04</span>
+          {/* Mobile Contact button */}
+          <div className="md:hidden w-full flex justify-center mt-12 mb-24">
+            <button
+              onClick={() => setContactOpen(true)}
+              className="text-[10px] font-bold uppercase tracking-widest border border-[#111] px-6 py-3 rounded-full hover:bg-[#111] hover:text-[#f7f6f0] transition-colors"
+            >
+              Contact me
+            </button>
           </div>
         </div>
-
-        {/* Bottom Section */}
-        <div className={`flex-1 border-t border-[#f7f6f0]/30 flex items-center overflow-hidden transition-opacity duration-1000 ${appState === 'ready' ? 'opacity-100' : 'opacity-0'}`}>
-        </div>
-
       </div>
 
-      {/* Contact Dialog */}
-      <ContactDialog open={contactOpen} onClose={() => setContactOpen(false)} dark={darkMode} />
+      <ContactDialog open={contactOpen} onClose={() => setContactOpen(false)} dark={false} />
     </div>
   );
 }

@@ -14,6 +14,8 @@ export interface Project {
     image: string;
     aspect: string;
     media?: MediaItem[];
+    externalLink?: string;
+    showExternalLink?: boolean;
 }
 
 export interface CategoryData {
@@ -117,6 +119,40 @@ export async function getAllCategories(): Promise<string[]> {
         }
     }
     return Object.keys(FALLBACK_DATA);
+}
+
+/**
+ * 모든 카테고리의 프로젝트를 배열로 가져오기 (시간 역순이나 지정된 순서)
+ */
+export async function getAllProjects(): Promise<Array<Project & { category: string }>> {
+    const allProjects: Array<Project & { category: string }> = [];
+
+    // Firestore 연동 상태 확인
+    if (isConfigured && db) {
+        try {
+            const categoriesSnapshot = await getDocs(collection(db, 'portfolios'));
+            for (const catDoc of categoriesSnapshot.docs) {
+                const category = catDoc.id;
+                const projectsSnapshot = await getDocs(query(collection(db, 'portfolios', category, 'projects'), orderBy('id')));
+                projectsSnapshot.forEach(pDoc => {
+                    allProjects.push({ ...(pDoc.data() as Project), category });
+                });
+            }
+            // 임의 정렬: id 역순(최신순 등)
+            return allProjects.sort((a, b) => b.id - a.id);
+        } catch (error) {
+            console.warn('Firestore fetch failed for getAllProjects, using fallback data:', error);
+        }
+    }
+
+    // 폴백 데이터 사용
+    for (const [category, data] of Object.entries(FALLBACK_DATA)) {
+        data.projects.forEach(project => {
+            allProjects.push({ ...project, category });
+        });
+    }
+
+    return allProjects.sort((a, b) => b.id - a.id);
 }
 
 /**
