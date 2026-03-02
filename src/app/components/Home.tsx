@@ -33,8 +33,8 @@ export default function Home() {
       });
     }, {
       root: scrollContainerRef.current,
-      rootMargin: '0px',
-      threshold: 0.5
+      rootMargin: '-30% 0px -30% 0px', // Trigger when image enters the middle 40% of the screen
+      threshold: 0
     });
 
     imageRefs.current.forEach(ref => {
@@ -61,18 +61,18 @@ export default function Home() {
         </div>
       </nav>
 
-      <div className="flex flex-col md:flex-row w-full h-full relative">
+      <div className="flex flex-col md:flex-row w-full relative min-h-max">
         {/* Left Column (Sticky Info) - Desktop Only */}
-        <div className="w-full md:w-[45%] h-screen sticky top-0 flex flex-col justify-center p-8 md:pl-24 lg:pl-32 z-10 hidden md:flex border-r border-[#111]/5">
+        <div className="w-full md:w-[45%] lg:w-[40%] h-screen sticky top-0 flex flex-col justify-center p-8 md:pl-16 lg:pl-24 z-10 hidden md:flex">
           {activeProject && (
-            <div className="w-full max-w-[280px] lg:max-w-xs transition-opacity duration-500">
-              <div className="flex justify-between items-end mb-12 font-bold text-[10px] md:text-xs uppercase tracking-widest">
+            <div className="w-full max-w-md lg:max-w-lg transition-opacity duration-500">
+              <div className="flex justify-between items-end mb-12 font-bold text-[10px] md:text-sm uppercase tracking-widest">
                 <span>{activeProject.title}</span>
                 <span>{activeProject.year}</span>
               </div>
 
               <div className="mb-16">
-                <p className="text-[10px] leading-[1.8] opacity-80 text-justify">
+                <p className="text-[10px] md:text-xs leading-[2] md:leading-[2.2] opacity-80 text-justify">
                   {activeProject.desc}
                 </p>
               </div>
@@ -92,7 +92,7 @@ export default function Home() {
             </div>
           )}
 
-          <div className="absolute bottom-6 left-6 md:bottom-12 md:left-12">
+          <div className="absolute bottom-6 left-6 md:bottom-12 md:left-12 lg:left-16">
             <button
               onClick={() => setContactOpen(true)}
               className="text-[8px] md:text-[10px] font-bold uppercase tracking-widest hover:opacity-50 transition-opacity"
@@ -103,50 +103,58 @@ export default function Home() {
         </div>
 
         {/* Right Column (Scrollable Images) */}
-        <div className="w-full md:w-[55%] flex flex-col items-center z-0">
-          {projects.map((project, idx) => (
-            <div
-              key={`${project.category}-${project.id}`}
-              data-id={`${project.category}-${project.id}`}
-              ref={(el) => { imageRefs.current[idx] = el; }}
-              className="w-full h-screen flex flex-col justify-center items-center snap-center cursor-pointer group px-6 md:px-12 py-20 md:py-0 shrink-0"
-              onClick={() => navigate(`/portfolio/${project.category}`)}
-            >
-              <div className={`w-full max-w-[85%] md:max-w-xl lg:max-w-2xl ${project.aspect || 'aspect-[4/5]'} bg-[#e5e4de] overflow-hidden relative shadow-sm`}>
-                <img
-                  src={project.image}
-                  alt={project.title}
-                  loading="lazy"
-                  className="w-full h-full object-cover transition-transform duration-[1.5s] ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:scale-[1.03]"
-                />
-              </div>
-
-              {/* Mobile Info Overlay */}
-              <div className="md:hidden mt-8 flex flex-col items-center text-center w-full max-w-[85%]">
-                <div className="flex justify-between w-full font-bold text-[9px] uppercase tracking-widest mb-4">
-                  <span>{project.title}</span>
-                  <span>{project.year}</span>
+        <div className="w-full md:w-[55%] lg:w-[60%] flex flex-col items-center z-0 pt-[25vh] pb-[25vh]">
+          {projects.map((project, idx) => {
+            const isActive = `${project.category}-${project.id}` === activeProjectId;
+            return (
+              <div
+                key={`${project.category}-${project.id}`}
+                data-id={`${project.category}-${project.id}`}
+                ref={(el) => { imageRefs.current[idx] = el; }}
+                className="w-full flex justify-center items-center snap-center cursor-pointer group px-6 md:px-12 shrink-0 my-8 md:my-16"
+                onClick={() => navigate(`/portfolio/${project.category}`)}
+              >
+                <div
+                  className={`w-full max-w-[90%] md:max-w-2xl lg:max-w-4xl ${project.aspect || 'aspect-[4/3]'} bg-[#e5e4de] overflow-hidden relative shadow-md transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] ${isActive ? 'scale-100 opacity-100' : 'scale-[0.85] opacity-40'}`}
+                >
+                  <img
+                    src={project.image}
+                    alt={project.title}
+                    loading="lazy"
+                    className="w-full h-full object-cover transition-transform duration-[1.5s] ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:scale-[1.03]"
+                  />
+                  {!isActive && (
+                    <div className="absolute inset-0 bg-[#f7f6f0]/10 mix-blend-overlay"></div>
+                  )}
                 </div>
-                <p className="text-[9px] leading-relaxed opacity-80 text-left w-full mb-6 max-h-24 overflow-hidden text-ellipsis line-clamp-3">
-                  {project.desc}
-                </p>
-                {project.showExternalLink && project.externalLink && (
-                  <a
-                    href={project.externalLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[9px] font-bold uppercase tracking-widest border-b border-[#111] pb-0.5 hover:opacity-50 transition-opacity self-start"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {'>'} Link
-                  </a>
-                )}
-              </div>
-            </div>
-          ))}
 
-          {/* Mobile Contact button area (snaps to end) */}
-          <div className="md:hidden w-full h-[30vh] flex justify-center items-start snap-center pt-12">
+                {/* Mobile Info Overlay */}
+                <div className="md:hidden mt-8 flex flex-col items-center text-center w-full max-w-[85%]">
+                  <div className={`flex justify-between w-full font-bold text-[9px] uppercase tracking-widest mb-4 transition-opacity duration-700 ${isActive ? 'opacity-100' : 'opacity-0'}`}>
+                    <span>{project.title}</span>
+                    <span>{project.year}</span>
+                  </div>
+                  <p className={`text-[9px] leading-relaxed opacity-80 text-left w-full mb-6 max-h-24 overflow-hidden text-ellipsis line-clamp-3 transition-opacity duration-700 ${isActive ? 'opacity-100' : 'opacity-0'}`}>
+                    {project.desc}
+                  </p>
+                  {project.showExternalLink && project.externalLink && (
+                    <a
+                      href={project.externalLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`text-[9px] font-bold uppercase tracking-widest border-b border-[#111] pb-0.5 hover:opacity-50 transition-opacity duration-700 self-start ${isActive ? 'opacity-100' : 'opacity-0'}`}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {'>'} Link
+                    </a>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Mobile Contact button area */}
+          <div className="md:hidden w-full flex justify-center items-start snap-center pt-12 pb-32">
             <button
               onClick={() => setContactOpen(true)}
               className="text-[10px] font-bold uppercase tracking-widest border border-[#111] px-6 py-3 rounded-full hover:bg-[#111] hover:text-[#f7f6f0] transition-colors"
