@@ -138,7 +138,7 @@ const GridTrail: React.FC<GridTrailProps> = ({ dark, sliderValue = 0, sliderTrac
           const ease = 1 - Math.pow(1 - progress, 3);
 
           const targetCx = labelCenters[currentIndex];
-          const baseR = 30;
+          const baseR = window.innerWidth < 768 ? 16 : 30;
 
           const drawBlob = (bx: number, by: number, br: number) => {
             if (br < 1) return;

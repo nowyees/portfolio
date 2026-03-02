@@ -126,9 +126,9 @@ export default function Home() {
             </span>
 
             <div
-              className="flex-1 max-w-5xl mx-4 md:mx-16 relative h-32 flex items-center md:cursor-none"
+              className="flex-1 max-w-5xl mx-4 md:mx-16 relative h-16 md:h-32 flex items-center md:cursor-none"
             >
-              <p className={`absolute top-2 left-1/2 -translate-x-1/2 w-full text-center text-[8px] md:text-[9px] uppercase tracking-wider md:tracking-widest transition-opacity duration-1000 delay-300 ${appState === 'ready' ? 'opacity-100' : 'opacity-0'}`}>
+              <p className={`hidden md:block absolute top-2 left-1/2 -translate-x-1/2 w-full text-center text-[8px] md:text-[9px] uppercase tracking-wider md:tracking-widest transition-opacity duration-1000 delay-300 ${appState === 'ready' ? 'opacity-100' : 'opacity-0'}`}>
                 HELLO. I'M <span className="inline-block min-w-[7em]">{currentWord}</span> DESIGNER JAYDEN
               </p>
 
@@ -136,7 +136,7 @@ export default function Home() {
               <div ref={sliderTrackRef} className={`w-full h-4 relative transition-opacity duration-1000 ${appState === 'ready' ? 'opacity-100' : 'opacity-0'}`}>
               </div>
 
-              <div className={`absolute bottom-2 left-0 w-full flex justify-between px-0 md:px-12 text-[7px] md:text-[9px] uppercase tracking-wider md:tracking-widest transition-opacity duration-1000 delay-300 ${appState === 'ready' ? 'opacity-100' : 'opacity-0'}`}>
+              <div className={`absolute top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 md:bottom-2 left-0 w-full flex justify-between px-0 md:px-12 text-[7px] md:text-[9px] uppercase tracking-wider md:tracking-widest transition-opacity duration-1000 delay-300 ${appState === 'ready' ? 'opacity-100' : 'opacity-0'}`}>
                 {WORDS.map((word, i) => (
                   <button
                     key={word}
