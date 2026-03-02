@@ -48,6 +48,6 @@ export async function submitContactForm(
         return { success: true };
     } catch (error: any) {
         console.error('Contact form submission failed:', error);
-        return { success: false, error: error.message || '전송에 실패했습니다.' };
+        return { success: false, error: error?.text || error?.message || '이메일 전송에 실패했습니다. (EmailJS 에러)' };
     }
 }
