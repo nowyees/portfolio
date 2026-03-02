@@ -40,6 +40,8 @@ export async function submitContactForm(
             await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
                 from_name: data.name,
                 from_email: data.email,
+                name: data.name,
+                email: data.email,
                 message: data.message,
                 to_email: 'ljwoong1104@gmail.com',
             }, EMAILJS_PUBLIC_KEY);
