@@ -69,7 +69,7 @@ export default function Home() {
   };
 
   return (
-    <div className="relative w-screen h-screen bg-[#f7f6f0] overflow-hidden cursor-none selection:bg-[#111] selection:text-[#f7f6f0] font-sans flex flex-col">
+    <div className="relative w-screen h-screen bg-[#f7f6f0] overflow-hidden md:cursor-none selection:bg-[#111] selection:text-[#f7f6f0] font-sans flex flex-col">
 
       <style dangerouslySetInnerHTML={{
         __html: `
@@ -81,10 +81,11 @@ export default function Home() {
       <GridTrail dark={darkMode} sliderValue={sliderValue} sliderTrackRef={sliderTrackRef} ready={appState === 'ready'} labelRefs={labelRefs} appState={appState} />
 
       {/* 모핑 마우스 커서 */}
+      {/* Custom cursor - hidden on mobile */}
       {appState !== 'initial' && (
         <div
           ref={cursorRef}
-          className="fixed top-0 left-0 pointer-events-none z-50 flex items-center justify-center will-change-transform mix-blend-difference"
+          className="fixed top-0 left-0 pointer-events-none z-50 items-center justify-center will-change-transform mix-blend-difference hidden md:flex"
           style={{ transform: 'translate3d(-100px, -100px, 0)' }}
         >
           <div
@@ -107,9 +108,9 @@ export default function Home() {
 
         {/* 네비게이션 */}
         <nav className={`absolute top-0 w-full flex justify-between items-center p-6 md:px-12 pointer-events-auto transition-opacity duration-1000 ${appState === 'ready' ? 'opacity-100' : 'opacity-0'}`}>
-          <button onClick={handlePortfolioClick} onMouseEnter={() => handleMenuHover('Portfolio')} onMouseLeave={handleMenuLeave} className={`text-[10px] md:text-xs font-medium uppercase tracking-widest cursor-none transition-opacity duration-200 ${cursorState.text === 'Portfolio' ? 'opacity-0' : 'opacity-100'}`}>Portfolio</button>
-          <button onMouseEnter={() => handleMenuHover('LEE JAEWOONG')} onMouseLeave={handleMenuLeave} onClick={() => setDarkMode(d => !d)} className={`text-[10px] md:text-xs font-medium uppercase tracking-widest cursor-none transition-opacity duration-200 ${cursorState.text === 'LEE JAEWOONG' ? 'opacity-0' : 'opacity-100'}`}>LEE JAEWOONG</button>
-          <button onClick={() => setContactOpen(true)} onMouseEnter={() => handleMenuHover('Contact')} onMouseLeave={handleMenuLeave} className={`text-[10px] md:text-xs font-medium uppercase tracking-widest cursor-none transition-opacity duration-200 ${cursorState.text === 'Contact' ? 'opacity-0' : 'opacity-100'}`}>Contact</button>
+          <button onClick={handlePortfolioClick} onMouseEnter={() => handleMenuHover('Portfolio')} onMouseLeave={handleMenuLeave} className={`text-[9px] md:text-xs font-medium uppercase tracking-widest md:cursor-none transition-opacity duration-200 ${cursorState.text === 'Portfolio' ? 'md:opacity-0' : 'opacity-100'}`}>Portfolio</button>
+          <button onMouseEnter={() => handleMenuHover('LEE JAEWOONG')} onMouseLeave={handleMenuLeave} onClick={() => setDarkMode(d => !d)} className={`text-[9px] md:text-xs font-medium uppercase tracking-wider md:tracking-widest md:cursor-none transition-opacity duration-200 ${cursorState.text === 'LEE JAEWOONG' ? 'md:opacity-0' : 'opacity-100'}`}>LEE JAEWOONG</button>
+          <button onClick={() => setContactOpen(true)} onMouseEnter={() => handleMenuHover('Contact')} onMouseLeave={handleMenuLeave} className={`text-[9px] md:text-xs font-medium uppercase tracking-widest md:cursor-none transition-opacity duration-200 ${cursorState.text === 'Contact' ? 'md:opacity-0' : 'opacity-100'}`}>Contact</button>
         </nav>
 
         {/* Top Section */}
@@ -120,14 +121,14 @@ export default function Home() {
         <div className={`flex-1 flex items-center justify-center px-6 md:px-16 relative pointer-events-auto`}>
 
           <div className={`flex items-center justify-between w-full relative transition-opacity duration-1000 ${appState === 'ready' ? 'opacity-100' : 'opacity-0'}`}>
-            <span className={`text-[7vw] md:text-[5vw] font-mono leading-none transition-opacity duration-1000 ${appState === 'ready' ? 'opacity-100' : 'opacity-0'}`}>
+            <span className={`text-[5vw] md:text-[5vw] font-mono leading-none transition-opacity duration-1000 ${appState === 'ready' ? 'opacity-100' : 'opacity-0'}`}>
               {`0${Math.min(4, Math.max(1, Math.floor(sliderValue / 25) + 1))}`}
             </span>
 
             <div
-              className="flex-1 max-w-5xl mx-8 md:mx-16 relative h-32 flex items-center cursor-none"
+              className="flex-1 max-w-5xl mx-4 md:mx-16 relative h-32 flex items-center md:cursor-none"
             >
-              <p className={`absolute top-2 left-1/2 -translate-x-1/2 w-full text-center text-[9px] uppercase tracking-widest transition-opacity duration-1000 delay-300 ${appState === 'ready' ? 'opacity-100' : 'opacity-0'}`}>
+              <p className={`absolute top-2 left-1/2 -translate-x-1/2 w-full text-center text-[8px] md:text-[9px] uppercase tracking-wider md:tracking-widest transition-opacity duration-1000 delay-300 ${appState === 'ready' ? 'opacity-100' : 'opacity-0'}`}>
                 HELLO. I'M <span className="inline-block min-w-[7em]">{currentWord}</span> DESIGNER JAYDEN
               </p>
 
@@ -135,14 +136,14 @@ export default function Home() {
               <div ref={sliderTrackRef} className={`w-full h-4 relative transition-opacity duration-1000 ${appState === 'ready' ? 'opacity-100' : 'opacity-0'}`}>
               </div>
 
-              <div className={`absolute bottom-2 left-0 w-full flex justify-between px-4 md:px-12 text-[9px] uppercase tracking-widest transition-opacity duration-1000 delay-300 ${appState === 'ready' ? 'opacity-100' : 'opacity-0'}`}>
+              <div className={`absolute bottom-2 left-0 w-full flex justify-between px-0 md:px-12 text-[7px] md:text-[9px] uppercase tracking-wider md:tracking-widest transition-opacity duration-1000 delay-300 ${appState === 'ready' ? 'opacity-100' : 'opacity-0'}`}>
                 {WORDS.map((word, i) => (
                   <button
                     key={word}
                     ref={el => labelRefs.current[i] = el}
                     onMouseEnter={() => handleMenuHover(word)}
                     onMouseLeave={handleMenuLeave}
-                    className={`text-[9px] uppercase tracking-widest cursor-none transition-opacity duration-200 ${cursorState.text === word ? 'opacity-0' : 'opacity-100'}`}
+                    className={`text-[7px] md:text-[9px] uppercase tracking-wider md:tracking-widest md:cursor-none transition-opacity duration-200 ${cursorState.text === word ? 'md:opacity-0' : 'opacity-100'}`}
                     onClick={() => handleWordClick(word)}
                   >
                     {word}

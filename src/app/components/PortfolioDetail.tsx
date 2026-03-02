@@ -278,23 +278,23 @@ export default function PortfolioDetail() {
                 )}
               </motion.div>
 
-              {/* Left/Right project navigation arrows */}
+              {/* Desktop arrows (sides) */}
               <button
                 onClick={goToPrevProject}
-                className={`absolute left-2 md:left-8 top-1/2 -translate-y-1/2 w-16 h-16 flex items-center justify-center text-[#f7f6f0] transition-opacity text-4xl ${hasPrevProject ? 'opacity-50 hover:opacity-100' : 'opacity-10 cursor-default'
+                className={`hidden md:flex absolute left-8 top-1/2 -translate-y-1/2 w-16 h-16 items-center justify-center text-[#f7f6f0] transition-opacity text-4xl ${hasPrevProject ? 'opacity-50 hover:opacity-100' : 'opacity-10 cursor-default'
                   }`}
               >
                 ←
               </button>
               <button
                 onClick={goToNextProject}
-                className={`absolute right-2 md:right-8 top-1/2 -translate-y-1/2 w-16 h-16 flex items-center justify-center text-[#f7f6f0] transition-opacity text-4xl ${hasNextProject ? 'opacity-50 hover:opacity-100' : 'opacity-10 cursor-default'
+                className={`hidden md:flex absolute right-8 top-1/2 -translate-y-1/2 w-16 h-16 items-center justify-center text-[#f7f6f0] transition-opacity text-4xl ${hasNextProject ? 'opacity-50 hover:opacity-100' : 'opacity-10 cursor-default'
                   }`}
               >
                 →
               </button>
 
-              {/* Info + media dots */}
+              {/* Info + mobile arrows + media dots */}
               <div className="mt-4 w-full max-w-5xl" onClick={(e) => e.stopPropagation()}>
                 <div className="flex justify-between items-baseline text-[#f7f6f0]">
                   <div>
@@ -303,9 +303,31 @@ export default function PortfolioDetail() {
                   </div>
                   <span className="text-[10px] font-mono opacity-30">{project.year}</span>
                 </div>
-                {/* Media dots (if project has multiple media) */}
+
+                {/* Mobile arrows (bottom) */}
+                <div className="flex md:hidden justify-center items-center gap-8 mt-4">
+                  <button
+                    onClick={goToPrevProject}
+                    className={`w-12 h-12 flex items-center justify-center text-[#f7f6f0] transition-opacity text-3xl ${hasPrevProject ? 'opacity-60' : 'opacity-15'
+                      }`}
+                  >
+                    ←
+                  </button>
+                  <span className="text-[10px] text-[#f7f6f0] opacity-30">
+                    {projectIndex + 1} / {data.projects.length}
+                  </span>
+                  <button
+                    onClick={goToNextProject}
+                    className={`w-12 h-12 flex items-center justify-center text-[#f7f6f0] transition-opacity text-3xl ${hasNextProject ? 'opacity-60' : 'opacity-15'
+                      }`}
+                  >
+                    →
+                  </button>
+                </div>
+
+                {/* Media dots */}
                 {hasMultipleMedia && (
-                  <div className="flex justify-center gap-2 mt-4">
+                  <div className="flex justify-center gap-2 mt-3">
                     {allMedia.map((_, idx) => (
                       <button
                         key={idx}
