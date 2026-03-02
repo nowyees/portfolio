@@ -64,9 +64,7 @@ export default function Home() {
     navigate(`/portfolio/${word.toLowerCase()}`);
   };
 
-  const handlePortfolioClick = () => {
-    navigate('/portfolio/fashion');
-  };
+
 
   return (
     <div className="relative w-screen h-screen bg-[#f7f6f0] overflow-hidden md:cursor-none selection:bg-[#111] selection:text-[#f7f6f0] font-sans flex flex-col">
@@ -107,10 +105,19 @@ export default function Home() {
       <div className="absolute inset-0 flex flex-col z-10 mix-blend-difference text-[#f7f6f0] pointer-events-none">
 
         {/* 네비게이션 */}
-        <nav className={`absolute top-0 w-full flex justify-between items-center p-6 md:px-12 pointer-events-auto transition-opacity duration-1000 ${appState === 'ready' ? 'opacity-100' : 'opacity-0'}`}>
-          <button onClick={handlePortfolioClick} onMouseEnter={() => handleMenuHover('Portfolio')} onMouseLeave={handleMenuLeave} className={`text-[9px] md:text-xs font-bold md:font-medium uppercase tracking-widest md:cursor-none transition-opacity duration-200 ${cursorState.text === 'Portfolio' ? 'md:opacity-0' : 'opacity-100'}`}>Portfolio</button>
-          <button onMouseEnter={() => handleMenuHover('LEE JAEWOONG')} onMouseLeave={handleMenuLeave} onClick={() => setDarkMode(d => !d)} className={`text-[9px] md:text-xs font-bold md:font-medium uppercase tracking-wider md:tracking-widest md:cursor-none transition-opacity duration-200 ${cursorState.text === 'LEE JAEWOONG' ? 'md:opacity-0' : 'opacity-100'}`}>LEE JAEWOONG</button>
-          <button onClick={() => setContactOpen(true)} onMouseEnter={() => handleMenuHover('Contact')} onMouseLeave={handleMenuLeave} className={`text-[9px] md:text-xs font-bold md:font-medium uppercase tracking-widest md:cursor-none transition-opacity duration-200 ${cursorState.text === 'Contact' ? 'md:opacity-0' : 'opacity-100'}`}>Contact</button>
+        <nav className={`absolute top-0 w-full flex justify-between md:grid md:grid-cols-4 items-center p-6 md:px-12 pointer-events-auto transition-opacity duration-1000 z-50 ${appState === 'ready' ? 'opacity-100' : 'opacity-0'}`}>
+          <div className="flex justify-start">
+            <button onMouseEnter={() => handleMenuHover('LEE JAEWOONG')} onMouseLeave={handleMenuLeave} className={`text-[8px] md:text-xs font-bold md:font-medium uppercase tracking-wider md:tracking-widest md:cursor-none transition-opacity duration-200 ${cursorState.text === 'LEE JAEWOONG' ? 'md:opacity-0' : 'opacity-100'}`}>LEE JAEWOONG</button>
+          </div>
+          <div className="flex justify-center md:justify-start md:pl-8 lg:pl-16">
+            <button onClick={() => setContactOpen(true)} onMouseEnter={() => handleMenuHover('CONTACT')} onMouseLeave={handleMenuLeave} className={`text-[8px] md:text-xs font-bold md:font-medium uppercase tracking-widest md:cursor-none transition-opacity duration-200 ${cursorState.text === 'CONTACT' ? 'md:opacity-0' : 'opacity-100'}`}>CONTACT</button>
+          </div>
+          <div className="flex justify-center md:justify-start md:pl-4 lg:pl-8">
+            <button onClick={() => setDarkMode(d => !d)} onMouseEnter={() => handleMenuHover('WHITE')} onMouseLeave={handleMenuLeave} className={`text-[8px] md:text-xs font-bold md:font-medium uppercase tracking-widest md:cursor-none transition-opacity duration-200 ${cursorState.text === 'WHITE' ? 'md:opacity-0' : 'opacity-100'}`}>WHITE</button>
+          </div>
+          <div className="flex justify-end">
+            <button onMouseEnter={() => handleMenuHover('PLAYGROUND')} onMouseLeave={handleMenuLeave} className={`text-[8px] md:text-xs font-bold md:font-medium uppercase tracking-widest md:cursor-none transition-opacity duration-200 ${cursorState.text === 'PLAYGROUND' ? 'md:opacity-0' : 'opacity-100'}`}>PLAYGROUND</button>
+          </div>
         </nav>
 
         {/* Top Section */}
