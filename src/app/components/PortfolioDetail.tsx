@@ -251,16 +251,29 @@ export default function PortfolioDetail() {
               }}
               onTouchStart={(e) => {
                 const touch = e.touches[0];
+                (e.currentTarget as any).__touchStartX = touch.clientX;
                 (e.currentTarget as any).__touchStartY = touch.clientY;
               }}
               onTouchEnd={(e) => {
+                const startX = (e.currentTarget as any).__touchStartX;
                 const startY = (e.currentTarget as any).__touchStartY;
-                if (startY === undefined) return;
+                if (startX === undefined || startY === undefined) return;
+
+                const endX = e.changedTouches[0].clientX;
                 const endY = e.changedTouches[0].clientY;
-                const diff = startY - endY;
-                if (Math.abs(diff) > 50) {
-                  if (diff > 0 && hasNext) setMediaIndex(i => i + 1);
-                  if (diff < 0 && hasPrev) setMediaIndex(i => i - 1);
+
+                const diffX = startX - endX;
+                const diffY = startY - endY;
+
+                // 수평 스와이프가 수직 스와이프보다 클 때 (좌우 넘기기)
+                if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
+                  if (diffX > 0 && hasNext) setMediaIndex(i => i + 1); // 스와이프 레프트 -> 다음
+                  if (diffX < 0 && hasPrev) setMediaIndex(i => i - 1); // 스와이프 라이트 -> 이전
+                }
+                // 수직 스와이프가 더 클 때 (상하 넘기기 - 기존 유지)
+                else if (Math.abs(diffY) > 50) {
+                  if (diffY > 0 && hasNext) setMediaIndex(i => i + 1);
+                  if (diffY < 0 && hasPrev) setMediaIndex(i => i - 1);
                 }
               }}
             >
