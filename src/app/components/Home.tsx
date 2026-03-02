@@ -118,32 +118,35 @@ export default function Home() {
         </div>
 
         {/* Middle Section (Slider) */}
-        <div className={`flex-1 flex items-center justify-center px-6 md:px-16 relative pointer-events-auto`}>
+        <div className={`flex-1 flex items-center justify-center px-4 md:px-16 relative pointer-events-auto`}>
 
-          <div className={`flex items-center justify-between w-full relative transition-opacity duration-1000 ${appState === 'ready' ? 'opacity-100' : 'opacity-0'}`}>
-            <span className={`text-[5vw] md:text-[5vw] font-mono leading-none transition-opacity duration-1000 ${appState === 'ready' ? 'opacity-100' : 'opacity-0'}`}>
+          <div className={`flex flex-row items-center justify-between w-full relative transition-opacity duration-1000 ${appState === 'ready' ? 'opacity-100' : 'opacity-0'}`}>
+            {/* Left Number */}
+            <span className={`text-[6vw] md:text-[5vw] font-mono leading-none md:mr-0 z-10 transition-opacity duration-1000 ${appState === 'ready' ? 'opacity-100' : 'opacity-0'}`}>
               {`0${Math.min(4, Math.max(1, Math.floor(sliderValue / 25) + 1))}`}
             </span>
 
+            {/* Slider Container */}
             <div
-              className="flex-1 max-w-5xl mx-4 md:mx-16 relative h-16 md:h-32 flex items-center md:cursor-none"
+              className="flex-1 max-w-5xl mx-2 md:mx-16 relative h-16 md:h-32 flex items-center md:cursor-none justify-end md:justify-center"
             >
               <p className={`hidden md:block absolute top-2 left-1/2 -translate-x-1/2 w-full text-center text-[8px] md:text-[9px] uppercase tracking-wider md:tracking-widest transition-opacity duration-1000 delay-300 ${appState === 'ready' ? 'opacity-100' : 'opacity-0'}`}>
                 HELLO. I'M <span className="inline-block min-w-[7em]">{currentWord}</span> DESIGNER JAYDEN
               </p>
 
-              {/* 슬라이더 트랙 */}
-              <div ref={sliderTrackRef} className={`w-full h-4 relative transition-opacity duration-1000 ${appState === 'ready' ? 'opacity-100' : 'opacity-0'}`}>
+              {/* 슬라이더 트랙 - 모바일에서는 영역을 줄임 */}
+              <div ref={sliderTrackRef} className={`w-full max-w-[280px] md:max-w-none h-4 relative transition-opacity duration-1000 ${appState === 'ready' ? 'opacity-100' : 'opacity-0'}`}>
               </div>
 
-              <div className={`absolute top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 md:bottom-2 left-0 w-full flex justify-between px-0 md:px-12 text-[7px] md:text-[9px] uppercase tracking-wider md:tracking-widest transition-opacity duration-1000 delay-300 ${appState === 'ready' ? 'opacity-100' : 'opacity-0'}`}>
+              {/* Categories */}
+              <div className={`absolute top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 md:bottom-2 right-0 md:left-0 w-[240px] md:w-full flex justify-between px-0 md:px-12 text-[7px] md:text-[9px] uppercase tracking-wider md:tracking-widest transition-opacity duration-1000 delay-300 ${appState === 'ready' ? 'opacity-100' : 'opacity-0'}`}>
                 {WORDS.map((word, i) => (
                   <button
                     key={word}
                     ref={el => labelRefs.current[i] = el}
                     onMouseEnter={() => handleMenuHover(word)}
                     onMouseLeave={handleMenuLeave}
-                    className={`text-[7px] md:text-[9px] uppercase tracking-wider md:tracking-widest md:cursor-none transition-opacity duration-200 ${cursorState.text === word ? 'md:opacity-0' : 'opacity-100'}`}
+                    className={`text-[5.5px] tracking-normal md:text-[9px] md:tracking-widest md:cursor-none transition-opacity duration-200 ${cursorState.text === word ? 'md:opacity-0' : 'opacity-100'}`}
                     onClick={() => handleWordClick(word)}
                   >
                     {word}
@@ -152,7 +155,8 @@ export default function Home() {
               </div>
             </div>
 
-            <span className={`text-[7vw] md:text-[5vw] font-mono leading-none invisible`}>04</span>
+            {/* Hidden right spacer (Desktop only) */}
+            <span className={`hidden md:block text-[7vw] md:text-[5vw] font-mono leading-none invisible`}>04</span>
           </div>
         </div>
 
