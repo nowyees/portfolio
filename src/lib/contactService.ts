@@ -22,13 +22,17 @@ export async function submitContactForm(
     data: ContactFormData
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        // 1) Firestore에 저장
+        // 1) Firestore에 저장 (권한 문제로 실패해도 이메일 전송을 계속 진행하도록 try-catch)
         if (isConfigured && db) {
-            await addDoc(collection(db, 'contacts'), {
-                ...data,
-                createdAt: serverTimestamp(),
-                read: false,
-            });
+            try {
+                await addDoc(collection(db, 'contacts'), {
+                    ...data,
+                    createdAt: serverTimestamp(),
+                    read: false,
+                });
+            } catch (fsErr) {
+                console.warn('Firestore 저장 실패 (단순 이메일 전송으로 넘어갑니다):', fsErr);
+            }
         }
 
         // 2) EmailJS로 이메일 전송
