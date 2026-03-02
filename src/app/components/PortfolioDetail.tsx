@@ -26,6 +26,18 @@ export default function PortfolioDetail() {
     });
   }, [category]);
 
+  // 라이트박스 열려있을 때 배경 스크롤 잠금
+  useEffect(() => {
+    if (selectedProject !== null) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [selectedProject]);
+
   // 로딩 상태
   if (loading) {
     return (
