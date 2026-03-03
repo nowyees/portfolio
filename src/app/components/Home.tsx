@@ -58,10 +58,10 @@ export default function Home() {
       {/* Navigation */}
       <nav className="fixed top-0 w-full flex justify-between items-center px-6 pt-4 pb-0 md:px-12 z-50 mix-blend-difference text-[#f7f6f0] md:mix-blend-normal md:text-[#111]">
         <div className="flex-none">
-          <button onClick={() => { scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' }) }} className="text-[9px] md:text-[11px] font-bold transition-opacity hover:opacity-50 uppercase tracking-widest">LEE JAEWOONG</button>
+          <button onClick={() => { scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' }) }} className="text-[9px] md:text-[11px] font-bold uppercase transition-opacity hover:opacity-50">LEE JAEWOONG</button>
         </div>
         <div className="flex-1 flex justify-end items-center gap-6 md:gap-16">
-          <button onClick={() => navigate('/freedive')} className="text-[9px] md:text-[11px] font-bold transition-opacity hover:opacity-50 uppercase tracking-widest">FREE DIVE</button>
+          <button onClick={() => navigate('/freedive')} className="text-[9px] md:text-[11px] font-bold uppercase transition-opacity hover:opacity-50 opacity-40">FREE DIVE</button>
         </div>
       </nav>
 

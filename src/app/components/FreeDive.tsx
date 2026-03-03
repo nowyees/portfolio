@@ -107,7 +107,9 @@ export default function FreeDive() {
         }
 
         let newZoom = tZ.current * (1 + zoomDelta);
-        newZoom = Math.max(0.1, Math.min(newZoom, 5.0)); // Clamp scale
+        // Limit zoom out so we don't see more than ~10-15 items at once 
+        // 0.35 is roughly 3x3 or 4x3 items depending on screen size
+        newZoom = Math.max(0.35, Math.min(newZoom, 5.0));
         tZ.current = newZoom;
     };
 
@@ -191,8 +193,18 @@ export default function FreeDive() {
         }
     }
 
+    const handleItemClick = (x: number, y: number) => {
+        if (!isDragging.current) {
+            // Center camera on this item
+            tX.current = -x;
+            tY.current = -y;
+            // Optionally zoom in slightly
+            tZ.current = Math.max(1.5, tZ.current);
+        }
+    };
+
     // Video Player Component to handle individual play states without rerendering the whole canvas
-    const VideoItem = ({ src }: { src: string }) => {
+    const VideoItem = ({ src, onClick }: { src: string, onClick: () => void }) => {
         const [isPlaying, setIsPlaying] = useState(false);
         const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -211,8 +223,11 @@ export default function FreeDive() {
             <div
                 className="w-full h-auto relative cursor-pointer"
                 onClick={(e) => {
-                    // Prevent canvas drag from triggering click if they only meant to drag
-                    if (!isDragging.current) togglePlay();
+                    e.stopPropagation(); // prevent bubbling to canvas if we had any
+                    if (!isDragging.current) {
+                        togglePlay();
+                        onClick(); // Trigger camera centering
+                    }
                 }}
             >
                 <video
@@ -290,13 +305,20 @@ export default function FreeDive() {
                             }}
                         >
                             {renderData.item.type === 'video' ? (
-                                <VideoItem src={renderData.item.url} />
+                                <VideoItem
+                                    src={renderData.item.url}
+                                    onClick={() => handleItemClick(renderData.x, renderData.y)}
+                                />
                             ) : (
                                 <img
                                     src={renderData.item.url}
                                     alt=""
                                     loading="lazy"
-                                    className="w-full h-auto pointer-events-none opacity-90 hover:opacity-100 transition-opacity duration-300 block bg-black/5"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleItemClick(renderData.x, renderData.y);
+                                    }}
+                                    className="w-full h-auto pointer-events-auto cursor-pointer opacity-90 hover:opacity-100 transition-opacity duration-300 block bg-black/5"
                                 />
                             )}
                         </div>
