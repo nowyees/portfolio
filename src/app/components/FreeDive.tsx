@@ -9,7 +9,6 @@ export default function FreeDive() {
     const navigate = useNavigate();
     const [mediaItems, setMediaItems] = useState<any[]>([]);
     const [screen, setScreen] = useState({ w: window.innerWidth, h: window.innerHeight });
-    const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
     // Handle screen resize
     useEffect(() => {
@@ -209,17 +208,13 @@ export default function FreeDive() {
         }
     }
 
-    const handleItemClick = (x: number, y: number, url?: string) => {
+    const handleItemClick = (x: number, y: number) => {
         if (!isDragging.current) {
             // Center camera on this item
             tX.current = -x;
             tY.current = -y;
-            // Optionally zoom in slightly
+            // Zoom in to focus on the item
             tZ.current = Math.max(1.5, tZ.current);
-            // Open lightbox if url provided
-            if (url) {
-                setZoomedImage(url);
-            }
         }
     };
 
@@ -342,7 +337,7 @@ export default function FreeDive() {
                                     loading="lazy"
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        handleItemClick(renderData.x, renderData.y, renderData.item.url);
+                                        handleItemClick(renderData.x, renderData.y);
                                     }}
                                     className="w-full h-auto pointer-events-auto cursor-pointer opacity-90 hover:opacity-100 transition-opacity duration-300 block bg-black/5"
                                 />
@@ -351,27 +346,6 @@ export default function FreeDive() {
                     ))
                 )}
             </div>
-
-            {/* Lightbox Overlay */}
-            {zoomedImage && (
-                <div
-                    className="fixed inset-0 z-[100] bg-black/85 flex items-center justify-center cursor-pointer"
-                    onClick={() => setZoomedImage(null)}
-                >
-                    <button
-                        onClick={() => setZoomedImage(null)}
-                        className="absolute top-6 right-6 md:top-8 md:right-12 text-[10px] uppercase tracking-widest text-white/60 hover:text-white transition-colors z-10"
-                    >
-                        Close
-                    </button>
-                    <img
-                        src={zoomedImage}
-                        alt=""
-                        className="max-w-[90vw] max-h-[85vh] object-contain"
-                        onClick={(e) => e.stopPropagation()}
-                    />
-                </div>
-            )}
         </div>
     );
 }
