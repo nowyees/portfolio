@@ -9,6 +9,7 @@ export default function FreeDive() {
     const navigate = useNavigate();
     const [mediaItems, setMediaItems] = useState<any[]>([]);
     const [screen, setScreen] = useState({ w: window.innerWidth, h: window.innerHeight });
+    const [dispMapUrl, setDispMapUrl] = useState('');
 
     // Handle screen resize
     useEffect(() => {
@@ -65,23 +66,47 @@ export default function FreeDive() {
     const lastPan = useRef({ x: 0, y: 0 });
     const [landingDone, setLandingDone] = useState(false);
 
-    // Fisheye keyhole landing animation — starts immediately
+    // Generate barrel distortion displacement map
     useEffect(() => {
-        // Begin zoomed in
+        const size = 256;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        const imageData = ctx.createImageData(size, size);
+        const d = imageData.data;
+        const half = size / 2;
+        const strength = 0.3;
+        for (let y = 0; y < size; y++) {
+            for (let x = 0; x < size; x++) {
+                const nx = (x - half) / half;
+                const ny = (y - half) / half;
+                const r2 = nx * nx + ny * ny;
+                const i = (y * size + x) * 4;
+                d[i] = Math.round(255 * Math.max(0, Math.min(1, 0.5 - nx * strength * r2)));
+                d[i + 1] = Math.round(255 * Math.max(0, Math.min(1, 0.5 - ny * strength * r2)));
+                d[i + 2] = 128;
+                d[i + 3] = 255;
+            }
+        }
+        ctx.putImageData(imageData, 0, 0);
+        setDispMapUrl(canvas.toDataURL());
+    }, []);
+
+    // Fisheye landing animation — starts immediately
+    useEffect(() => {
         tZ.current = 4.0;
         cZ.current = 4.0;
 
-        // Immediately start pulling outward
         requestAnimationFrame(() => {
             tZ.current = 0.5;
         });
 
-        // Settle to normal
         const t2 = setTimeout(() => {
             tZ.current = 1.0;
         }, 1600);
 
-        // Done — remove overlays
         const t3 = setTimeout(() => {
             setLandingDone(true);
         }, 2800);
@@ -283,164 +308,116 @@ export default function FreeDive() {
             className="fixed inset-0 bg-[#111] text-[#111] select-none overflow-hidden"
             style={{ fontFamily: "'Champagne & Limousines', sans-serif" }}
         >
-            {/* Circular lens viewport */}
+            {/* SVG barrel distortion filter */}
+            {dispMapUrl && (
+                <svg className="absolute w-0 h-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <filter id="barrel" x="-5%" y="-5%" width="110%" height="110%" colorInterpolationFilters="sRGB">
+                            <feImage href={dispMapUrl} result="dispMap" preserveAspectRatio="none" x="0" y="0" width="100%" height="100%" />
+                            <feDisplacementMap in="SourceGraphic" in2="dispMap" scale="120" xChannelSelector="R" yChannelSelector="G" />
+                        </filter>
+                    </defs>
+                </svg>
+            )}
+
+            {/* Circular viewport with barrel distortion */}
             <div
                 ref={peepholeRef}
-                className="absolute z-[1]"
+                className="absolute inset-0 bg-[#f7f6f0] z-[1]"
                 style={{
-                    ...(landingDone ? {
-                        inset: 0,
-                        borderRadius: 0,
-                    } : {
-                        animation: 'lensGrow 2.4s cubic-bezier(0.22, 1, 0.36, 1) forwards',
-                    }),
-                    overflow: 'hidden',
-                    background: '#f7f6f0',
+                    clipPath: landingDone ? 'none' : undefined,
+                    animation: landingDone ? 'none' : 'circleOpen 2.6s cubic-bezier(0.22, 1, 0.36, 1) forwards',
+                    filter: !landingDone && dispMapUrl ? 'url(#barrel)' : 'none',
                 }}
             >
-                {/* Inner content — starts scaled up for barrel bulge, settles to normal */}
+                {/* Canvas drag surface */}
                 <div
-                    className="absolute inset-0"
+                    className="absolute inset-0 touch-none z-0"
+                    onWheel={handleWheel}
+                    onPointerDown={handlePointerDown}
+                    onPointerMove={handlePointerMove}
+                    onPointerUp={handlePointerUp}
+                    onPointerCancel={handlePointerUp}
+                />
+
+                {/* Header / Nav */}
+                <nav className="absolute top-0 w-full flex justify-between items-center px-6 pt-4 pb-0 md:px-12 z-50">
+                    <div className="flex-none">
+                        <button onClick={() => navigate('/')} className="text-[9px] md:text-[11px] font-bold uppercase transition-opacity hover:opacity-50">LEE JAEWOONG</button>
+                    </div>
+                    <div className="flex-1 flex justify-end items-center gap-6 md:gap-16">
+                        <button className="text-[9px] md:text-[11px] font-bold uppercase transition-opacity hover:opacity-50 opacity-40">FREE DIVE</button>
+                    </div>
+                </nav>
+
+                {/* Helper overlay */}
+                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-40 text-center pointer-events-none opacity-40 mix-blend-multiply">
+                    <span className="text-[9px] uppercase font-bold tracking-[0.2em] px-4 py-2">
+                        Drag, Scroll Wheel, or Arrow Keys
+                    </span>
+                </div>
+
+                {/* Virtual Canvas */}
+                <div
+                    ref={canvasRef}
+                    className="absolute top-1/2 left-1/2 origin-center z-10"
                     style={{
-                        transform: landingDone ? 'none' : undefined,
-                        animation: landingDone ? 'none' : 'lensBulge 2.4s cubic-bezier(0.22, 1, 0.36, 1) forwards',
-                        transformOrigin: 'center center',
+                        transform: `translate(-50%, -50%) scale(${cZ.current}) translate(${cX.current}px, ${cY.current}px)`,
+                        willChange: 'transform'
                     }}
                 >
-                    {/* Canvas drag surface */}
-                    <div
-                        className="absolute inset-0 touch-none z-0"
-                        onWheel={handleWheel}
-                        onPointerDown={handlePointerDown}
-                        onPointerMove={handlePointerMove}
-                        onPointerUp={handlePointerUp}
-                        onPointerCancel={handlePointerUp}
-                    />
-
-                    {/* Header / Nav */}
-                    <nav className="absolute top-0 w-full flex justify-between items-center px-6 pt-4 pb-0 md:px-12 z-50">
-                        <div className="flex-none">
-                            <button onClick={() => navigate('/')} className="text-[9px] md:text-[11px] font-bold uppercase transition-opacity hover:opacity-50">LEE JAEWOONG</button>
-                        </div>
-                        <div className="flex-1 flex justify-end items-center gap-6 md:gap-16">
-                            <button className="text-[9px] md:text-[11px] font-bold uppercase transition-opacity hover:opacity-50 opacity-40">FREE DIVE</button>
-                        </div>
-                    </nav>
-
-                    {/* Helper overlay */}
-                    <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-40 text-center pointer-events-none opacity-40 mix-blend-multiply">
-                        <span className="text-[9px] uppercase font-bold tracking-[0.2em] px-4 py-2">
-                            Drag, Scroll Wheel, or Arrow Keys
-                        </span>
-                    </div>
-
-                    {/* Virtual Canvas */}
-                    <div
-                        ref={canvasRef}
-                        className="absolute top-1/2 left-1/2 origin-center z-10"
-                        style={{
-                            transform: `translate(-50%, -50%) scale(${cZ.current}) translate(${cX.current}px, ${cY.current}px)`,
-                            willChange: 'transform'
-                        }}
-                    >
-                        {mediaItems.length === 0 ? (
-                            <div className="absolute top-0 left-0 -translate-x-1/2 -translate-y-1/2 text-center opacity-30 mt-[-20px]">
-                                <p className="text-2xl tracking-[0.2em] font-bold uppercase">FREE DIVE</p>
-                                <p className="mt-2 text-[10px] tracking-widest">Awaiting Media...</p>
-                            </div>
-                        ) : (
-                            visibleItems.map(renderData => (
-                                <div
-                                    key={renderData.key}
-                                    className="absolute bg-transparent shadow-[0_8px_30px_rgba(0,0,0,0.04)]"
-                                    style={{
-                                        width: renderData.width,
-                                        height: 'auto',
-                                        left: renderData.x,
-                                        top: renderData.y,
-                                        transform: 'translate(-50%, -50%)',
-                                        willChange: 'transform'
+                    {visibleItems.map(renderData => (
+                        <div
+                            key={renderData.key}
+                            className="absolute bg-transparent shadow-[0_8px_30px_rgba(0,0,0,0.04)]"
+                            style={{
+                                width: renderData.width,
+                                height: 'auto',
+                                left: renderData.x,
+                                top: renderData.y,
+                                transform: 'translate(-50%, -50%)',
+                                willChange: 'transform'
+                            }}
+                        >
+                            {renderData.item.type === 'video' ? (
+                                <VideoItem
+                                    src={renderData.item.url}
+                                    onClick={() => handleItemClick(renderData.x, renderData.y)}
+                                />
+                            ) : (
+                                <img
+                                    src={renderData.item.url}
+                                    alt=""
+                                    loading="lazy"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleItemClick(renderData.x, renderData.y);
                                     }}
-                                >
-                                    {renderData.item.type === 'video' ? (
-                                        <VideoItem
-                                            src={renderData.item.url}
-                                            onClick={() => handleItemClick(renderData.x, renderData.y)}
-                                        />
-                                    ) : (
-                                        <img
-                                            src={renderData.item.url}
-                                            alt=""
-                                            loading="lazy"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleItemClick(renderData.x, renderData.y);
-                                            }}
-                                            className="w-full h-auto pointer-events-auto cursor-pointer opacity-90 hover:opacity-100 transition-opacity duration-300 block bg-black/5"
-                                        />
-                                    )}
-                                </div>
-                            ))
-                        )}
-                    </div>
+                                    className="w-full h-auto pointer-events-auto cursor-pointer opacity-90 hover:opacity-100 transition-opacity duration-300 block bg-black/5"
+                                />
+                            )}
+                        </div>
+                    ))}
                 </div>
             </div>
 
             {/* CSS Keyframes */}
             <style>{`
-                @keyframes lensGrow {
+                @keyframes circleOpen {
                     0% {
-                        top: 50%;
-                        left: 50%;
-                        width: 60px;
-                        height: 60px;
-                        margin-top: -30px;
-                        margin-left: -30px;
-                        border-radius: 50%;
+                        clip-path: circle(3% at 50% 50%);
+                        filter: ${dispMapUrl ? 'url(#barrel)' : 'none'} brightness(0.4);
                     }
-                    40% {
-                        top: 50%;
-                        left: 50%;
-                        width: 55vmin;
-                        height: 55vmin;
-                        margin-top: -27.5vmin;
-                        margin-left: -27.5vmin;
-                        border-radius: 50%;
+                    30% {
+                        clip-path: circle(18% at 50% 50%);
+                        filter: ${dispMapUrl ? 'url(#barrel)' : 'none'} brightness(0.8);
                     }
-                    85% {
-                        top: -5%;
-                        left: -5%;
-                        width: 110%;
-                        height: 110%;
-                        margin-top: 0;
-                        margin-left: 0;
-                        border-radius: 20%;
-                    }
-                    100% {
-                        top: 0;
-                        left: 0;
-                        width: 100%;
-                        height: 100%;
-                        margin-top: 0;
-                        margin-left: 0;
-                        border-radius: 0%;
-                    }
-                }
-                @keyframes lensBulge {
-                    0% {
-                        transform: scale(1.5);
-                        filter: brightness(0.5);
-                    }
-                    40% {
-                        transform: scale(1.2);
-                        filter: brightness(0.85);
-                    }
-                    85% {
-                        transform: scale(1.02);
+                    70% {
+                        clip-path: circle(55% at 50% 50%);
                         filter: brightness(1);
                     }
                     100% {
-                        transform: scale(1);
+                        clip-path: circle(100% at 50% 50%);
                         filter: brightness(1);
                     }
                 }
