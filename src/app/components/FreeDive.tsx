@@ -53,8 +53,13 @@ export default function FreeDive() {
     const tY = useRef(0);
     const tZ = useRef(3.0); // Start deeply zoomed in
 
-    // Camera current state (lerped)
-    const [camera, setCamera] = useState({ x: 0, y: 0, z: 3.0 });
+    // Camera current state (NOT lerped via React state to save CPU)
+    const cX = useRef(0);
+    const cY = useRef(0);
+    const cZ = useRef(3.0);
+    const canvasRef = useRef<HTMLDivElement>(null);
+    const lastBounds = useRef({ startCol: -2, endCol: 2, startRow: -2, endRow: 2 });
+    const [visibleBounds, setVisibleBounds] = useState({ startCol: -1, endCol: 1, startRow: -1, endRow: 1 });
     const isDragging = useRef(false);
     const lastPan = useRef({ x: 0, y: 0 });
 
@@ -71,31 +76,51 @@ export default function FreeDive() {
         return () => clearTimeout(timer);
     }, []);
 
-    // Animation loop
+    // Animation loop (optimized natively, bypassing React lifecycle)
     useEffect(() => {
         let frame: number;
         const tick = () => {
-            setCamera(prev => {
-                const dx = tX.current - prev.x;
-                const dy = tY.current - prev.y;
-                const dz = tZ.current - prev.z;
+            let changed = false;
+            const dx = tX.current - cX.current;
+            const dy = tY.current - cY.current;
+            const dz = tZ.current - cZ.current;
 
-                // Stop rendering strictly if we're super close, saves CPU
-                if (Math.abs(dx) < 0.1 && Math.abs(dy) < 0.1 && Math.abs(dz) < 0.001) {
-                    return prev;
+            if (Math.abs(dx) > 0.01 || Math.abs(dy) > 0.01 || Math.abs(dz) > 0.001) {
+                cX.current += dx * 0.08; // lerp speed
+                cY.current += dy * 0.08;
+                cZ.current += dz * 0.08;
+
+                if (canvasRef.current) {
+                    canvasRef.current.style.transform = `translate(-50%, -50%) scale(${cZ.current}) translate(${cX.current}px, ${cY.current}px)`;
                 }
+                changed = true;
+            }
 
-                return {
-                    x: prev.x + dx * 0.08, // 0.08 is lerp speed
-                    y: prev.y + dy * 0.08,
-                    z: prev.z + dz * 0.08
-                };
-            });
+            // Always check bounds in case screen resized or jump occurred
+            const sW = window.innerWidth;
+            const sH = window.innerHeight;
+            const vL = -cX.current - (sW / 2) / cZ.current;
+            const vR = -cX.current + (sW / 2) / cZ.current;
+            const vT = -cY.current - (sH / 2) / cZ.current;
+            const vB = -cY.current + (sH / 2) / cZ.current;
+
+            const sc = Math.floor(vL / blockW) - 1;
+            const ec = Math.floor(vR / blockW) + 1;
+            const sr = Math.floor(vT / blockH) - 1;
+            const er = Math.floor(vB / blockH) + 1;
+
+            const prev = lastBounds.current;
+            if (sc !== prev.startCol || ec !== prev.endCol || sr !== prev.startRow || er !== prev.endRow) {
+                const nb = { startCol: sc, endCol: ec, startRow: sr, endRow: er };
+                lastBounds.current = nb;
+                setVisibleBounds(nb);
+            }
+
             frame = requestAnimationFrame(tick);
         };
         tick();
         return () => cancelAnimationFrame(frame);
-    }, []);
+    }, [blockW, blockH]);
 
     // Interaction handlers
     const handleWheel = (e: React.WheelEvent) => {
@@ -153,20 +178,10 @@ export default function FreeDive() {
     }, []);
 
     // Visible blocks calculation
-    const vLeft = -camera.x - (screen.w / 2) / camera.z;
-    const vRight = -camera.x + (screen.w / 2) / camera.z;
-    const vTop = -camera.y - (screen.h / 2) / camera.z;
-    const vBottom = -camera.y + (screen.h / 2) / camera.z;
-
-    const startCol = Math.floor(vLeft / blockW) - 1;
-    const endCol = Math.floor(vRight / blockW) + 1;
-    const startRow = Math.floor(vTop / blockH) - 1;
-    const endRow = Math.floor(vBottom / blockH) + 1;
-
     const visibleItems: any[] = [];
     if (mediaItems.length > 0) {
-        for (let bc = startCol; bc <= endCol; bc++) {
-            for (let br = startRow; br <= endRow; br++) {
+        for (let bc = visibleBounds.startCol; bc <= visibleBounds.endCol; bc++) {
+            for (let br = visibleBounds.startRow; br <= visibleBounds.endRow; br++) {
                 const blockOffsetX = bc * blockW;
                 const blockOffsetY = br * blockH;
 
@@ -277,11 +292,11 @@ export default function FreeDive() {
                 </span>
             </div>
 
-            {/* Virtual Canvas */}
             <div
+                ref={canvasRef}
                 className="absolute top-1/2 left-1/2 origin-center"
                 style={{
-                    transform: `translate(-50%, -50%) scale(${camera.z}) translate(${camera.x}px, ${camera.y}px)`,
+                    transform: `translate(-50%, -50%) scale(${cZ.current}) translate(${cX.current}px, ${cY.current}px)`,
                     willChange: 'transform'
                 }}
             >

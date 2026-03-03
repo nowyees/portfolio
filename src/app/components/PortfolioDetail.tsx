@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router';
+import { useParams, useNavigate, useLocation } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import GridTrail from './GridTrail';
 import ContactDialog from './ContactDialog';
@@ -9,6 +9,7 @@ import { isVideoUrl } from '../../lib/storageService';
 export default function PortfolioDetail() {
   const { category } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [data, setData] = useState<CategoryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState<number | null>(null);
@@ -25,6 +26,19 @@ export default function PortfolioDetail() {
       setLoading(false);
     });
   }, [category]);
+
+  // Deep linking: read URL query params to auto-open a project lightbox
+  useEffect(() => {
+    if (!loading && data) {
+      const q = new URLSearchParams(location.search);
+      const pid = q.get('project');
+      if (pid) {
+        setSelectedProject(parseInt(pid, 10));
+      } else {
+        setSelectedProject(null);
+      }
+    }
+  }, [location.search, loading, data]);
 
   // 라이트박스 열려있을 때 배경 스크롤 잠금
   useEffect(() => {

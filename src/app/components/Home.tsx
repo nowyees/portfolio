@@ -119,7 +119,7 @@ export default function Home() {
                 data-id={`${project.category}-${project.id}`}
                 ref={(el) => { imageRefs.current[idx] = el; }}
                 className="w-full h-[65vh] flex justify-center items-center snap-center cursor-pointer group px-6 md:px-12 shrink-0 pointer-events-none"
-                onClick={() => navigate(`/portfolio/${project.category}`)}
+                onClick={() => navigate(`/portfolio/${project.category}?project=${project.id}`)}
               >
                 <div
                   className={`relative shadow-md transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] ${isActive ? 'scale-100 opacity-100' : 'scale-[0.88] opacity-50'} pointer-events-auto bg-[#e5e4de] flex justify-center items-center`}
