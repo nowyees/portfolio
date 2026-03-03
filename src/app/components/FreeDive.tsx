@@ -37,6 +37,8 @@ export default function FreeDive() {
     }, []);
 
     // Layout math
+    // Instead of forcing strict bounds, we will give each item a random aspect ratio and size if not provided
+    // and arrange them in a loose grid.
     const cols = Math.max(1, Math.ceil(Math.sqrt(mediaItems.length)));
     const rows = Math.ceil(mediaItems.length / cols) || 1;
     const blockW = cols * CELL_W;
@@ -169,16 +171,68 @@ export default function FreeDive() {
                     const itemX = blockOffsetX + localCol * CELL_W + CELL_W / 2;
                     const itemY = blockOffsetY + localRow * CELL_H + CELL_H / 2;
 
+                    // Generate a stable pseudo-random aspect and scale based on index to make them look free-flowing
+                    const pseudoRandom = (Math.sin(index * 12.9898 + 78.233) * 43758.5453) % 1;
+                    const scale = 0.6 + Math.abs(pseudoRandom) * 0.6; // between 0.6 and 1.2
+                    const isPortrait = Math.abs(pseudoRandom) > 0.5;
+                    const aspect = isPortrait ? (3 / 4) : (16 / 9);
+
                     visibleItems.push({
                         key: `${bc}-${br}-${item.id}`,
                         item,
                         x: itemX,
                         y: itemY,
+                        width: (CELL_W - 60) * scale,
+                        height: (CELL_W - 60) * scale / aspect
                     });
                 });
             }
         }
     }
+
+    // Video Player Component to handle individual play states without rerendering the whole canvas
+    const VideoItem = ({ src }: { src: string }) => {
+        const [isPlaying, setIsPlaying] = useState(false);
+        const videoRef = useRef<HTMLVideoElement>(null);
+
+        const togglePlay = () => {
+            if (videoRef.current) {
+                if (isPlaying) {
+                    videoRef.current.pause();
+                } else {
+                    videoRef.current.play();
+                }
+                setIsPlaying(!isPlaying);
+            }
+        };
+
+        return (
+            <div
+                className="w-full h-full relative cursor-pointer"
+                onClick={(e) => {
+                    // Prevent canvas drag from triggering click if they only meant to drag
+                    if (!isDragging.current) togglePlay();
+                }}
+            >
+                <video
+                    ref={videoRef}
+                    src={src}
+                    loop
+                    muted
+                    playsInline
+                    className="w-full h-full object-cover pointer-events-none opacity-90 transition-opacity duration-300"
+                    style={{ opacity: isPlaying ? 1 : 0.8 }}
+                />
+                {!isPlaying && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none">
+                        <div className="w-12 h-12 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center">
+                            <span className="text-white ml-1 text-xl">▶</span>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    };
 
     return (
         <div
@@ -224,10 +278,10 @@ export default function FreeDive() {
                     visibleItems.map(renderData => (
                         <div
                             key={renderData.key}
-                            className="absolute bg-[#FFF] shadow-[0_8px_30px_rgba(0,0,0,0.04)] overflow-hidden"
+                            className="absolute bg-[#FFF] shadow-[0_8px_30px_rgba(0,0,0,0.04)] overflow-hidden flex items-center justify-center"
                             style={{
-                                width: CELL_W - 60,
-                                height: CELL_H - 60,
+                                width: renderData.width,
+                                height: renderData.height,
                                 left: renderData.x,
                                 top: renderData.y,
                                 transform: 'translate(-50%, -50%)',
@@ -235,14 +289,7 @@ export default function FreeDive() {
                             }}
                         >
                             {renderData.item.type === 'video' ? (
-                                <video
-                                    src={renderData.item.url}
-                                    autoPlay
-                                    loop
-                                    muted
-                                    playsInline
-                                    className="w-full h-full object-cover pointer-events-none opacity-90 hover:opacity-100 transition-opacity duration-300"
-                                />
+                                <VideoItem src={renderData.item.url} />
                             ) : (
                                 <img
                                     src={renderData.item.url}
