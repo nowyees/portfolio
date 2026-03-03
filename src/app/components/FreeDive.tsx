@@ -283,155 +283,166 @@ export default function FreeDive() {
             className="fixed inset-0 bg-[#111] text-[#111] select-none overflow-hidden"
             style={{ fontFamily: "'Champagne & Limousines', sans-serif" }}
         >
-            {/* Fisheye lens viewport — circular with barrel bulge */}
+            {/* Circular lens viewport */}
             <div
                 ref={peepholeRef}
-                className="absolute inset-0 bg-[#f7f6f0] z-[1]"
+                className="absolute z-[1]"
                 style={{
-                    clipPath: landingDone ? 'none' : undefined,
-                    animation: landingDone ? 'none' : 'fisheyeOpen 2.6s cubic-bezier(0.22, 1, 0.36, 1) forwards',
+                    ...(landingDone ? {
+                        inset: 0,
+                        borderRadius: 0,
+                    } : {
+                        animation: 'lensGrow 2.4s cubic-bezier(0.22, 1, 0.36, 1) forwards',
+                    }),
+                    overflow: 'hidden',
+                    background: '#f7f6f0',
                 }}
             >
-                {/* Canvas drag surface */}
+                {/* Inner content — starts scaled up for barrel bulge, settles to normal */}
                 <div
-                    className="absolute inset-0 touch-none z-0"
-                    onWheel={handleWheel}
-                    onPointerDown={handlePointerDown}
-                    onPointerMove={handlePointerMove}
-                    onPointerUp={handlePointerUp}
-                    onPointerCancel={handlePointerUp}
-                />
-
-                {/* Header / Nav */}
-                <nav className="absolute top-0 w-full flex justify-between items-center px-6 pt-4 pb-0 md:px-12 z-50">
-                    <div className="flex-none">
-                        <button onClick={() => navigate('/')} className="text-[9px] md:text-[11px] font-bold uppercase transition-opacity hover:opacity-50">LEE JAEWOONG</button>
-                    </div>
-                    <div className="flex-1 flex justify-end items-center gap-6 md:gap-16">
-                        <button className="text-[9px] md:text-[11px] font-bold uppercase transition-opacity hover:opacity-50 opacity-40">FREE DIVE</button>
-                    </div>
-                </nav>
-
-                {/* Helper overlay */}
-                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-40 text-center pointer-events-none opacity-40 mix-blend-multiply">
-                    <span className="text-[9px] uppercase font-bold tracking-[0.2em] px-4 py-2">
-                        Drag, Scroll Wheel, or Arrow Keys
-                    </span>
-                </div>
-
-                {/* Virtual Canvas */}
-                <div
-                    ref={canvasRef}
-                    className="absolute top-1/2 left-1/2 origin-center z-10"
+                    className="absolute inset-0"
                     style={{
-                        transform: `translate(-50%, -50%) scale(${cZ.current}) translate(${cX.current}px, ${cY.current}px)`,
-                        willChange: 'transform'
+                        transform: landingDone ? 'none' : undefined,
+                        animation: landingDone ? 'none' : 'lensBulge 2.4s cubic-bezier(0.22, 1, 0.36, 1) forwards',
+                        transformOrigin: 'center center',
                     }}
                 >
-                    {mediaItems.length === 0 ? (
-                        <div className="absolute top-0 left-0 -translate-x-1/2 -translate-y-1/2 text-center opacity-30 mt-[-20px]">
-                            <p className="text-2xl tracking-[0.2em] font-bold uppercase">FREE DIVE</p>
-                            <p className="mt-2 text-[10px] tracking-widest">Awaiting Media...</p>
+                    {/* Canvas drag surface */}
+                    <div
+                        className="absolute inset-0 touch-none z-0"
+                        onWheel={handleWheel}
+                        onPointerDown={handlePointerDown}
+                        onPointerMove={handlePointerMove}
+                        onPointerUp={handlePointerUp}
+                        onPointerCancel={handlePointerUp}
+                    />
+
+                    {/* Header / Nav */}
+                    <nav className="absolute top-0 w-full flex justify-between items-center px-6 pt-4 pb-0 md:px-12 z-50">
+                        <div className="flex-none">
+                            <button onClick={() => navigate('/')} className="text-[9px] md:text-[11px] font-bold uppercase transition-opacity hover:opacity-50">LEE JAEWOONG</button>
                         </div>
-                    ) : (
-                        visibleItems.map(renderData => (
-                            <div
-                                key={renderData.key}
-                                className="absolute bg-transparent shadow-[0_8px_30px_rgba(0,0,0,0.04)]"
-                                style={{
-                                    width: renderData.width,
-                                    height: 'auto',
-                                    left: renderData.x,
-                                    top: renderData.y,
-                                    transform: 'translate(-50%, -50%)',
-                                    willChange: 'transform'
-                                }}
-                            >
-                                {renderData.item.type === 'video' ? (
-                                    <VideoItem
-                                        src={renderData.item.url}
-                                        onClick={() => handleItemClick(renderData.x, renderData.y)}
-                                    />
-                                ) : (
-                                    <img
-                                        src={renderData.item.url}
-                                        alt=""
-                                        loading="lazy"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleItemClick(renderData.x, renderData.y);
-                                        }}
-                                        className="w-full h-auto pointer-events-auto cursor-pointer opacity-90 hover:opacity-100 transition-opacity duration-300 block bg-black/5"
-                                    />
-                                )}
+                        <div className="flex-1 flex justify-end items-center gap-6 md:gap-16">
+                            <button className="text-[9px] md:text-[11px] font-bold uppercase transition-opacity hover:opacity-50 opacity-40">FREE DIVE</button>
+                        </div>
+                    </nav>
+
+                    {/* Helper overlay */}
+                    <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-40 text-center pointer-events-none opacity-40 mix-blend-multiply">
+                        <span className="text-[9px] uppercase font-bold tracking-[0.2em] px-4 py-2">
+                            Drag, Scroll Wheel, or Arrow Keys
+                        </span>
+                    </div>
+
+                    {/* Virtual Canvas */}
+                    <div
+                        ref={canvasRef}
+                        className="absolute top-1/2 left-1/2 origin-center z-10"
+                        style={{
+                            transform: `translate(-50%, -50%) scale(${cZ.current}) translate(${cX.current}px, ${cY.current}px)`,
+                            willChange: 'transform'
+                        }}
+                    >
+                        {mediaItems.length === 0 ? (
+                            <div className="absolute top-0 left-0 -translate-x-1/2 -translate-y-1/2 text-center opacity-30 mt-[-20px]">
+                                <p className="text-2xl tracking-[0.2em] font-bold uppercase">FREE DIVE</p>
+                                <p className="mt-2 text-[10px] tracking-widest">Awaiting Media...</p>
                             </div>
-                        ))
-                    )}
+                        ) : (
+                            visibleItems.map(renderData => (
+                                <div
+                                    key={renderData.key}
+                                    className="absolute bg-transparent shadow-[0_8px_30px_rgba(0,0,0,0.04)]"
+                                    style={{
+                                        width: renderData.width,
+                                        height: 'auto',
+                                        left: renderData.x,
+                                        top: renderData.y,
+                                        transform: 'translate(-50%, -50%)',
+                                        willChange: 'transform'
+                                    }}
+                                >
+                                    {renderData.item.type === 'video' ? (
+                                        <VideoItem
+                                            src={renderData.item.url}
+                                            onClick={() => handleItemClick(renderData.x, renderData.y)}
+                                        />
+                                    ) : (
+                                        <img
+                                            src={renderData.item.url}
+                                            alt=""
+                                            loading="lazy"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleItemClick(renderData.x, renderData.y);
+                                            }}
+                                            className="w-full h-auto pointer-events-auto cursor-pointer opacity-90 hover:opacity-100 transition-opacity duration-300 block bg-black/5"
+                                        />
+                                    )}
+                                </div>
+                            ))
+                        )}
+                    </div>
                 </div>
             </div>
 
-            {/* Curved glass lens overlay — circular barrel distortion feel */}
-            {!landingDone && (
-                <div
-                    className="fixed inset-0 z-[2] pointer-events-none"
-                    style={{ animation: 'glassOverlayFade 2.6s cubic-bezier(0.22, 1, 0.36, 1) forwards' }}
-                >
-                    {/* Radial edge blur — sharp center, blurry edges like a lens */}
-                    <div
-                        className="absolute inset-0"
-                        style={{
-                            backdropFilter: 'blur(16px)',
-                            WebkitBackdropFilter: 'blur(16px)',
-                            maskImage: 'radial-gradient(ellipse 50% 50% at 50% 50%, transparent 40%, rgba(0,0,0,0.5) 65%, black 80%)',
-                            WebkitMaskImage: 'radial-gradient(ellipse 50% 50% at 50% 50%, transparent 40%, rgba(0,0,0,0.5) 65%, black 80%)',
-                        }}
-                    />
-                    {/* Subtle curved light refraction ring — glass edge highlight */}
-                    <div
-                        className="absolute inset-0"
-                        style={{
-                            background: 'radial-gradient(ellipse 55% 55% at 50% 50%, transparent 35%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.15) 52%, rgba(255,255,255,0.08) 54%, transparent 70%)',
-                        }}
-                    />
-                    {/* Chromatic aberration fringe */}
-                    <div
-                        className="absolute inset-0"
-                        style={{
-                            background: 'radial-gradient(ellipse 52% 52% at 50% 50%, transparent 38%, rgba(80,120,255,0.05) 48%, transparent 52%), radial-gradient(ellipse 56% 56% at 50% 50%, transparent 42%, rgba(255,80,60,0.04) 52%, transparent 58%)',
-                        }}
-                    />
-                </div>
-            )}
-
             {/* CSS Keyframes */}
             <style>{`
-                @keyframes fisheyeOpen {
+                @keyframes lensGrow {
                     0% {
-                        clip-path: circle(3% at 50% 50%);
-                        filter: brightness(0.4) blur(3px);
-                    }
-                    15% {
-                        clip-path: circle(10% at 50% 50%);
-                        filter: brightness(0.7) blur(2px);
+                        top: 50%;
+                        left: 50%;
+                        width: 60px;
+                        height: 60px;
+                        margin-top: -30px;
+                        margin-left: -30px;
+                        border-radius: 50%;
                     }
                     40% {
-                        clip-path: circle(28% at 50% 50%);
-                        filter: brightness(0.9) blur(0.5px);
+                        top: 50%;
+                        left: 50%;
+                        width: 55vmin;
+                        height: 55vmin;
+                        margin-top: -27.5vmin;
+                        margin-left: -27.5vmin;
+                        border-radius: 50%;
                     }
-                    70% {
-                        clip-path: circle(65% at 50% 50%);
-                        filter: brightness(1) blur(0px);
+                    85% {
+                        top: -5%;
+                        left: -5%;
+                        width: 110%;
+                        height: 110%;
+                        margin-top: 0;
+                        margin-left: 0;
+                        border-radius: 20%;
                     }
                     100% {
-                        clip-path: circle(100% at 50% 50%);
-                        filter: brightness(1) blur(0px);
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        margin-top: 0;
+                        margin-left: 0;
+                        border-radius: 0%;
                     }
                 }
-                @keyframes glassOverlayFade {
-                    0% { opacity: 1; transform: scale(1); }
-                    40% { opacity: 0.9; transform: scale(1.1); }
-                    70% { opacity: 0.4; transform: scale(1.4); }
-                    100% { opacity: 0; transform: scale(2); }
+                @keyframes lensBulge {
+                    0% {
+                        transform: scale(1.5);
+                        filter: brightness(0.5);
+                    }
+                    40% {
+                        transform: scale(1.2);
+                        filter: brightness(0.85);
+                    }
+                    85% {
+                        transform: scale(1.02);
+                        filter: brightness(1);
+                    }
+                    100% {
+                        transform: scale(1);
+                        filter: brightness(1);
+                    }
                 }
             `}</style>
         </div>
