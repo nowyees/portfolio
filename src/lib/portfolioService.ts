@@ -146,6 +146,8 @@ export async function getAllProjects(): Promise<Array<Project & { category: stri
             const categoriesSnapshot = await getDocs(collection(db, 'portfolios'));
             for (const catDoc of categoriesSnapshot.docs) {
                 const category = catDoc.id;
+                if (category.toLowerCase() === 'freedive') continue; // Exclude freedive from global aggregation
+
                 const projectsSnapshot = await getDocs(query(collection(db, 'portfolios', category, 'projects'), orderBy('id')));
                 projectsSnapshot.forEach(pDoc => {
                     allProjects.push({ ...(pDoc.data() as Project), category });
@@ -160,6 +162,7 @@ export async function getAllProjects(): Promise<Array<Project & { category: stri
 
     // 폴백 데이터 사용
     for (const [category, data] of Object.entries(FALLBACK_DATA)) {
+        if (category.toLowerCase() === 'freedive') continue; // Exclude freedive from global aggregation
         data.projects.forEach(project => {
             allProjects.push({ ...project, category });
         });
