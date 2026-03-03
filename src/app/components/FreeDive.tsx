@@ -9,6 +9,7 @@ export default function FreeDive() {
     const navigate = useNavigate();
     const [mediaItems, setMediaItems] = useState<any[]>([]);
     const [screen, setScreen] = useState({ w: window.innerWidth, h: window.innerHeight });
+    const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
     // Handle screen resize
     useEffect(() => {
@@ -208,13 +209,17 @@ export default function FreeDive() {
         }
     }
 
-    const handleItemClick = (x: number, y: number) => {
+    const handleItemClick = (x: number, y: number, url?: string) => {
         if (!isDragging.current) {
             // Center camera on this item
             tX.current = -x;
             tY.current = -y;
             // Optionally zoom in slightly
             tZ.current = Math.max(1.5, tZ.current);
+            // Open lightbox if url provided
+            if (url) {
+                setZoomedImage(url);
+            }
         }
     };
 
@@ -267,18 +272,21 @@ export default function FreeDive() {
 
     return (
         <div
-            className="fixed inset-0 bg-[#f7f6f0] text-[#111] touch-none select-none overflow-hidden"
+            className="fixed inset-0 bg-[#f7f6f0] text-[#111] select-none overflow-hidden"
             style={{ fontFamily: "'Champagne & Limousines', sans-serif" }}
-            onWheel={handleWheel}
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-            onPointerCancel={handlePointerUp}
         >
-            {/* Header / Nav */}
-            <nav className="absolute top-0 w-full flex justify-between items-center px-6 pt-4 pb-0 md:px-12 pointer-events-auto z-50"
-                onPointerDown={(e) => e.stopPropagation()}
-            >
+            {/* Canvas drag surface — sits behind nav */}
+            <div
+                className="absolute inset-0 touch-none z-0"
+                onWheel={handleWheel}
+                onPointerDown={handlePointerDown}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                onPointerCancel={handlePointerUp}
+            />
+
+            {/* Header / Nav — on top, pointer events fully independent */}
+            <nav className="absolute top-0 w-full flex justify-between items-center px-6 pt-4 pb-0 md:px-12 z-50">
                 <div className="flex-none">
                     <button onClick={() => navigate('/')} className="text-[9px] md:text-[11px] font-bold uppercase transition-opacity hover:opacity-50">LEE JAEWOONG</button>
                 </div>
@@ -294,9 +302,10 @@ export default function FreeDive() {
                 </span>
             </div>
 
+            {/* Virtual Canvas */}
             <div
                 ref={canvasRef}
-                className="absolute top-1/2 left-1/2 origin-center"
+                className="absolute top-1/2 left-1/2 origin-center z-10"
                 style={{
                     transform: `translate(-50%, -50%) scale(${cZ.current}) translate(${cX.current}px, ${cY.current}px)`,
                     willChange: 'transform'
@@ -333,7 +342,7 @@ export default function FreeDive() {
                                     loading="lazy"
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        handleItemClick(renderData.x, renderData.y);
+                                        handleItemClick(renderData.x, renderData.y, renderData.item.url);
                                     }}
                                     className="w-full h-auto pointer-events-auto cursor-pointer opacity-90 hover:opacity-100 transition-opacity duration-300 block bg-black/5"
                                 />
@@ -342,6 +351,27 @@ export default function FreeDive() {
                     ))
                 )}
             </div>
+
+            {/* Lightbox Overlay */}
+            {zoomedImage && (
+                <div
+                    className="fixed inset-0 z-[100] bg-black/85 flex items-center justify-center cursor-pointer"
+                    onClick={() => setZoomedImage(null)}
+                >
+                    <button
+                        onClick={() => setZoomedImage(null)}
+                        className="absolute top-6 right-6 md:top-8 md:right-12 text-[10px] uppercase tracking-widest text-white/60 hover:text-white transition-colors z-10"
+                    >
+                        Close
+                    </button>
+                    <img
+                        src={zoomedImage}
+                        alt=""
+                        className="max-w-[90vw] max-h-[85vh] object-contain"
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                </div>
+            )}
         </div>
     );
 }
