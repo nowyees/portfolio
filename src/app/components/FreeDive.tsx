@@ -1,110 +1,196 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
-import { motion, useMotionValue, useSpring } from 'motion/react';
-import { getAllProjects, type Project } from '../../lib/portfolioService';
+import { getAllProjects } from '../../lib/portfolioService';
+
+const CELL_W = 460;
+const CELL_H = 640;
 
 export default function FreeDive() {
     const navigate = useNavigate();
-    const [mediaItems, setMediaItems] = useState<{ id: string, url: string, type: 'video' | 'image', x: number, y: number, width: number, aspect: string }[]>([]);
+    const [mediaItems, setMediaItems] = useState<any[]>([]);
+    const [screen, setScreen] = useState({ w: window.innerWidth, h: window.innerHeight });
 
-    // Canvas panning state
-    const x = useMotionValue(0);
-    const y = useMotionValue(0);
-
-    // Smooth spring physics for panning (gives that underwater glide feel)
-    const springConfig = { damping: 25, stiffness: 120, mass: 0.5 };
-    const smoothX = useSpring(x, springConfig);
-    const smoothY = useSpring(y, springConfig);
-
+    // Handle screen resize
     useEffect(() => {
-        // Prevent default body scrolling while on this page
-        document.body.style.overflow = 'hidden';
+        const updateScreen = () => setScreen({ w: window.innerWidth, h: window.innerHeight });
+        window.addEventListener('resize', updateScreen);
+        return () => window.removeEventListener('resize', updateScreen);
+    }, []);
 
-        // Fetch `freedive` projects and map their media
+    // Fetch projects
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
         getAllProjects().then(projects => {
             const freeDiveProjects = projects.filter(p => p.category === 'freedive');
-            let extracted: { id: string, url: string, type: 'video' | 'image', x: number, y: number, width: number, aspect: string }[] = [];
-
-            // We extract all images and media from the freedive projects
-            freeDiveProjects.forEach((project, pIdx) => {
-                // Main project image
-                if (project.image) {
-                    extracted.push({
-                        id: `p-${project.id}-main`,
-                        url: project.image,
-                        type: 'image',
-                        x: Math.random() * 3000 - 1500, // Random X between -1500 and +1500
-                        y: Math.random() * 2000 - 1000, // Random Y between -1000 and +1000
-                        width: Math.random() * 300 + 200, // Random width between 200px and 500px
-                        aspect: project.aspect || '1',
-                    });
-                }
-
-                // Additional media
+            let extracted: any[] = [];
+            freeDiveProjects.forEach((project) => {
+                if (project.image) extracted.push({ id: `p-${project.id}-main`, url: project.image, type: 'image' });
                 if (project.media && project.media.length > 0) {
                     project.media.forEach((m, mIdx) => {
-                        extracted.push({
-                            id: `p-${project.id}-m-${mIdx}`,
-                            url: m.url,
-                            type: m.type,
-                            x: Math.random() * 4000 - 2000,
-                            y: Math.random() * 3000 - 1500,
-                            width: Math.random() * 250 + 150,
-                            aspect: '1' // Defaulting to squareish if not provided for generic media
-                        });
+                        extracted.push({ id: `p-${project.id}-m-${mIdx}`, url: m.url, type: m.type });
                     });
                 }
             });
-
-            // If no valid items (empty init state), spread some dummy shapes or leave empty.
             setMediaItems(extracted);
         });
-
-        return () => {
-            document.body.style.overflow = 'auto';
-        };
+        return () => { document.body.style.overflow = 'auto'; };
     }, []);
 
-    // Handle Wheel Events for Panning
+    // Layout math
+    const cols = Math.max(1, Math.ceil(Math.sqrt(mediaItems.length)));
+    const rows = Math.ceil(mediaItems.length / cols) || 1;
+    const blockW = cols * CELL_W;
+    const blockH = rows * CELL_H;
+
+    // Camera targets
+    const tX = useRef(0);
+    const tY = useRef(0);
+    const tZ = useRef(3.0); // Start deeply zoomed in
+
+    // Camera current state (lerped)
+    const [camera, setCamera] = useState({ x: 0, y: 0, z: 3.0 });
+    const isDragging = useRef(false);
+    const lastPan = useRef({ x: 0, y: 0 });
+
+    // Initial landing animation (Zoom out, then zoom in)
+    useEffect(() => {
+        // Quickly zoom out
+        tZ.current = 0.3;
+
+        // After 1.5 seconds, zoom into normal level
+        const timer = setTimeout(() => {
+            tZ.current = 1.0;
+        }, 1500);
+
+        return () => clearTimeout(timer);
+    }, []);
+
+    // Animation loop
+    useEffect(() => {
+        let frame: number;
+        const tick = () => {
+            setCamera(prev => {
+                const dx = tX.current - prev.x;
+                const dy = tY.current - prev.y;
+                const dz = tZ.current - prev.z;
+
+                // Stop rendering strictly if we're super close, saves CPU
+                if (Math.abs(dx) < 0.1 && Math.abs(dy) < 0.1 && Math.abs(dz) < 0.001) {
+                    return prev;
+                }
+
+                return {
+                    x: prev.x + dx * 0.08, // 0.08 is lerp speed
+                    y: prev.y + dy * 0.08,
+                    z: prev.z + dz * 0.08
+                };
+            });
+            frame = requestAnimationFrame(tick);
+        };
+        tick();
+        return () => cancelAnimationFrame(frame);
+    }, []);
+
+    // Interaction handlers
     const handleWheel = (e: React.WheelEvent) => {
-        e.preventDefault();
-        const panSpeed = 1.5;
-        // Moving the wheel down (positive deltaY) moves the canvas UP (negative Y)
-        x.set(x.get() - e.deltaX * panSpeed);
-        y.set(y.get() - e.deltaY * panSpeed);
+        let zoomDelta = 0;
+        if (e.ctrlKey || e.metaKey) {
+            zoomDelta = e.deltaY * -0.01;
+        } else {
+            zoomDelta = e.deltaY * -0.002;
+        }
+
+        let newZoom = tZ.current * (1 + zoomDelta);
+        newZoom = Math.max(0.1, Math.min(newZoom, 5.0)); // Clamp scale
+        tZ.current = newZoom;
     };
 
-    // Handle Keydown Events for Panning
+    const handlePointerDown = (e: React.PointerEvent) => {
+        // Only trigger drag for primary buttons (mostly left click/touch)
+        if (e.button !== 0 && e.pointerType === 'mouse') return;
+        isDragging.current = true;
+        lastPan.current = { x: e.clientX, y: e.clientY };
+        e.currentTarget.setPointerCapture(e.pointerId);
+    };
+
+    const handlePointerMove = (e: React.PointerEvent) => {
+        if (!isDragging.current) return;
+        const dx = e.clientX - lastPan.current.x;
+        const dy = e.clientY - lastPan.current.y;
+        lastPan.current = { x: e.clientX, y: e.clientY };
+
+        // Move camera in opposite direction of drag, scaled by zoom
+        tX.current += dx / tZ.current;
+        tY.current += dy / tZ.current;
+    };
+
+    const handlePointerUp = (e: React.PointerEvent) => {
+        isDragging.current = false;
+        e.currentTarget.releasePointerCapture(e.pointerId);
+    };
+
+    // Keyboard panning
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            const step = 100;
+            const step = 60 / tZ.current;
             switch (e.key) {
-                case 'ArrowUp':
-                    y.set(y.get() + step);
-                    break;
-                case 'ArrowDown':
-                    y.set(y.get() - step);
-                    break;
-                case 'ArrowLeft':
-                    x.set(x.get() + step);
-                    break;
-                case 'ArrowRight':
-                    x.set(x.get() - step);
-                    break;
+                case 'ArrowUp': tY.current += step; break;
+                case 'ArrowDown': tY.current -= step; break;
+                case 'ArrowLeft': tX.current += step; break;
+                case 'ArrowRight': tX.current -= step; break;
             }
         };
-
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [x, y]);
+    }, []);
+
+    // Visible blocks calculation
+    const vLeft = -camera.x - (screen.w / 2) / camera.z;
+    const vRight = -camera.x + (screen.w / 2) / camera.z;
+    const vTop = -camera.y - (screen.h / 2) / camera.z;
+    const vBottom = -camera.y + (screen.h / 2) / camera.z;
+
+    const startCol = Math.floor(vLeft / blockW) - 1;
+    const endCol = Math.floor(vRight / blockW) + 1;
+    const startRow = Math.floor(vTop / blockH) - 1;
+    const endRow = Math.floor(vBottom / blockH) + 1;
+
+    const visibleItems: any[] = [];
+    if (mediaItems.length > 0) {
+        for (let bc = startCol; bc <= endCol; bc++) {
+            for (let br = startRow; br <= endRow; br++) {
+                const blockOffsetX = bc * blockW;
+                const blockOffsetY = br * blockH;
+
+                mediaItems.forEach((item, index) => {
+                    const localCol = index % cols;
+                    const localRow = Math.floor(index / cols);
+
+                    const itemX = blockOffsetX + localCol * CELL_W + CELL_W / 2;
+                    const itemY = blockOffsetY + localRow * CELL_H + CELL_H / 2;
+
+                    visibleItems.push({
+                        key: `${bc}-${br}-${item.id}`,
+                        item,
+                        x: itemX,
+                        y: itemY,
+                    });
+                });
+            }
+        }
+    }
 
     return (
         <div
-            className="relative w-screen h-screen bg-white overflow-hidden text-[#111] selection:bg-[#111] selection:text-white"
+            className="fixed inset-0 bg-[#f7f6f0] text-[#111] touch-none select-none overflow-hidden"
             style={{ fontFamily: "'Champagne & Limousines', sans-serif" }}
             onWheel={handleWheel}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
         >
-            {/* Fixed Navigation */}
+            {/* Header / Nav */}
             <nav className="absolute top-0 w-full flex justify-between items-center px-6 pt-4 pb-0 md:px-12 pointer-events-auto z-50">
                 <div className="flex-none">
                     <button onClick={() => navigate('/')} className="text-[9px] md:text-[11px] font-bold uppercase transition-opacity hover:opacity-50">LEE JAEWOONG</button>
@@ -114,78 +200,61 @@ export default function FreeDive() {
                 </div>
             </nav>
 
-            {/* Helper text overlay */}
-            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-40 text-center pointer-events-none opacity-30 mix-blend-difference">
-                <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-[#111] bg-white/50 px-4 py-2 rounded-full backdrop-blur-sm">
-                    Drag, Scroll, or Arrow Keys to Explore
+            {/* Helper overlay */}
+            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-40 text-center pointer-events-none opacity-40 mix-blend-multiply">
+                <span className="text-[9px] uppercase font-bold tracking-[0.2em] px-4 py-2">
+                    Drag, Scroll Wheel, or Arrow Keys
                 </span>
             </div>
 
-            {/* Infinite Canvas */}
-            <motion.div
-                className="w-full h-full cursor-grab active:cursor-grabbing"
-                drag
-                dragMomentum={true}
-                style={{ x: smoothX, y: smoothY }}
-                onDrag={(event, info) => {
-                    // We keep the spring updated natively via Framer Motion's `drag`
-                    // But we need to sync the raw x/y values so wheel and keys don't reset tracking
-                    x.set(x.get() + info.delta.x);
-                    y.set(y.get() + info.delta.y);
+            {/* Virtual Canvas */}
+            <div
+                className="absolute top-1/2 left-1/2 origin-center"
+                style={{
+                    transform: `translate(-50%, -50%) scale(${camera.z}) translate(${camera.x}px, ${camera.y}px)`,
+                    willChange: 'transform'
                 }}
-            // We use an absolutely huge invisible div to ensure drag surface covers everything bounds-free
             >
-                <div className="absolute top-1/2 left-1/2 w-[10000px] h-[10000px] -translate-x-1/2 -translate-y-1/2 origin-center">
-                    {mediaItems.length === 0 ? (
-                        // State if DB is empty
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center opacity-20">
-                            <p className="text-4xl font-bold uppercase tracking-widest">Free Dive</p>
-                            <p className="mt-4 text-sm font-sans tracking-widest">Upload files to the 'freedive' category in Admin panel to see them float here.</p>
+                {mediaItems.length === 0 ? (
+                    <div className="absolute top-0 left-0 -translate-x-1/2 -translate-y-1/2 text-center opacity-30 mt-[-20px]">
+                        <p className="text-2xl tracking-[0.2em] font-bold uppercase">FREE DIVE</p>
+                        <p className="mt-2 text-[10px] tracking-widest">Awaiting Media...</p>
+                    </div>
+                ) : (
+                    visibleItems.map(renderData => (
+                        <div
+                            key={renderData.key}
+                            className="absolute bg-[#FFF] shadow-[0_8px_30px_rgba(0,0,0,0.04)] overflow-hidden"
+                            style={{
+                                width: CELL_W - 60,
+                                height: CELL_H - 60,
+                                left: renderData.x,
+                                top: renderData.y,
+                                transform: 'translate(-50%, -50%)',
+                                willChange: 'transform'
+                            }}
+                        >
+                            {renderData.item.type === 'video' ? (
+                                <video
+                                    src={renderData.item.url}
+                                    autoPlay
+                                    loop
+                                    muted
+                                    playsInline
+                                    className="w-full h-full object-cover pointer-events-none opacity-90 hover:opacity-100 transition-opacity duration-300"
+                                />
+                            ) : (
+                                <img
+                                    src={renderData.item.url}
+                                    alt=""
+                                    loading="lazy"
+                                    className="w-full h-full object-cover pointer-events-none opacity-90 hover:opacity-100 transition-opacity duration-300"
+                                />
+                            )}
                         </div>
-                    ) : (
-                        // Floating Media
-                        mediaItems.map((item) => {
-                            return (
-                                <motion.div
-                                    key={item.id}
-                                    className="absolute shadow-sm hover:shadow-xl transition-shadow duration-500 bg-[#f7f6f0] overflow-hidden"
-                                    style={{
-                                        // Place relative to the massive 10000x10000 center anchor
-                                        left: `calc(50% + ${item.x}px)`,
-                                        top: `calc(50% + ${item.y}px)`,
-                                        width: item.width,
-                                        // Aspect ratio hack if string is e.g 'aspect-[4/3]' -> we compute padding or use CSS native
-                                        aspectRatio: item.aspect.includes('aspect-[')
-                                            ? item.aspect.replace('aspect-[', '').replace(']', '')
-                                            : 'auto',
-                                    }}
-                                    initial={{ opacity: 0, scale: 0.8 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    transition={{ duration: 1, delay: Math.random() * 0.5 }}
-                                >
-                                    {item.type === 'video' ? (
-                                        <video
-                                            src={item.url}
-                                            autoPlay
-                                            loop
-                                            muted
-                                            playsInline
-                                            className="w-full h-full object-cover pointer-events-none"
-                                        />
-                                    ) : (
-                                        <img
-                                            src={item.url}
-                                            alt=""
-                                            className="w-full h-full object-cover pointer-events-none"
-                                            loading="lazy"
-                                        />
-                                    )}
-                                </motion.div>
-                            )
-                        })
-                    )}
-                </div>
-            </motion.div>
+                    ))
+                )}
+            </div>
         </div>
     );
 }
