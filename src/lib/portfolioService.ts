@@ -90,16 +90,23 @@ export async function getPortfolioByCategory(category: string): Promise<Category
     if (isConfigured && db) {
         try {
             const categoryDoc = await getDoc(doc(db, 'portfolios', key));
+            let catData = null;
+
             if (categoryDoc.exists()) {
-                const catData = categoryDoc.data();
+                catData = categoryDoc.data();
+            } else if (FALLBACK_DATA[key]) {
+                catData = FALLBACK_DATA[key];
+            }
+
+            if (catData) {
                 const projectsSnapshot = await getDocs(
                     query(collection(db, 'portfolios', key, 'projects'), orderBy('id'))
                 );
                 const projects: Project[] = projectsSnapshot.docs.map(d => d.data() as Project);
                 return {
-                    title: catData.title,
-                    subtitle: catData.subtitle,
-                    description: catData.description,
+                    title: catData.title || '',
+                    subtitle: catData.subtitle || '',
+                    description: catData.description || '',
                     projects,
                 };
             }
@@ -176,6 +183,19 @@ export async function updateProject(category: string, projectId: string, data: P
 export async function addProject(category: string, project: Project): Promise<string> {
     if (!isConfigured || !db) throw new Error('Firebase not configured');
     const key = category.toLowerCase();
+
+    // 카테고리 문서가 없으면 생성 (폴백 데이터 기반)
+    const categoryDocRef = doc(db, 'portfolios', key);
+    const categoryDoc = await getDoc(categoryDocRef);
+    if (!categoryDoc.exists()) {
+        const fallback = FALLBACK_DATA[key] || { title: key.toUpperCase(), subtitle: '', description: '', projects: [] };
+        await setDoc(categoryDocRef, {
+            title: fallback.title,
+            subtitle: fallback.subtitle,
+            description: fallback.description
+        });
+    }
+
     const docId = `project-${project.id}`;
     await setDoc(doc(db, 'portfolios', key, 'projects', docId), project);
     return docId;
