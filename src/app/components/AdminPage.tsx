@@ -14,7 +14,7 @@ import {
 import { uploadImage, isVideoFile, isVideoUrl } from '../../lib/storageService';
 import type { User } from 'firebase/auth';
 
-const CATEGORIES = ['fashion', 'product', 'space', 'speculative'];
+const CATEGORIES = ['fashion', 'product', 'space', 'speculative', 'freedive'];
 const ASPECT_OPTIONS = ['aspect-[3/4]', 'aspect-[4/5]', 'aspect-[4/3]', 'aspect-[16/10]'];
 
 export default function AdminPage() {

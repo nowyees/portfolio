@@ -71,6 +71,12 @@ const FALLBACK_DATA: Record<string, CategoryData> = {
             { id: 4, title: 'Mixed Signal', year: '2023', desc: 'Experimental media exploring noise and silence', image: 'https://images.unsplash.com/photo-1671955100866-f73c4b2d79a3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxleHBlcmltZW50YWwlMjBhcnQlMjBtaXhlZCUyMG1lZGlhfGVufDF8fHx8MTc3MjM1NzM4OHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral', aspect: 'aspect-[16/10]' },
         ],
     },
+    freedive: {
+        title: 'FREE DIVE',
+        subtitle: 'Floating Media Gallery',
+        description: 'An interactive exploration of scattered memories and visual experiments.',
+        projects: [],
+    },
 };
 
 /**
