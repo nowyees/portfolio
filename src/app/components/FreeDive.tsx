@@ -64,29 +64,34 @@ export default function FreeDive() {
     const isDragging = useRef(false);
     const lastPan = useRef({ x: 0, y: 0 });
     const [landingDone, setLandingDone] = useState(false);
+    const [landingPhase, setLandingPhase] = useState(0); // 0=start, 1=expanding, 2=settling, 3=done
 
     // Fisheye keyhole landing animation
     useEffect(() => {
-        // Start deeply zoomed in and off-kilter
+        // Start deeply zoomed in
         tZ.current = 4.0;
         cZ.current = 4.0;
+        setLandingPhase(0);
 
-        // Phase 1: after a brief pause, zoom out to reveal the canvas
-        const t1 = setTimeout(() => {
+        // Phase 1: start expanding
+        const t0 = setTimeout(() => {
+            setLandingPhase(1);
             tZ.current = 0.5;
-        }, 300);
+        }, 200);
 
         // Phase 2: settle to normal
         const t2 = setTimeout(() => {
+            setLandingPhase(2);
             tZ.current = 1.0;
-        }, 2000);
+        }, 1800);
 
-        // Mark landing done (remove overlay)
+        // Phase 3: fully done, clean up filters
         const t3 = setTimeout(() => {
+            setLandingPhase(3);
             setLandingDone(true);
-        }, 2800);
+        }, 3200);
 
-        return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+        return () => { clearTimeout(t0); clearTimeout(t2); clearTimeout(t3); };
     }, []);
 
     // Animation loop (optimized natively, bypassing React lifecycle)
@@ -283,13 +288,32 @@ export default function FreeDive() {
             className="fixed inset-0 bg-[#111] text-[#111] select-none overflow-hidden"
             style={{ fontFamily: "'Champagne & Limousines', sans-serif" }}
         >
+            {/* SVG Filters for barrel distortion */}
+            <svg className="absolute w-0 h-0" aria-hidden="true">
+                <defs>
+                    <filter id="fisheye" x="-20%" y="-20%" width="140%" height="140%">
+                        <feTurbulence type="turbulence" baseFrequency="0.015" numOctaves="2" result="warp" seed="2" />
+                        <feDisplacementMap in="SourceGraphic" in2="warp" scale="45" xChannelSelector="R" yChannelSelector="G" />
+                    </filter>
+                    <filter id="fisheyeLight" x="-10%" y="-10%" width="120%" height="120%">
+                        <feTurbulence type="turbulence" baseFrequency="0.012" numOctaves="1" result="warp" seed="2" />
+                        <feDisplacementMap in="SourceGraphic" in2="warp" scale="15" xChannelSelector="R" yChannelSelector="G" />
+                    </filter>
+                </defs>
+            </svg>
+
             {/* Fisheye peephole layer */}
             <div
                 ref={peepholeRef}
                 className="absolute inset-0 bg-[#f7f6f0] z-[1]"
                 style={{
                     clipPath: landingDone ? 'circle(100% at 50% 50%)' : undefined,
-                    animation: landingDone ? 'none' : 'fisheyeOpen 2.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                    animation: landingDone ? 'none' : 'fisheyeOpen 3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                    filter: landingPhase === 0 ? 'url(#fisheye) blur(6px) brightness(0.5)'
+                        : landingPhase === 1 ? 'url(#fisheyeLight) blur(1px) brightness(0.9)'
+                            : landingPhase === 2 ? 'blur(0px) brightness(1)'
+                                : 'none',
+                    transition: 'filter 1.2s cubic-bezier(0.25, 1, 0.5, 1)',
                 }}
             >
                 {/* Canvas drag surface */}
@@ -302,7 +326,7 @@ export default function FreeDive() {
                     onPointerCancel={handlePointerUp}
                 />
 
-                {/* Header / Nav — on top, pointer events fully independent */}
+                {/* Header / Nav */}
                 <nav className="absolute top-0 w-full flex justify-between items-center px-6 pt-4 pb-0 md:px-12 z-50">
                     <div className="flex-none">
                         <button onClick={() => navigate('/')} className="text-[9px] md:text-[11px] font-bold uppercase transition-opacity hover:opacity-50">LEE JAEWOONG</button>
@@ -370,25 +394,57 @@ export default function FreeDive() {
                 </div>
             </div>
 
-            {/* CSS Keyframes for the fisheye opening */}
+            {/* Frosted glass ring overlay — lens edge blur effect */}
+            {!landingDone && (
+                <div
+                    className="fixed inset-0 z-[2] pointer-events-none"
+                    style={{
+                        animation: 'glassRingFade 3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                    }}
+                >
+                    {/* Outer frosted ring */}
+                    <div
+                        className="absolute inset-0"
+                        style={{
+                            backdropFilter: 'blur(12px) saturate(1.4)',
+                            WebkitBackdropFilter: 'blur(12px) saturate(1.4)',
+                            maskImage: 'radial-gradient(circle at 50% 50%, transparent 15%, rgba(0,0,0,0.3) 30%, rgba(0,0,0,0.7) 50%, black 65%)',
+                            WebkitMaskImage: 'radial-gradient(circle at 50% 50%, transparent 15%, rgba(0,0,0,0.3) 30%, rgba(0,0,0,0.7) 50%, black 65%)',
+                        }}
+                    />
+                    {/* Subtle chromatic aberration ring */}
+                    <div
+                        className="absolute inset-0"
+                        style={{
+                            background: 'radial-gradient(circle at 50% 50%, transparent 20%, rgba(100,140,255,0.06) 40%, rgba(255,100,80,0.04) 55%, transparent 70%)',
+                        }}
+                    />
+                </div>
+            )}
+
+            {/* CSS Keyframes */}
             <style>{`
                 @keyframes fisheyeOpen {
                     0% {
-                        clip-path: circle(2% at 50% 50%);
-                        filter: blur(8px) brightness(0.6);
+                        clip-path: circle(3% at 50% 50%);
                     }
-                    30% {
+                    20% {
                         clip-path: circle(8% at 50% 50%);
-                        filter: blur(4px) brightness(0.8);
                     }
-                    60% {
-                        clip-path: circle(35% at 50% 50%);
-                        filter: blur(1px) brightness(0.95);
+                    50% {
+                        clip-path: circle(30% at 50% 50%);
+                    }
+                    80% {
+                        clip-path: circle(70% at 50% 50%);
                     }
                     100% {
                         clip-path: circle(100% at 50% 50%);
-                        filter: blur(0px) brightness(1);
                     }
+                }
+                @keyframes glassRingFade {
+                    0% { opacity: 1; }
+                    60% { opacity: 0.8; }
+                    100% { opacity: 0; }
                 }
             `}</style>
         </div>
