@@ -64,34 +64,29 @@ export default function FreeDive() {
     const isDragging = useRef(false);
     const lastPan = useRef({ x: 0, y: 0 });
     const [landingDone, setLandingDone] = useState(false);
-    const [landingPhase, setLandingPhase] = useState(0); // 0=start, 1=expanding, 2=settling, 3=done
 
-    // Fisheye keyhole landing animation
+    // Fisheye keyhole landing animation — starts immediately
     useEffect(() => {
-        // Start deeply zoomed in
+        // Begin zoomed in
         tZ.current = 4.0;
         cZ.current = 4.0;
-        setLandingPhase(0);
 
-        // Phase 1: start expanding
-        const t0 = setTimeout(() => {
-            setLandingPhase(1);
+        // Immediately start pulling outward
+        requestAnimationFrame(() => {
             tZ.current = 0.5;
-        }, 200);
+        });
 
-        // Phase 2: settle to normal
+        // Settle to normal
         const t2 = setTimeout(() => {
-            setLandingPhase(2);
             tZ.current = 1.0;
-        }, 1800);
+        }, 1600);
 
-        // Phase 3: fully done, clean up filters
+        // Done — remove overlays
         const t3 = setTimeout(() => {
-            setLandingPhase(3);
             setLandingDone(true);
-        }, 3200);
+        }, 2800);
 
-        return () => { clearTimeout(t0); clearTimeout(t2); clearTimeout(t3); };
+        return () => { clearTimeout(t2); clearTimeout(t3); };
     }, []);
 
     // Animation loop (optimized natively, bypassing React lifecycle)
@@ -288,32 +283,13 @@ export default function FreeDive() {
             className="fixed inset-0 bg-[#111] text-[#111] select-none overflow-hidden"
             style={{ fontFamily: "'Champagne & Limousines', sans-serif" }}
         >
-            {/* SVG Filters for barrel distortion */}
-            <svg className="absolute w-0 h-0" aria-hidden="true">
-                <defs>
-                    <filter id="fisheye" x="-20%" y="-20%" width="140%" height="140%">
-                        <feTurbulence type="turbulence" baseFrequency="0.015" numOctaves="2" result="warp" seed="2" />
-                        <feDisplacementMap in="SourceGraphic" in2="warp" scale="45" xChannelSelector="R" yChannelSelector="G" />
-                    </filter>
-                    <filter id="fisheyeLight" x="-10%" y="-10%" width="120%" height="120%">
-                        <feTurbulence type="turbulence" baseFrequency="0.012" numOctaves="1" result="warp" seed="2" />
-                        <feDisplacementMap in="SourceGraphic" in2="warp" scale="15" xChannelSelector="R" yChannelSelector="G" />
-                    </filter>
-                </defs>
-            </svg>
-
-            {/* Fisheye peephole layer */}
+            {/* Fisheye lens viewport — circular with barrel bulge */}
             <div
                 ref={peepholeRef}
                 className="absolute inset-0 bg-[#f7f6f0] z-[1]"
                 style={{
-                    clipPath: landingDone ? 'circle(100% at 50% 50%)' : undefined,
-                    animation: landingDone ? 'none' : 'fisheyeOpen 3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-                    filter: landingPhase === 0 ? 'url(#fisheye) blur(6px) brightness(0.5)'
-                        : landingPhase === 1 ? 'url(#fisheyeLight) blur(1px) brightness(0.9)'
-                            : landingPhase === 2 ? 'blur(0px) brightness(1)'
-                                : 'none',
-                    transition: 'filter 1.2s cubic-bezier(0.25, 1, 0.5, 1)',
+                    clipPath: landingDone ? 'none' : undefined,
+                    animation: landingDone ? 'none' : 'fisheyeOpen 2.6s cubic-bezier(0.22, 1, 0.36, 1) forwards',
                 }}
             >
                 {/* Canvas drag surface */}
@@ -394,29 +370,34 @@ export default function FreeDive() {
                 </div>
             </div>
 
-            {/* Frosted glass ring overlay — lens edge blur effect */}
+            {/* Curved glass lens overlay — circular barrel distortion feel */}
             {!landingDone && (
                 <div
                     className="fixed inset-0 z-[2] pointer-events-none"
-                    style={{
-                        animation: 'glassRingFade 3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-                    }}
+                    style={{ animation: 'glassOverlayFade 2.6s cubic-bezier(0.22, 1, 0.36, 1) forwards' }}
                 >
-                    {/* Outer frosted ring */}
+                    {/* Radial edge blur — sharp center, blurry edges like a lens */}
                     <div
                         className="absolute inset-0"
                         style={{
-                            backdropFilter: 'blur(12px) saturate(1.4)',
-                            WebkitBackdropFilter: 'blur(12px) saturate(1.4)',
-                            maskImage: 'radial-gradient(circle at 50% 50%, transparent 15%, rgba(0,0,0,0.3) 30%, rgba(0,0,0,0.7) 50%, black 65%)',
-                            WebkitMaskImage: 'radial-gradient(circle at 50% 50%, transparent 15%, rgba(0,0,0,0.3) 30%, rgba(0,0,0,0.7) 50%, black 65%)',
+                            backdropFilter: 'blur(16px)',
+                            WebkitBackdropFilter: 'blur(16px)',
+                            maskImage: 'radial-gradient(ellipse 50% 50% at 50% 50%, transparent 40%, rgba(0,0,0,0.5) 65%, black 80%)',
+                            WebkitMaskImage: 'radial-gradient(ellipse 50% 50% at 50% 50%, transparent 40%, rgba(0,0,0,0.5) 65%, black 80%)',
                         }}
                     />
-                    {/* Subtle chromatic aberration ring */}
+                    {/* Subtle curved light refraction ring — glass edge highlight */}
                     <div
                         className="absolute inset-0"
                         style={{
-                            background: 'radial-gradient(circle at 50% 50%, transparent 20%, rgba(100,140,255,0.06) 40%, rgba(255,100,80,0.04) 55%, transparent 70%)',
+                            background: 'radial-gradient(ellipse 55% 55% at 50% 50%, transparent 35%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.15) 52%, rgba(255,255,255,0.08) 54%, transparent 70%)',
+                        }}
+                    />
+                    {/* Chromatic aberration fringe */}
+                    <div
+                        className="absolute inset-0"
+                        style={{
+                            background: 'radial-gradient(ellipse 52% 52% at 50% 50%, transparent 38%, rgba(80,120,255,0.05) 48%, transparent 52%), radial-gradient(ellipse 56% 56% at 50% 50%, transparent 42%, rgba(255,80,60,0.04) 52%, transparent 58%)',
                         }}
                     />
                 </div>
@@ -427,24 +408,30 @@ export default function FreeDive() {
                 @keyframes fisheyeOpen {
                     0% {
                         clip-path: circle(3% at 50% 50%);
+                        filter: brightness(0.4) blur(3px);
                     }
-                    20% {
-                        clip-path: circle(8% at 50% 50%);
+                    15% {
+                        clip-path: circle(10% at 50% 50%);
+                        filter: brightness(0.7) blur(2px);
                     }
-                    50% {
-                        clip-path: circle(30% at 50% 50%);
+                    40% {
+                        clip-path: circle(28% at 50% 50%);
+                        filter: brightness(0.9) blur(0.5px);
                     }
-                    80% {
-                        clip-path: circle(70% at 50% 50%);
+                    70% {
+                        clip-path: circle(65% at 50% 50%);
+                        filter: brightness(1) blur(0px);
                     }
                     100% {
                         clip-path: circle(100% at 50% 50%);
+                        filter: brightness(1) blur(0px);
                     }
                 }
-                @keyframes glassRingFade {
-                    0% { opacity: 1; }
-                    60% { opacity: 0.8; }
-                    100% { opacity: 0; }
+                @keyframes glassOverlayFade {
+                    0% { opacity: 1; transform: scale(1); }
+                    40% { opacity: 0.9; transform: scale(1.1); }
+                    70% { opacity: 0.4; transform: scale(1.4); }
+                    100% { opacity: 0; transform: scale(2); }
                 }
             `}</style>
         </div>
