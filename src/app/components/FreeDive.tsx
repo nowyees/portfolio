@@ -175,19 +175,16 @@ export default function FreeDive() {
                     const itemX = blockOffsetX + localCol * CELL_W + CELL_W / 2;
                     const itemY = blockOffsetY + localRow * CELL_H + CELL_H / 2;
 
-                    // Generate a stable pseudo-random aspect and scale based on index to make them look free-flowing
+                    // Generate a stable pseudo-random scale based on index to make them look free-flowing
                     const pseudoRandom = (Math.sin(index * 12.9898 + 78.233) * 43758.5453) % 1;
                     const scale = 0.6 + Math.abs(pseudoRandom) * 0.6; // between 0.6 and 1.2
-                    const isPortrait = Math.abs(pseudoRandom) > 0.5;
-                    const aspect = isPortrait ? (3 / 4) : (16 / 9);
 
                     visibleItems.push({
                         key: `${bc}-${br}-${item.id}`,
                         item,
                         x: itemX,
                         y: itemY,
-                        width: (CELL_W - 60) * scale,
-                        height: (CELL_W - 60) * scale / aspect
+                        width: (CELL_W - 60) * scale
                     });
                 });
             }
@@ -212,7 +209,7 @@ export default function FreeDive() {
 
         return (
             <div
-                className="w-full h-full relative cursor-pointer"
+                className="w-full h-auto relative cursor-pointer"
                 onClick={(e) => {
                     // Prevent canvas drag from triggering click if they only meant to drag
                     if (!isDragging.current) togglePlay();
@@ -224,7 +221,7 @@ export default function FreeDive() {
                     loop
                     muted
                     playsInline
-                    className="w-full h-full object-cover pointer-events-none opacity-90 transition-opacity duration-300"
+                    className="w-full h-auto pointer-events-none opacity-90 transition-opacity duration-300 block"
                     style={{ opacity: isPlaying ? 1 : 0.8 }}
                 />
                 {!isPlaying && (
@@ -282,10 +279,10 @@ export default function FreeDive() {
                     visibleItems.map(renderData => (
                         <div
                             key={renderData.key}
-                            className="absolute bg-[#FFF] shadow-[0_8px_30px_rgba(0,0,0,0.04)] overflow-hidden flex items-center justify-center"
+                            className="absolute bg-transparent shadow-[0_8px_30px_rgba(0,0,0,0.04)]"
                             style={{
                                 width: renderData.width,
-                                height: renderData.height,
+                                height: 'auto',
                                 left: renderData.x,
                                 top: renderData.y,
                                 transform: 'translate(-50%, -50%)',
@@ -299,7 +296,7 @@ export default function FreeDive() {
                                     src={renderData.item.url}
                                     alt=""
                                     loading="lazy"
-                                    className="w-full h-full object-cover pointer-events-none opacity-90 hover:opacity-100 transition-opacity duration-300"
+                                    className="w-full h-auto pointer-events-none opacity-90 hover:opacity-100 transition-opacity duration-300 block bg-black/5"
                                 />
                             )}
                         </div>
