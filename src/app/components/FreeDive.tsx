@@ -58,22 +58,35 @@ export default function FreeDive() {
     const cY = useRef(0);
     const cZ = useRef(3.0);
     const canvasRef = useRef<HTMLDivElement>(null);
+    const peepholeRef = useRef<HTMLDivElement>(null);
     const lastBounds = useRef({ startCol: -2, endCol: 2, startRow: -2, endRow: 2 });
     const [visibleBounds, setVisibleBounds] = useState({ startCol: -1, endCol: 1, startRow: -1, endRow: 1 });
     const isDragging = useRef(false);
     const lastPan = useRef({ x: 0, y: 0 });
+    const [landingDone, setLandingDone] = useState(false);
 
-    // Initial landing animation (Zoom out, then zoom in)
+    // Fisheye keyhole landing animation
     useEffect(() => {
-        // Quickly zoom out
-        tZ.current = 0.3;
+        // Start deeply zoomed in and off-kilter
+        tZ.current = 4.0;
+        cZ.current = 4.0;
 
-        // After 1.5 seconds, zoom into normal level
-        const timer = setTimeout(() => {
+        // Phase 1: after a brief pause, zoom out to reveal the canvas
+        const t1 = setTimeout(() => {
+            tZ.current = 0.5;
+        }, 300);
+
+        // Phase 2: settle to normal
+        const t2 = setTimeout(() => {
             tZ.current = 1.0;
-        }, 1500);
+        }, 2000);
 
-        return () => clearTimeout(timer);
+        // Mark landing done (remove overlay)
+        const t3 = setTimeout(() => {
+            setLandingDone(true);
+        }, 2800);
+
+        return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
     }, []);
 
     // Animation loop (optimized natively, bypassing React lifecycle)
@@ -267,85 +280,117 @@ export default function FreeDive() {
 
     return (
         <div
-            className="fixed inset-0 bg-[#f7f6f0] text-[#111] select-none overflow-hidden"
+            className="fixed inset-0 bg-[#111] text-[#111] select-none overflow-hidden"
             style={{ fontFamily: "'Champagne & Limousines', sans-serif" }}
         >
-            {/* Canvas drag surface — sits behind nav */}
+            {/* Fisheye peephole layer */}
             <div
-                className="absolute inset-0 touch-none z-0"
-                onWheel={handleWheel}
-                onPointerDown={handlePointerDown}
-                onPointerMove={handlePointerMove}
-                onPointerUp={handlePointerUp}
-                onPointerCancel={handlePointerUp}
-            />
-
-            {/* Header / Nav — on top, pointer events fully independent */}
-            <nav className="absolute top-0 w-full flex justify-between items-center px-6 pt-4 pb-0 md:px-12 z-50">
-                <div className="flex-none">
-                    <button onClick={() => navigate('/')} className="text-[9px] md:text-[11px] font-bold uppercase transition-opacity hover:opacity-50">LEE JAEWOONG</button>
-                </div>
-                <div className="flex-1 flex justify-end items-center gap-6 md:gap-16">
-                    <button className="text-[9px] md:text-[11px] font-bold uppercase transition-opacity hover:opacity-50 opacity-40">FREE DIVE</button>
-                </div>
-            </nav>
-
-            {/* Helper overlay */}
-            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-40 text-center pointer-events-none opacity-40 mix-blend-multiply">
-                <span className="text-[9px] uppercase font-bold tracking-[0.2em] px-4 py-2">
-                    Drag, Scroll Wheel, or Arrow Keys
-                </span>
-            </div>
-
-            {/* Virtual Canvas */}
-            <div
-                ref={canvasRef}
-                className="absolute top-1/2 left-1/2 origin-center z-10"
+                ref={peepholeRef}
+                className="absolute inset-0 bg-[#f7f6f0] z-[1]"
                 style={{
-                    transform: `translate(-50%, -50%) scale(${cZ.current}) translate(${cX.current}px, ${cY.current}px)`,
-                    willChange: 'transform'
+                    clipPath: landingDone ? 'circle(100% at 50% 50%)' : undefined,
+                    animation: landingDone ? 'none' : 'fisheyeOpen 2.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
                 }}
             >
-                {mediaItems.length === 0 ? (
-                    <div className="absolute top-0 left-0 -translate-x-1/2 -translate-y-1/2 text-center opacity-30 mt-[-20px]">
-                        <p className="text-2xl tracking-[0.2em] font-bold uppercase">FREE DIVE</p>
-                        <p className="mt-2 text-[10px] tracking-widest">Awaiting Media...</p>
+                {/* Canvas drag surface */}
+                <div
+                    className="absolute inset-0 touch-none z-0"
+                    onWheel={handleWheel}
+                    onPointerDown={handlePointerDown}
+                    onPointerMove={handlePointerMove}
+                    onPointerUp={handlePointerUp}
+                    onPointerCancel={handlePointerUp}
+                />
+
+                {/* Header / Nav — on top, pointer events fully independent */}
+                <nav className="absolute top-0 w-full flex justify-between items-center px-6 pt-4 pb-0 md:px-12 z-50">
+                    <div className="flex-none">
+                        <button onClick={() => navigate('/')} className="text-[9px] md:text-[11px] font-bold uppercase transition-opacity hover:opacity-50">LEE JAEWOONG</button>
                     </div>
-                ) : (
-                    visibleItems.map(renderData => (
-                        <div
-                            key={renderData.key}
-                            className="absolute bg-transparent shadow-[0_8px_30px_rgba(0,0,0,0.04)]"
-                            style={{
-                                width: renderData.width,
-                                height: 'auto',
-                                left: renderData.x,
-                                top: renderData.y,
-                                transform: 'translate(-50%, -50%)',
-                                willChange: 'transform'
-                            }}
-                        >
-                            {renderData.item.type === 'video' ? (
-                                <VideoItem
-                                    src={renderData.item.url}
-                                    onClick={() => handleItemClick(renderData.x, renderData.y)}
-                                />
-                            ) : (
-                                <img
-                                    src={renderData.item.url}
-                                    alt=""
-                                    loading="lazy"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleItemClick(renderData.x, renderData.y);
-                                    }}
-                                    className="w-full h-auto pointer-events-auto cursor-pointer opacity-90 hover:opacity-100 transition-opacity duration-300 block bg-black/5"
-                                />
-                            )}
+                    <div className="flex-1 flex justify-end items-center gap-6 md:gap-16">
+                        <button className="text-[9px] md:text-[11px] font-bold uppercase transition-opacity hover:opacity-50 opacity-40">FREE DIVE</button>
+                    </div>
+                </nav>
+
+                {/* Helper overlay */}
+                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-40 text-center pointer-events-none opacity-40 mix-blend-multiply">
+                    <span className="text-[9px] uppercase font-bold tracking-[0.2em] px-4 py-2">
+                        Drag, Scroll Wheel, or Arrow Keys
+                    </span>
+                </div>
+
+                {/* Virtual Canvas */}
+                <div
+                    ref={canvasRef}
+                    className="absolute top-1/2 left-1/2 origin-center z-10"
+                    style={{
+                        transform: `translate(-50%, -50%) scale(${cZ.current}) translate(${cX.current}px, ${cY.current}px)`,
+                        willChange: 'transform'
+                    }}
+                >
+                    {mediaItems.length === 0 ? (
+                        <div className="absolute top-0 left-0 -translate-x-1/2 -translate-y-1/2 text-center opacity-30 mt-[-20px]">
+                            <p className="text-2xl tracking-[0.2em] font-bold uppercase">FREE DIVE</p>
+                            <p className="mt-2 text-[10px] tracking-widest">Awaiting Media...</p>
                         </div>
-                    ))
-                )}
+                    ) : (
+                        visibleItems.map(renderData => (
+                            <div
+                                key={renderData.key}
+                                className="absolute bg-transparent shadow-[0_8px_30px_rgba(0,0,0,0.04)]"
+                                style={{
+                                    width: renderData.width,
+                                    height: 'auto',
+                                    left: renderData.x,
+                                    top: renderData.y,
+                                    transform: 'translate(-50%, -50%)',
+                                    willChange: 'transform'
+                                }}
+                            >
+                                {renderData.item.type === 'video' ? (
+                                    <VideoItem
+                                        src={renderData.item.url}
+                                        onClick={() => handleItemClick(renderData.x, renderData.y)}
+                                    />
+                                ) : (
+                                    <img
+                                        src={renderData.item.url}
+                                        alt=""
+                                        loading="lazy"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleItemClick(renderData.x, renderData.y);
+                                        }}
+                                        className="w-full h-auto pointer-events-auto cursor-pointer opacity-90 hover:opacity-100 transition-opacity duration-300 block bg-black/5"
+                                    />
+                                )}
+                            </div>
+                        ))
+                    )}
+                </div>
             </div>
+
+            {/* CSS Keyframes for the fisheye opening */}
+            <style>{`
+                @keyframes fisheyeOpen {
+                    0% {
+                        clip-path: circle(2% at 50% 50%);
+                        filter: blur(8px) brightness(0.6);
+                    }
+                    30% {
+                        clip-path: circle(8% at 50% 50%);
+                        filter: blur(4px) brightness(0.8);
+                    }
+                    60% {
+                        clip-path: circle(35% at 50% 50%);
+                        filter: blur(1px) brightness(0.95);
+                    }
+                    100% {
+                        clip-path: circle(100% at 50% 50%);
+                        filter: blur(0px) brightness(1);
+                    }
+                }
+            `}</style>
         </div>
     );
 }
