@@ -10,10 +10,7 @@ import { auth } from './firebase';
 
 const ADMIN_EMAIL = 'ljwoong1104@gmail.com';
 
-// 로그인 유지 설정 (브라우저 종료 후에도 유지)
-if (auth) {
-    setPersistence(auth, browserLocalPersistence).catch(console.error);
-}
+// 로그인 유지 설정은 로그인 함수 내부에서 실행합니다.
 
 /**
  * 이메일/비밀번호 로그인
@@ -28,6 +25,7 @@ export async function adminLogin(id: string, password: string): Promise<{ succes
     const email = id.includes('@') ? id : ADMIN_EMAIL;
 
     try {
+        await setPersistence(auth, browserLocalPersistence);
         const result = await signInWithEmailAndPassword(auth, email, password);
         if (result.user.email !== ADMIN_EMAIL) {
             await signOut(auth);
