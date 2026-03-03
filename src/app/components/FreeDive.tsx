@@ -276,7 +276,9 @@ export default function FreeDive() {
             onPointerCancel={handlePointerUp}
         >
             {/* Header / Nav */}
-            <nav className="absolute top-0 w-full flex justify-between items-center px-6 pt-4 pb-0 md:px-12 pointer-events-auto z-50">
+            <nav className="absolute top-0 w-full flex justify-between items-center px-6 pt-4 pb-0 md:px-12 pointer-events-auto z-50"
+                onPointerDown={(e) => e.stopPropagation()}
+            >
                 <div className="flex-none">
                     <button onClick={() => navigate('/')} className="text-[9px] md:text-[11px] font-bold uppercase transition-opacity hover:opacity-50">LEE JAEWOONG</button>
                 </div>
