@@ -29,6 +29,7 @@ export default function AdminPage() {
     const [notification, setNotification] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const mediaFileInputRef = useRef<HTMLInputElement>(null);
+    const freediveFileInputRef = useRef<HTMLInputElement>(null);
     const [uploadingImage, setUploadingImage] = useState(false);
 
     // Auth 체크
@@ -95,6 +96,38 @@ export default function AdminPage() {
         setUploadingImage(false);
     };
 
+    const handleFreediveUpload = async (files: FileList) => {
+        setUploadingImage(true);
+        showNotification('업로드 중...');
+        let maxId = data?.projects.reduce((max, p) => Math.max(max, p.id), 0) || 0;
+
+        let successCount = 0;
+        for (const file of Array.from(files)) {
+            try {
+                const url = await uploadImage(file);
+                const type = isVideoFile(file) ? 'video' : 'image';
+                maxId++;
+                const newProject: Project = {
+                    id: maxId,
+                    title: type,
+                    year: new Date().getFullYear().toString(),
+                    desc: '',
+                    image: '', // We use the media array exclusively for freedive to track type
+                    media: [{ url, type }],
+                    aspect: 'aspect-[1/1]'
+                };
+                await addProject('freedive', newProject);
+                successCount++;
+            } catch (err) {
+                console.error(err);
+                showNotification(`"${file.name}" 실패`);
+            }
+        }
+        showNotification(`${successCount}개 미디어 업로드 완료 ✓`);
+        setUploadingImage(false);
+        await loadData();
+    };
+
     const removeMedia = (index: number) => {
         if (!editingProject) return;
         const newMedia = [...(editingProject.media || [])];
@@ -123,13 +156,14 @@ export default function AdminPage() {
         setSaving(false);
     };
 
-    const handleDeleteProject = async (project: Project) => {
-        if (!confirm(`"${project.title}" 프로젝트를 삭제하시겠습니까?`)) return;
+    const handleDeleteProject = async (project: Project, isFreedive: boolean = false) => {
+        const msg = isFreedive ? `해당 미디어를 삭제하시겠습니까?` : `"${project.title}" 프로젝트를 삭제하시겠습니까?`;
+        if (!confirm(msg)) return;
         setSaving(true);
         try {
             await deleteProject(activeCategory, `project-${project.id}`);
             showNotification('삭제 완료');
-            setEditingProject(null);
+            if (editingProject?.id === project.id) setEditingProject(null);
             await loadData();
         } catch (err: any) {
             showNotification(`삭제 실패: ${err.message || err}`);
@@ -172,7 +206,7 @@ export default function AdminPage() {
     }
 
     return (
-        <div className="min-h-screen bg-[#f7f6f0] text-[#111] font-sans">
+        <div className="min-h-screen bg-[#f7f6f0] text-[#111] font-sans pb-32">
             {/* Hidden file inputs */}
             <input
                 ref={fileInputRef}
@@ -194,6 +228,18 @@ export default function AdminPage() {
                 onChange={e => {
                     const files = e.target.files;
                     if (files && files.length > 0) handleMediaUpload(files);
+                    e.target.value = '';
+                }}
+            />
+            <input
+                ref={freediveFileInputRef}
+                type="file"
+                accept="image/*,video/*"
+                multiple
+                className="hidden"
+                onChange={e => {
+                    const files = e.target.files;
+                    if (files && files.length > 0) handleFreediveUpload(files);
                     e.target.value = '';
                 }}
             />
@@ -236,7 +282,7 @@ export default function AdminPage() {
 
             <div className="max-w-6xl mx-auto px-6 md:px-12 py-8">
                 {/* Category Tabs */}
-                <div className="flex gap-1 mb-8 border-b border-[#111]/10">
+                <div className="flex gap-1 mb-8 border-b border-[#111]/10 flex-wrap">
                     {CATEGORIES.map(cat => (
                         <button
                             key={cat}
@@ -265,67 +311,111 @@ export default function AdminPage() {
                             </div>
                         )}
 
-                        {/* Project Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                            {data?.projects.map(project => (
+                        {/* Project / Media Grid */}
+                        <div className={`grid gap-6 mb-8 ${activeCategory === 'freedive' ? 'grid-cols-2 md:grid-cols-4 lg:grid-cols-5' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
+                            {data?.projects.map(project => {
+                                if (activeCategory === 'freedive') {
+                                    // FREEDIVE: Simple media tile
+                                    return (
+                                        <motion.div
+                                            key={project.id}
+                                            layout
+                                            className="relative aspect-square overflow-hidden bg-[#e5e4de] group rounded-sm shadow-sm border border-[#111]/5"
+                                        >
+                                            {project.media && project.media.length > 0 ? (
+                                                project.media[0].type === 'video' ? (
+                                                    <video src={project.media[0].url} className="w-full h-full object-cover" muted autoPlay loop playsInline />
+                                                ) : (
+                                                    <img src={project.media[0].url} className="w-full h-full object-cover" alt="" />
+                                                )
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-[10px] opacity-20 uppercase">No Media</div>
+                                            )}
+
+                                            {/* Hover Delete Button */}
+                                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors"></div>
+                                            <button
+                                                onClick={() => handleDeleteProject(project, true)}
+                                                className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-[4px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm z-10 hover:bg-red-600"
+                                                title="Delete Media"
+                                            >
+                                                ×
+                                            </button>
+                                        </motion.div>
+                                    );
+                                }
+
+                                // NORMAL PROJECT TILE
+                                return (
+                                    <motion.div
+                                        key={project.id}
+                                        layout
+                                        className={`group border border-[#111]/10 cursor-pointer transition-all hover:border-[#111]/30 ${editingProject?.id === project.id ? 'ring-2 ring-[#111]' : ''}`}
+                                        onClick={() => setEditingProject({ ...project, media: project.media || [] })}
+                                    >
+                                        <div className="aspect-[4/3] overflow-hidden bg-[#e5e4de] relative">
+                                            {project.image ? (
+                                                <img src={project.image} alt={project.title} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-[10px] uppercase tracking-widest opacity-20">
+                                                    No Image
+                                                </div>
+                                            )}
+                                            {/* Media count badge */}
+                                            {project.media && project.media.length > 0 && (
+                                                <div className="absolute top-2 right-2 bg-[#111] text-[#f7f6f0] text-[9px] px-2 py-0.5 uppercase tracking-wider">
+                                                    {project.media.length} media
+                                                </div>
+                                            )}
+                                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                                                <span className="text-[#f7f6f0] text-[10px] uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    Edit
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="p-4">
+                                            <div className="flex justify-between items-baseline">
+                                                <h3 className="text-[11px] uppercase tracking-widest">{project.title || 'Untitled'}</h3>
+                                                <span className="text-[10px] font-mono opacity-30">{project.year}</span>
+                                            </div>
+                                            <p className="text-[10px] mt-1 opacity-40">{project.desc}</p>
+                                        </div>
+                                    </motion.div>
+                                );
+                            })}
+
+                            {/* Add New Card */}
+                            {activeCategory === 'freedive' ? (
                                 <motion.div
-                                    key={project.id}
                                     layout
-                                    className={`group border border-[#111]/10 cursor-pointer transition-all hover:border-[#111]/30 ${editingProject?.id === project.id ? 'ring-2 ring-[#111]' : ''
-                                        }`}
-                                    onClick={() => setEditingProject({ ...project, media: project.media || [] })}
+                                    onClick={() => freediveFileInputRef.current?.click()}
+                                    className={`aspect-square border border-dashed border-[#111]/30 cursor-pointer hover:border-[#111]/60 hover:bg-[#111]/5 transition-all flex flex-col items-center justify-center rounded-sm ${uploadingImage ? 'opacity-50 pointer-events-none' : ''}`}
                                 >
-                                    <div className="aspect-[4/3] overflow-hidden bg-[#e5e4de] relative">
-                                        {project.image ? (
-                                            <img src={project.image} alt={project.title} className="w-full h-full object-cover" />
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-[10px] uppercase tracking-widest opacity-20">
-                                                No Image
-                                            </div>
-                                        )}
-                                        {/* Media count badge */}
-                                        {project.media && project.media.length > 0 && (
-                                            <div className="absolute top-2 right-2 bg-[#111] text-[#f7f6f0] text-[9px] px-2 py-0.5 uppercase tracking-wider">
-                                                {project.media.length} media
-                                            </div>
-                                        )}
-                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                                            <span className="text-[#f7f6f0] text-[10px] uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
-                                                Edit
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div className="p-4">
-                                        <div className="flex justify-between items-baseline">
-                                            <h3 className="text-[11px] uppercase tracking-widest">{project.title || 'Untitled'}</h3>
-                                            <span className="text-[10px] font-mono opacity-30">{project.year}</span>
-                                        </div>
-                                        <p className="text-[10px] mt-1 opacity-40">{project.desc}</p>
+                                    <span className="text-2xl opacity-40 mb-2">{uploadingImage ? '...' : '+'}</span>
+                                    <span className="text-[10px] uppercase tracking-widest opacity-40">{uploadingImage ? 'Uploading' : 'Upload Media'}</span>
+                                </motion.div>
+                            ) : (
+                                <motion.div
+                                    layout
+                                    onClick={handleNewProject}
+                                    className="border border-dashed border-[#111]/20 cursor-pointer hover:border-[#111]/40 transition-all flex items-center justify-center min-h-[240px]"
+                                >
+                                    <div className="text-center">
+                                        <span className="text-2xl opacity-20 block mb-2">+</span>
+                                        <span className="text-[10px] uppercase tracking-widest opacity-30">Add Project</span>
                                     </div>
                                 </motion.div>
-                            ))}
-
-                            {/* Add New Project Card */}
-                            <motion.div
-                                layout
-                                onClick={handleNewProject}
-                                className="border border-dashed border-[#111]/20 cursor-pointer hover:border-[#111]/40 transition-all flex items-center justify-center min-h-[240px]"
-                            >
-                                <div className="text-center">
-                                    <span className="text-2xl opacity-20 block mb-2">+</span>
-                                    <span className="text-[10px] uppercase tracking-widest opacity-30">Add Project</span>
-                                </div>
-                            </motion.div>
+                            )}
                         </div>
 
-                        {/* Edit Panel */}
+                        {/* Normal Project Edit Panel (Hidden for Freedive) */}
                         <AnimatePresence>
-                            {editingProject && (
+                            {editingProject && activeCategory !== 'freedive' && (
                                 <motion.div
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: 20 }}
-                                    className="sticky bottom-0 bg-white border-t border-[#111]/10 shadow-[0_-4px_24px_rgba(0,0,0,0.08)] p-6 md:p-8 -mx-6 md:-mx-12"
+                                    className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#111]/10 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] p-6 md:p-8 z-50 overflow-y-auto max-h-[85vh]"
                                 >
                                     <div className="max-w-6xl mx-auto">
                                         <div className="flex justify-between items-center mb-6">
@@ -336,7 +426,7 @@ export default function AdminPage() {
                                                 onClick={() => setEditingProject(null)}
                                                 className="text-[10px] uppercase tracking-widest opacity-40 hover:opacity-100 transition-opacity"
                                             >
-                                                Cancel
+                                                Close
                                             </button>
                                         </div>
 
