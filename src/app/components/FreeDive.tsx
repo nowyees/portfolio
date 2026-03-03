@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
-import { getAllProjects } from '../../lib/portfolioService';
+import { getPortfolioByCategory } from '../../lib/portfolioService';
 
 const CELL_W = 460;
 const CELL_H = 640;
@@ -20,8 +20,12 @@ export default function FreeDive() {
     // Fetch projects
     useEffect(() => {
         document.body.style.overflow = 'hidden';
-        getAllProjects().then(projects => {
-            const freeDiveProjects = projects.filter(p => p.category === 'freedive');
+        getPortfolioByCategory('freedive').then(categoryData => {
+            if (!categoryData) {
+                setMediaItems([]);
+                return;
+            }
+            const freeDiveProjects = categoryData.projects;
             let extracted: any[] = [];
             freeDiveProjects.forEach((project) => {
                 if (project.image) extracted.push({ id: `p-${project.id}-main`, url: project.image, type: 'image' });
