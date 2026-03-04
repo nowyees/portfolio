@@ -64,27 +64,13 @@ export default function FreeDive() {
     const lastPan = useRef({ x: 0, y: 0 });
     const [landingDone, setLandingDone] = useState(false);
 
-    // Burst landing animation
+    // Slide-up landing animation
     useEffect(() => {
-        tZ.current = 1.5;
-        cZ.current = 1.5;
+        tZ.current = 1.0;
+        cZ.current = 1.0;
 
-        // Burst outward after a brief moment
-        const t1 = setTimeout(() => {
-            tZ.current = 0.6;
-        }, 100);
-
-        // Settle to normal
-        const t2 = setTimeout(() => {
-            tZ.current = 1.0;
-        }, 1200);
-
-        // Mark landing done
-        const t3 = setTimeout(() => {
-            setLandingDone(true);
-        }, 2000);
-
-        return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+        const t = setTimeout(() => setLandingDone(true), 800);
+        return () => clearTimeout(t);
     }, []);
 
     // Animation loop (optimized natively, bypassing React lifecycle)
@@ -279,7 +265,10 @@ export default function FreeDive() {
     return (
         <div
             className="fixed inset-0 bg-[#f7f6f0] text-[#111] select-none overflow-hidden"
-            style={{ fontFamily: "'Champagne & Limousines', sans-serif" }}
+            style={{
+                fontFamily: "'Champagne & Limousines', sans-serif",
+                animation: 'slideUpIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards',
+            }}
         >
             {/* Canvas drag surface */}
             <div
@@ -317,51 +306,46 @@ export default function FreeDive() {
                     willChange: 'transform'
                 }}
             >
-                {visibleItems.map(renderData => {
-                    // During landing: items cluster at center (0,0). After: normal positions.
-                    const burstX = landingDone ? renderData.x : 0;
-                    const burstY = landingDone ? renderData.y : 0;
-                    const burstScale = landingDone ? 1 : 0.3;
-                    const burstOpacity = landingDone ? 0.9 : 0.7;
-
-                    return (
-                        <div
-                            key={renderData.key}
-                            className="absolute bg-transparent shadow-[0_8px_30px_rgba(0,0,0,0.04)]"
-                            style={{
-                                width: renderData.width,
-                                height: 'auto',
-                                left: burstX,
-                                top: burstY,
-                                transform: `translate(-50%, -50%) scale(${burstScale})`,
-                                opacity: burstOpacity,
-                                transition: landingDone
-                                    ? 'left 1.4s cubic-bezier(0.16, 1, 0.3, 1), top 1.4s cubic-bezier(0.16, 1, 0.3, 1), transform 1.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.8s ease'
-                                    : 'none',
-                                willChange: 'left, top, transform, opacity'
-                            }}
-                        >
-                            {renderData.item.type === 'video' ? (
-                                <VideoItem
-                                    src={renderData.item.url}
-                                    onClick={() => handleItemClick(renderData.x, renderData.y)}
-                                />
-                            ) : (
-                                <img
-                                    src={renderData.item.url}
-                                    alt=""
-                                    loading="lazy"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleItemClick(renderData.x, renderData.y);
-                                    }}
-                                    className="w-full h-auto pointer-events-auto cursor-pointer hover:opacity-100 transition-opacity duration-300 block bg-black/5"
-                                />
-                            )}
-                        </div>
-                    );
-                })}
+                {visibleItems.map(renderData => (
+                    <div
+                        key={renderData.key}
+                        className="absolute bg-transparent shadow-[0_8px_30px_rgba(0,0,0,0.04)]"
+                        style={{
+                            width: renderData.width,
+                            height: 'auto',
+                            left: renderData.x,
+                            top: renderData.y,
+                            transform: 'translate(-50%, -50%)',
+                            willChange: 'transform'
+                        }}
+                    >
+                        {renderData.item.type === 'video' ? (
+                            <VideoItem
+                                src={renderData.item.url}
+                                onClick={() => handleItemClick(renderData.x, renderData.y)}
+                            />
+                        ) : (
+                            <img
+                                src={renderData.item.url}
+                                alt=""
+                                loading="lazy"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleItemClick(renderData.x, renderData.y);
+                                }}
+                                className="w-full h-auto pointer-events-auto cursor-pointer opacity-90 hover:opacity-100 transition-opacity duration-300 block bg-black/5"
+                            />
+                        )}
+                    </div>
+                ))}
             </div>
+
+            <style>{`
+                @keyframes slideUpIn {
+                    from { transform: translateY(100%); }
+                    to { transform: translateY(0); }
+                }
+            `}</style>
         </div>
     );
 }
