@@ -64,13 +64,26 @@ export default function FreeDive() {
     const lastPan = useRef({ x: 0, y: 0 });
     const [landingDone, setLandingDone] = useState(false);
 
-    // Slide-up landing animation
+    // Slide-up + zoom-out/zoom-in landing animation
     useEffect(() => {
-        tZ.current = 1.0;
-        cZ.current = 1.0;
+        // Start zoomed in
+        tZ.current = 2.5;
+        cZ.current = 2.5;
 
-        const t = setTimeout(() => setLandingDone(true), 800);
-        return () => clearTimeout(t);
+        // Zoom out after slide-up completes
+        const t1 = setTimeout(() => {
+            tZ.current = 0.55;
+        }, 600);
+
+        // Zoom back in to normal
+        const t2 = setTimeout(() => {
+            tZ.current = 1.0;
+        }, 1600);
+
+        // Mark landing done
+        const t3 = setTimeout(() => setLandingDone(true), 2400);
+
+        return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
     }, []);
 
     // Animation loop (optimized natively, bypassing React lifecycle)
