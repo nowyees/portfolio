@@ -12,6 +12,7 @@ export default function ProjectDetail() {
     const [project, setProject] = useState<Project | null>(null);
     const [loading, setLoading] = useState(true);
     const [contactOpen, setContactOpen] = useState(false);
+    const [cols, setCols] = useState<1 | 2 | 4>(1);
 
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -156,8 +157,52 @@ export default function ProjectDetail() {
                 )}
             </motion.div>
 
-            {/* Media Gallery — Full-Width Vertical Scroll */}
-            <div className="px-4 md:px-12 lg:px-24 pb-32 relative z-10 space-y-6 md:space-y-10">
+            {/* Layout Navigator */}
+            <div className="fixed bottom-8 right-8 z-50 flex items-center gap-2 bg-white/80 backdrop-blur-md rounded-full px-3 py-2 shadow-lg border border-[#111]/10">
+                {([1, 2, 4] as const).map(n => (
+                    <button
+                        key={n}
+                        onClick={() => setCols(n)}
+                        className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 ${cols === n
+                                ? 'bg-[#111] text-[#f7f6f0]'
+                                : 'hover:bg-[#111]/10 text-[#111]/50'
+                            }`}
+                        title={`${n} column${n > 1 ? 's' : ''}`}
+                    >
+                        {/* Grid icon */}
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            {n === 1 && (
+                                <rect x="2" y="1" width="10" height="12" rx="1" stroke="currentColor" strokeWidth="1.3" />
+                            )}
+                            {n === 2 && (
+                                <>
+                                    <rect x="1" y="1" width="5" height="12" rx="1" stroke="currentColor" strokeWidth="1.3" />
+                                    <rect x="8" y="1" width="5" height="12" rx="1" stroke="currentColor" strokeWidth="1.3" />
+                                </>
+                            )}
+                            {n === 4 && (
+                                <>
+                                    <rect x="1" y="1" width="5" height="5" rx="0.5" stroke="currentColor" strokeWidth="1.2" />
+                                    <rect x="8" y="1" width="5" height="5" rx="0.5" stroke="currentColor" strokeWidth="1.2" />
+                                    <rect x="1" y="8" width="5" height="5" rx="0.5" stroke="currentColor" strokeWidth="1.2" />
+                                    <rect x="8" y="8" width="5" height="5" rx="0.5" stroke="currentColor" strokeWidth="1.2" />
+                                </>
+                            )}
+                        </svg>
+                    </button>
+                ))}
+            </div>
+
+            {/* Media Gallery — Responsive Grid */}
+            <div
+                className="px-4 md:px-12 lg:px-24 pb-32 relative z-10"
+                style={{
+                    display: 'grid',
+                    gridTemplateColumns: `repeat(${cols}, 1fr)`,
+                    gap: cols === 1 ? '2.5rem' : cols === 2 ? '1.5rem' : '1rem',
+                    transition: 'all 0.4s cubic-bezier(0.22, 1, 0.36, 1)',
+                }}
+            >
                 {allMedia.map((media, i) => (
                     <motion.div
                         key={i}
@@ -165,7 +210,8 @@ export default function ProjectDetail() {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true, margin: '-80px' }}
                         transition={{ duration: 0.8, delay: i * 0.05, ease: [0.25, 1, 0.5, 1] }}
-                        className="w-full flex justify-center"
+                        className="w-full"
+                        layout
                     >
                         {media.type === 'video' || isVideoUrl(media.url) ? (
                             <video
@@ -173,14 +219,16 @@ export default function ProjectDetail() {
                                 controls
                                 playsInline
                                 muted
-                                className="w-full max-w-5xl h-auto object-contain bg-black/5"
+                                className="w-full h-auto bg-black/5"
+                                style={{ objectFit: 'contain' }}
                             />
                         ) : (
                             <img
                                 src={media.url}
                                 alt={`${project.title} — ${i + 1}`}
                                 loading="lazy"
-                                className="w-full max-w-5xl h-auto object-contain bg-black/5"
+                                className="w-full h-auto bg-black/5"
+                                style={{ objectFit: 'contain' }}
                             />
                         )}
                     </motion.div>
