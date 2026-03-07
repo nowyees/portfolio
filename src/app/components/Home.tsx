@@ -162,7 +162,7 @@ export default function Home() {
                 </div>
 
                 <div className="mb-2">
-                  <p className="text-base md:text-lg leading-relaxed opacity-60 text-justify font-['Pretendard',sans-serif]">
+                  <p className="text-sm md:text-base leading-normal opacity-60 text-justify font-['Pretendard',sans-serif]">
                     {activeProject.desc}
                   </p>
                 </div>

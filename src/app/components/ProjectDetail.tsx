@@ -195,7 +195,7 @@ export default function ProjectDetail() {
                     </h1>
 
                     <div className="w-full max-w-3xl mx-auto flex flex-col items-start text-left">
-                        <p className="text-lg md:text-xl leading-relaxed opacity-60 font-['Pretendard',sans-serif]">
+                        <p className="text-base md:text-lg leading-normal opacity-60 font-['Pretendard',sans-serif]">
                             {project.desc}
                         </p>
 
