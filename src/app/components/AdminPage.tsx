@@ -143,12 +143,17 @@ export default function AdminPage() {
         if (!editingProject || !data) return;
         setSaving(true);
         try {
+            const cleanedProject = {
+                ...editingProject,
+                hashtags: editingProject.hashtags?.map(t => t.trim()).filter(Boolean) || []
+            };
+
             const docId = `project-${editingProject.id}`;
             const exists = data.projects.some(p => p.id === editingProject.id);
             if (exists) {
-                await updateProject(activeCategory, docId, editingProject);
+                await updateProject(activeCategory, docId, cleanedProject);
             } else {
-                await addProject(activeCategory, editingProject);
+                await addProject(activeCategory, cleanedProject);
             }
             showNotification('저장 완료 ✓');
             setEditingProject(null);
@@ -537,9 +542,9 @@ export default function AdminPage() {
                                                     <label className="block text-[9px] uppercase tracking-widest mb-1 opacity-40 text-blue-600 font-bold">Hashtags (Comma Separated)</label>
                                                     <input
                                                         type="text"
-                                                        value={editingProject.hashtags?.join(', ') || ''}
+                                                        value={(editingProject.hashtags || []).join(',')}
                                                         onChange={e => {
-                                                            const arr = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
+                                                            const arr = e.target.value.split(',');
                                                             setEditingProject({ ...editingProject, hashtags: arr });
                                                         }}
                                                         placeholder="e.g. fashion, editorial, 2024"
