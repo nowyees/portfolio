@@ -1,0 +1,402 @@
+﻿{
+    "documents":  [
+                      {
+                          "name":  "projects/portfolio-e24ac/databases/(default)/documents/portfolios/portfolio/projects/project-1",
+                          "fields":  {
+                                         "title":  {
+                                                       "stringValue":  "OFFICK"
+                                                   },
+                                         "id":  {
+                                                    "integerValue":  "1"
+                                                },
+                                         "hashtags":  {
+                                                          "arrayValue":  {
+                                                                             "values":  [
+                                                                                            {
+                                                                                                "stringValue":  "fashion"
+                                                                                            }
+                                                                                        ]
+                                                                         }
+                                                      },
+                                         "year":  {
+                                                      "stringValue":  "2026"
+                                                  },
+                                         "desc":  {
+                                                      "stringValue":  "지겨운 회사속 작은 반항을 표현하는 패션 브랜드 일반적인 오피스룩을 과감히 잘라 투피스로 배치하고 발레코어의 언발란스함으로 반항적인 무드를 표현"
+                                                  },
+                                         "aspect":  {
+                                                        "stringValue":  "aspect-[3/4]"
+                                                    },
+                                         "media":  {
+                                                       "arrayValue":  {
+                                                                          "values":  [
+                                                                                         {
+                                                                                             "mapValue":  {
+                                                                                                              "fields":  {
+                                                                                                                             "type":  {
+                                                                                                                                          "stringValue":  "image"
+                                                                                                                                      },
+                                                                                                                             "url":  {
+                                                                                                                                         "stringValue":  "https://res.cloudinary.com/dwxglojis/image/upload/v1772406789/portfolio/sarlkxcj0rnnu9brkqi3.jpg"
+                                                                                                                                     }
+                                                                                                                         }
+                                                                                                          }
+                                                                                         },
+                                                                                         {
+                                                                                             "mapValue":  {
+                                                                                                              "fields":  {
+                                                                                                                             "type":  {
+                                                                                                                                          "stringValue":  "image"
+                                                                                                                                      },
+                                                                                                                             "url":  {
+                                                                                                                                         "stringValue":  "https://res.cloudinary.com/dwxglojis/image/upload/v1772406799/portfolio/ghdq6y00nugevexmmyqf.jpg"
+                                                                                                                                     }
+                                                                                                                         }
+                                                                                                          }
+                                                                                         },
+                                                                                         {
+                                                                                             "mapValue":  {
+                                                                                                              "fields":  {
+                                                                                                                             "type":  {
+                                                                                                                                          "stringValue":  "image"
+                                                                                                                                      },
+                                                                                                                             "url":  {
+                                                                                                                                         "stringValue":  "https://res.cloudinary.com/dwxglojis/image/upload/v1772515657/portfolio/nv3l84ssitmekieimttb.png"
+                                                                                                                                     }
+                                                                                                                         }
+                                                                                                          }
+                                                                                         },
+                                                                                         {
+                                                                                             "mapValue":  {
+                                                                                                              "fields":  {
+                                                                                                                             "url":  {
+                                                                                                                                         "stringValue":  "https://res.cloudinary.com/dwxglojis/image/upload/v1772516045/portfolio/d9vjkojjythexrnvvo4t.png"
+                                                                                                                                     },
+                                                                                                                             "type":  {
+                                                                                                                                          "stringValue":  "image"
+                                                                                                                                      }
+                                                                                                                         }
+                                                                                                          }
+                                                                                         },
+                                                                                         {
+                                                                                             "mapValue":  {
+                                                                                                              "fields":  {
+                                                                                                                             "type":  {
+                                                                                                                                          "stringValue":  "image"
+                                                                                                                                      },
+                                                                                                                             "url":  {
+                                                                                                                                         "stringValue":  "https://res.cloudinary.com/dwxglojis/image/upload/v1772516124/portfolio/ucwkx0ah4qkgbixq5ydy.png"
+                                                                                                                                     }
+                                                                                                                         }
+                                                                                                          }
+                                                                                         }
+                                                                                     ]
+                                                                      }
+                                                   },
+                                         "image":  {
+                                                       "stringValue":  "https://res.cloudinary.com/dwxglojis/image/upload/v1772908555/portfolio/qahdgjkdejgqngvdlv1a.png"
+                                                   }
+                                     },
+                          "createTime":  "2026-03-07T15:52:37.144506Z",
+                          "updateTime":  "2026-03-07T18:35:58.102306Z"
+                      },
+                      {
+                          "name":  "projects/portfolio-e24ac/databases/(default)/documents/portfolios/portfolio/projects/project-2",
+                          "fields":  {
+                                         "year":  {
+                                                      "stringValue":  "2024"
+                                                  },
+                                         "aspect":  {
+                                                        "stringValue":  "aspect-[4/5]"
+                                                    },
+                                         "desc":  {
+                                                      "stringValue":  "Haute couture meets sustainable materials"
+                                                  },
+                                         "media":  {
+                                                       "arrayValue":  {
+
+                                                                      }
+                                                   },
+                                         "image":  {
+                                                       "stringValue":  "https://res.cloudinary.com/dwxglojis/image/upload/v1772498634/portfolio/xkv10ycnuthgyx0nwczl.png"
+                                                   },
+                                         "title":  {
+                                                       "stringValue":  "Runway Collection"
+                                                   },
+                                         "id":  {
+                                                    "integerValue":  "2"
+                                                },
+                                         "hashtags":  {
+                                                          "arrayValue":  {
+                                                                             "values":  [
+                                                                                            {
+                                                                                                "stringValue":  "fashion"
+                                                                                            }
+                                                                                        ]
+                                                                         }
+                                                      }
+                                     },
+                          "createTime":  "2026-03-07T15:52:37.182856Z",
+                          "updateTime":  "2026-03-07T15:52:37.182856Z"
+                      },
+                      {
+                          "name":  "projects/portfolio-e24ac/databases/(default)/documents/portfolios/portfolio/projects/project-3",
+                          "fields":  {
+                                         "title":  {
+                                                       "stringValue":  "Studio Portraits"
+                                                   },
+                                         "hashtags":  {
+                                                          "arrayValue":  {
+                                                                             "values":  [
+                                                                                            {
+                                                                                                "stringValue":  "fashion"
+                                                                                            }
+                                                                                        ]
+                                                                         }
+                                                      },
+                                         "id":  {
+                                                    "integerValue":  "3"
+                                                },
+                                         "desc":  {
+                                                      "stringValue":  "Capturing personality through form and fabric"
+                                                  },
+                                         "aspect":  {
+                                                        "stringValue":  "aspect-[3/4]"
+                                                    },
+                                         "year":  {
+                                                      "stringValue":  "2024"
+                                                  },
+                                         "image":  {
+                                                       "stringValue":  "https://res.cloudinary.com/dwxglojis/image/upload/v1772504646/portfolio/uontxf810dbl5vndhv7q.png"
+                                                   },
+                                         "media":  {
+                                                       "arrayValue":  {
+
+                                                                      }
+                                                   }
+                                     },
+                          "createTime":  "2026-03-07T15:52:37.222534Z",
+                          "updateTime":  "2026-03-07T15:52:37.222534Z"
+                      },
+                      {
+                          "name":  "projects/portfolio-e24ac/databases/(default)/documents/portfolios/portfolio/projects/project-4",
+                          "fields":  {
+                                         "year":  {
+                                                      "stringValue":  "2025"
+                                                  },
+                                         "image":  {
+                                                       "stringValue":  "https://res.cloudinary.com/dwxglojis/image/upload/v1772885515/portfolio/jqo2zbvvrkcdc3ah1zqt.png"
+                                                   },
+                                         "id":  {
+                                                    "integerValue":  "4"
+                                                },
+                                         "showExternalLink":  {
+                                                                  "booleanValue":  true
+                                                              },
+                                         "desc":  {
+                                                      "stringValue":  "우주 산업 생태계에서 회전운동을 컨트롤하고 몸을 고정할 수 있는 웨어러블 꼬리 디바이스와 모빌리티"
+                                                  },
+                                         "aspect":  {
+                                                        "stringValue":  "aspect-[3/4]"
+                                                    },
+                                         "media":  {
+                                                       "arrayValue":  {
+                                                                          "values":  [
+                                                                                         {
+                                                                                             "mapValue":  {
+                                                                                                              "fields":  {
+                                                                                                                             "type":  {
+                                                                                                                                          "stringValue":  "video"
+                                                                                                                                      },
+                                                                                                                             "url":  {
+                                                                                                                                         "stringValue":  "https://res.cloudinary.com/dwxglojis/video/upload/v1772410232/portfolio/hgvrcdxzgsazovzlxusw.mp4"
+                                                                                                                                     }
+                                                                                                                         }
+                                                                                                          }
+                                                                                         }
+                                                                                     ]
+                                                                      }
+                                                   },
+                                         "externalLink":  {
+                                                              "stringValue":  "https://www.dezeen.com/2025/12/15/wearable-device-for-sensory-problems-among-projects-from-hongik-university/"
+                                                          },
+                                         "title":  {
+                                                       "stringValue":  "LUNARIS"
+                                                   },
+                                         "hashtags":  {
+                                                          "arrayValue":  {
+                                                                             "values":  [
+                                                                                            {
+                                                                                                "stringValue":  "product"
+                                                                                            }
+                                                                                        ]
+                                                                         }
+                                                      }
+                                     },
+                          "createTime":  "2026-03-07T15:52:37.287795Z",
+                          "updateTime":  "2026-03-07T17:15:39.741470Z"
+                      },
+                      {
+                          "name":  "projects/portfolio-e24ac/databases/(default)/documents/portfolios/portfolio/projects/project-5",
+                          "fields":  {
+                                         "media":  {
+                                                       "arrayValue":  {
+
+                                                                      }
+                                                   },
+                                         "image":  {
+                                                       "stringValue":  "https://res.cloudinary.com/dwxglojis/image/upload/v1772885561/portfolio/saczyqq3vansjm2acvo1.png"
+                                                   },
+                                         "year":  {
+                                                      "stringValue":  "2024"
+                                                  },
+                                         "aspect":  {
+                                                        "stringValue":  "aspect-[4/5]"
+                                                    },
+                                         "desc":  {
+                                                      "stringValue":  "Exploring ergonomics through sculptural seating"
+                                                  },
+                                         "id":  {
+                                                    "integerValue":  "5"
+                                                },
+                                         "hashtags":  {
+                                                          "arrayValue":  {
+                                                                             "values":  [
+                                                                                            {
+                                                                                                "stringValue":  "product"
+                                                                                            }
+                                                                                        ]
+                                                                         }
+                                                      },
+                                         "title":  {
+                                                       "stringValue":  "Form Study"
+                                                   }
+                                     },
+                          "createTime":  "2026-03-07T15:52:37.326050Z",
+                          "updateTime":  "2026-03-07T15:52:37.326050Z"
+                      },
+                      {
+                          "name":  "projects/portfolio-e24ac/databases/(default)/documents/portfolios/portfolio/projects/project-6",
+                          "fields":  {
+                                         "title":  {
+                                                       "stringValue":  "Ceramic Objects"
+                                                   },
+                                         "hashtags":  {
+                                                          "arrayValue":  {
+                                                                             "values":  [
+                                                                                            {
+                                                                                                "stringValue":  "product"
+                                                                                            }
+                                                                                        ]
+                                                                         }
+                                                      },
+                                         "id":  {
+                                                    "integerValue":  "6"
+                                                },
+                                         "desc":  {
+                                                      "stringValue":  "Handcrafted vessels exploring texture and glaze"
+                                                  },
+                                         "aspect":  {
+                                                        "stringValue":  "aspect-[4/5]"
+                                                    },
+                                         "year":  {
+                                                      "stringValue":  "2024"
+                                                  },
+                                         "image":  {
+                                                       "stringValue":  "https://res.cloudinary.com/dwxglojis/image/upload/v1772885315/portfolio/gg0dt71f0zxd2s8svroi.png"
+                                                   },
+                                         "media":  {
+                                                       "arrayValue":  {
+
+                                                                      }
+                                                   }
+                                     },
+                          "createTime":  "2026-03-07T15:52:37.434223Z",
+                          "updateTime":  "2026-03-07T15:52:37.434223Z"
+                      },
+                      {
+                          "name":  "projects/portfolio-e24ac/databases/(default)/documents/portfolios/portfolio/projects/project-7",
+                          "fields":  {
+                                         "aspect":  {
+                                                        "stringValue":  "aspect-[4/5]"
+                                                    },
+                                         "desc":  {
+                                                      "stringValue":  "Luminaires that shape ambient atmospheres"
+                                                  },
+                                         "year":  {
+                                                      "stringValue":  "2023"
+                                                  },
+                                         "image":  {
+                                                       "stringValue":  "https://res.cloudinary.com/dwxglojis/image/upload/v1772885324/portfolio/monxbjipwocrpcdtthkb.png"
+                                                   },
+                                         "media":  {
+                                                       "arrayValue":  {
+
+                                                                      }
+                                                   },
+                                         "title":  {
+                                                       "stringValue":  "Light Forms"
+                                                   },
+                                         "hashtags":  {
+                                                          "arrayValue":  {
+                                                                             "values":  [
+                                                                                            {
+                                                                                                "stringValue":  "product"
+                                                                                            }
+                                                                                        ]
+                                                                         }
+                                                      },
+                                         "id":  {
+                                                    "integerValue":  "7"
+                                                }
+                                     },
+                          "createTime":  "2026-03-07T15:52:37.479427Z",
+                          "updateTime":  "2026-03-07T15:52:37.479427Z"
+                      },
+                      {
+                          "name":  "projects/portfolio-e24ac/databases/(default)/documents/portfolios/portfolio/projects/project-8",
+                          "fields":  {
+                                         "id":  {
+                                                    "integerValue":  "8"
+                                                },
+                                         "year":  {
+                                                      "stringValue":  "2026"
+                                                  },
+                                         "image":  {
+                                                       "stringValue":  "https://res.cloudinary.com/dwxglojis/image/upload/v1772885573/portfolio/thtisqdxttypgwgalfq5.png"
+                                                   },
+                                         "title":  {
+                                                       "stringValue":  "Identity Camouflager"
+                                                   },
+                                         "hashtags":  {
+                                                          "arrayValue":  {
+                                                                             "values":  [
+                                                                                            {
+                                                                                                "stringValue":  "product"
+                                                                                            }
+                                                                                        ]
+                                                                         }
+                                                      },
+                                         "showExternalLink":  {
+                                                                  "booleanValue":  false
+                                                              },
+                                         "aspect":  {
+                                                        "stringValue":  "aspect-[3/4]"
+                                                    },
+                                         "desc":  {
+                                                      "stringValue":  "werw"
+                                                  },
+                                         "media":  {
+                                                       "arrayValue":  {
+
+                                                                      }
+                                                   },
+                                         "externalLink":  {
+                                                              "stringValue":  ""
+                                                          }
+                                     },
+                          "createTime":  "2026-03-07T15:52:37.514993Z",
+                          "updateTime":  "2026-03-07T17:17:15.864974Z"
+                      }
+                  ]
+}

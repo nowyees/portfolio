@@ -122,16 +122,13 @@ export async function getAllProjects(): Promise<Array<Project & { category: stri
     // Firestore 연동 상태 확인
     if (isConfigured && db) {
         try {
-            const categoriesSnapshot = await getDocs(collection(db, 'portfolios'));
-            for (const catDoc of categoriesSnapshot.docs) {
-                const category = catDoc.id;
-                if (category.toLowerCase() === 'freedive') continue; // Exclude freedive from global aggregation
-
-                const projectsSnapshot = await getDocs(query(collection(db, 'portfolios', category, 'projects'), orderBy('id')));
-                projectsSnapshot.forEach(pDoc => {
-                    allProjects.push({ ...(pDoc.data() as Project), category });
-                });
-            }
+            // Fetch only from the consolidated 'portfolio' category
+            // This prevents fetching legacy categories (fashion, product, etc) that contain outdated/broken data
+            const category = 'portfolio';
+            const projectsSnapshot = await getDocs(query(collection(db, 'portfolios', category, 'projects'), orderBy('id')));
+            projectsSnapshot.forEach(pDoc => {
+                allProjects.push({ ...(pDoc.data() as Project), category });
+            });
             // 임의 정렬: id 역순(최신순 등)
             return allProjects.sort((a, b) => b.id - a.id);
         } catch (error) {

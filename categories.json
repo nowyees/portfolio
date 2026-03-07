@@ -1,0 +1,84 @@
+﻿{
+    "documents":  [
+                      {
+                          "name":  "projects/portfolio-e24ac/databases/(default)/documents/portfolios/fashion",
+                          "fields":  {
+                                         "title":  {
+                                                       "stringValue":  "FASHION"
+                                                   },
+                                         "description":  {
+                                                             "stringValue":  "Exploring the intersection of textile innovation and human expression through conceptual fashion design."
+                                                         },
+                                         "subtitle":  {
+                                                          "stringValue":  "Wearable Narratives"
+                                                      }
+                                     },
+                          "createTime":  "2026-03-01T21:13:14.312583Z",
+                          "updateTime":  "2026-03-01T21:13:14.312583Z"
+                      },
+                      {
+                          "name":  "projects/portfolio-e24ac/databases/(default)/documents/portfolios/freedive",
+                          "fields":  {
+                                         "subtitle":  {
+                                                          "stringValue":  "Floating Media Gallery"
+                                                      },
+                                         "description":  {
+                                                             "stringValue":  "An interactive exploration of scattered memories and visual experiments."
+                                                         },
+                                         "title":  {
+                                                       "stringValue":  "FREE DIVE"
+                                                   }
+                                     },
+                          "createTime":  "2026-03-03T00:44:29.755104Z",
+                          "updateTime":  "2026-03-03T00:44:29.755104Z"
+                      },
+                      {
+                          "name":  "projects/portfolio-e24ac/databases/(default)/documents/portfolios/product",
+                          "fields":  {
+                                         "subtitle":  {
+                                                          "stringValue":  "Functional Poetry"
+                                                      },
+                                         "description":  {
+                                                             "stringValue":  "Creating objects that balance utility with emotional resonance, each piece a dialogue between material and purpose."
+                                                         },
+                                         "title":  {
+                                                       "stringValue":  "PRODUCT"
+                                                   }
+                                     },
+                          "createTime":  "2026-03-01T21:13:15.040132Z",
+                          "updateTime":  "2026-03-01T21:13:15.040132Z"
+                      },
+                      {
+                          "name":  "projects/portfolio-e24ac/databases/(default)/documents/portfolios/space",
+                          "fields":  {
+                                         "title":  {
+                                                       "stringValue":  "SPACE"
+                                                   },
+                                         "description":  {
+                                                             "stringValue":  "Designing environments that evoke emotion and guide experience through light, material, and proportion."
+                                                         },
+                                         "subtitle":  {
+                                                          "stringValue":  "Spatial Storytelling"
+                                                      }
+                                     },
+                          "createTime":  "2026-03-01T21:13:15.303672Z",
+                          "updateTime":  "2026-03-01T21:13:15.303672Z"
+                      },
+                      {
+                          "name":  "projects/portfolio-e24ac/databases/(default)/documents/portfolios/speculative",
+                          "fields":  {
+                                         "subtitle":  {
+                                                          "stringValue":  "Future Fictions"
+                                                      },
+                                         "title":  {
+                                                       "stringValue":  "SPECULATIVE"
+                                                   },
+                                         "description":  {
+                                                             "stringValue":  "Imagining alternate futures through design artifacts that challenge assumptions about technology, culture, and society."
+                                                         }
+                                     },
+                          "createTime":  "2026-03-01T21:13:15.617339Z",
+                          "updateTime":  "2026-03-01T21:13:15.617339Z"
+                      }
+                  ]
+}
