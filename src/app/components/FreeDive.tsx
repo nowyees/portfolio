@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { getPortfolioByCategory } from '../../lib/portfolioService';
 
-const CELL_W = 620;
-const CELL_H = 780;
+const CELL_W = 1120;
+const CELL_H = 1300;
 
 export default function FreeDive() {
     const navigate = useNavigate();
