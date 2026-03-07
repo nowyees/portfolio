@@ -157,17 +157,17 @@ export default function Home() {
           <div className="pb-12 w-[85%]">
             {activeProject && (
               <div className="w-full transition-opacity duration-500">
-                <div className="mb-4 font-bold text-xs md:text-sm uppercase tracking-widest">
+                <div className="mb-8 font-bold text-xs md:text-sm uppercase tracking-widest">
                   <span>{activeProject.title}</span>
                 </div>
 
-                <div className="mb-4">
+                <div className="mb-2">
                   <p className="text-sm md:text-base leading-relaxed opacity-60 text-justify font-['Pretendard',sans-serif]">
                     {activeProject.desc}
                   </p>
                 </div>
 
-                <div className="mb-6 font-bold text-[10px] md:text-xs font-['Pretendard',sans-serif] tracking-wider">
+                <div className="mb-2 font-bold text-[10px] md:text-xs font-['Pretendard',sans-serif] tracking-wider">
                   <span className="opacity-70">{activeProject.year}</span>
                 </div>
 
@@ -181,18 +181,7 @@ export default function Home() {
                   </div>
                 )}
 
-                {activeProject.showExternalLink && activeProject.externalLink && (
-                  <div>
-                    <a
-                      href={activeProject.externalLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs font-bold border-b border-[#111] pb-1 hover:opacity-70 transition-opacity"
-                    >
-                      {'>'} Link
-                    </a>
-                  </div>
-                )}
+                {/* Hide external link on the Home page per user request */}
               </div>
             )}
           </div>
