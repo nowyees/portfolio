@@ -55,8 +55,8 @@ export default function ProjectDetail() {
         );
     }
 
-    // Build full media list: main image + extra media
-    const allMedia: MediaItem[] = [{ url: project.image, type: 'image' }];
+    // Build full media list: extra media only (exclude main image/thumbnail as requested)
+    const allMedia: MediaItem[] = [];
     if (project.media && project.media.length > 0) {
         allMedia.push(...project.media);
     }

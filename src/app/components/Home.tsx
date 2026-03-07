@@ -45,6 +45,35 @@ export default function Home() {
     return () => observerRef.current?.disconnect();
   }, [projects]);
 
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+
+      const currentIndex = projects.findIndex(p => `${p.category}-${p.id}` === activeProjectId);
+      if (currentIndex === -1) return;
+
+      e.preventDefault(); // Prevent default scroll
+
+      let nextIndex = currentIndex;
+      if (e.key === 'ArrowDown' && currentIndex < projects.length - 1) {
+        nextIndex = currentIndex + 1;
+      } else if (e.key === 'ArrowUp' && currentIndex > 0) {
+        nextIndex = currentIndex - 1;
+      }
+
+      if (nextIndex !== currentIndex && imageRefs.current[nextIndex]) {
+        imageRefs.current[nextIndex]?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [projects, activeProjectId]);
+
   const activeProject = projects.find(p => `${p.category}-${p.id}` === activeProjectId) || projects[0];
 
   return (
