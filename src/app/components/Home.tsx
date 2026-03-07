@@ -157,7 +157,7 @@ export default function Home() {
           <div className="pb-12 w-[95%]">
             {activeProject && (
               <div className="w-full transition-opacity duration-500">
-                <div className="mb-8 font-bold text-base md:text-lg uppercase tracking-widest font-['Pretendard',sans-serif]">
+                <div className="mb-8 font-bold text-base md:text-lg uppercase tracking-tighter font-['Pretendard',sans-serif]">
                   <span>{activeProject.title}</span>
                 </div>
 
