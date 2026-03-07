@@ -34,11 +34,13 @@ export default function Home() {
           setTimeout(() => {
             const idx = res.findIndex(p => `${p.category}-${p.id}` === targetId);
             if (idx !== -1 && imageRefs.current[idx]) {
-              imageRefs.current[idx]?.scrollIntoView({ behavior: 'auto', block: 'center' });
+              // Ensure instant scroll by manipulating the ref if needed, or just auto
+              if (scrollContainerRef.current) scrollContainerRef.current.style.scrollBehavior = 'auto';
+              imageRefs.current[idx]?.scrollIntoView({ behavior: 'auto', block: 'start' });
             } else if (scrollContainerRef.current) {
               scrollContainerRef.current.scrollTo(0, 0);
             }
-          }, 100); // Short delay to allow DOM refs to attach
+          }, 50);
         }
       }
     });
@@ -102,7 +104,7 @@ export default function Home() {
   return (
     <div
       ref={scrollContainerRef}
-      className="relative w-full h-screen overflow-y-auto overflow-x-hidden snap-y snap-mandatory bg-[#f7f6f0] text-[#111] selection:bg-[#111] selection:text-[#f7f6f0] scroll-smooth"
+      className="relative w-full h-screen overflow-y-auto overflow-x-hidden snap-y snap-mandatory bg-[#f7f6f0] text-[#111] selection:bg-[#111] selection:text-[#f7f6f0]"
       style={{ fontFamily: "'Champagne & Limousines', sans-serif" }}
     >
       <GridTrail dark={false} overlay={false} />
