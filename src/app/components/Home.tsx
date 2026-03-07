@@ -102,7 +102,7 @@ export default function Home() {
             <img
               src="/images/logo.png"
               alt="Jaydne. L(ee)"
-              className="w-[90%] max-w-[550px] h-auto select-none pointer-events-none"
+              className="w-full max-w-[650px] h-auto select-none pointer-events-none"
               draggable={false}
             />
           </div>
@@ -118,7 +118,7 @@ export default function Home() {
                 </div>
 
                 <div className="mb-4">
-                  <p className="text-xs md:text-sm leading-[1.8] opacity-50">
+                  <p className="text-sm md:text-base leading-[1.8] opacity-50">
                     {activeProject.desc}
                   </p>
                 </div>
@@ -176,7 +176,7 @@ export default function Home() {
                 key={`${project.category}-${project.id}`}
                 data-id={`${project.category}-${project.id}`}
                 ref={(el) => { imageRefs.current[idx] = el; }}
-                className="w-full h-[75vh] flex justify-center items-center snap-center cursor-pointer group px-6 md:px-[8%] shrink-0 pointer-events-none"
+                className="w-full h-[82vh] flex justify-center items-center snap-center cursor-pointer group px-6 md:px-[8%] shrink-0 pointer-events-none"
                 onClick={() => navigate(`/project/${project.category}/${project.id}`)}
               >
                 <div
