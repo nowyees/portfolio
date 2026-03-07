@@ -84,9 +84,9 @@ export default function Home() {
           <div className="pb-12 w-[85%]">
             {activeProject && (
               <div className="w-full transition-opacity duration-500">
-                <div className="flex justify-between items-end mb-4 font-bold text-xs md:text-sm uppercase tracking-widest">
-                  <span>{activeProject.title}</span>
+                <div className="flex flex-col mb-4 font-bold text-xs md:text-sm uppercase tracking-widest gap-1">
                   <span>{activeProject.year}</span>
+                  <span>{activeProject.title}</span>
                 </div>
 
                 <div className="mb-6">
