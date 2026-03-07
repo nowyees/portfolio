@@ -118,13 +118,13 @@ export default function Home() {
       </nav>
 
       {/* Side Navigator */}
-      <div className="fixed right-4 md:right-8 lg:right-12 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-4 mix-blend-difference text-[#f7f6f0] md:mix-blend-normal md:text-[#111]">
+      <div className="fixed right-4 md:right-8 lg:right-12 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-4 mix-blend-difference text-[#f7f6f0] md:mix-blend-normal md:text-[#111] pointer-events-none">
         {/* Tracker text */}
-        <div className="text-[9px] md:text-[10px] tracking-widest font-bold opacity-60 pointer-events-none" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
+        <div className="text-[9px] md:text-[10px] tracking-widest font-bold opacity-60" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
           {projects.length > 0 ? `${String(Math.max(0, projects.findIndex(p => `${p.category}-${p.id}` === activeProjectId)) + 1).padStart(2, '0')} / ${String(projects.length).padStart(2, '0')}` : ''}
         </div>
         {/* Dots */}
-        <div className="flex flex-col gap-3 mt-4">
+        <div className="flex flex-col gap-3 mt-4 pointer-events-auto">
           {projects.map((p, i) => (
             <button
               key={`${p.category}-${p.id}`}
