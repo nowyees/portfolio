@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { submitContactForm } from '../../lib/contactService';
-import { adminLogin } from '../../lib/authService';
+import { adminLogin, getCurrentUser, onAuthChange } from '../../lib/authService';
 import { isConfigured } from '../../lib/firebase';
+import type { User } from 'firebase/auth';
 
 interface ContactDialogProps {
     open: boolean;
@@ -24,6 +25,12 @@ export default function ContactDialog({ open, onClose, dark = false }: ContactDi
     const [adminId, setAdminId] = useState('');
     const [adminPw, setAdminPw] = useState('');
     const [adminLoading, setAdminLoading] = useState(false);
+    const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+    React.useEffect(() => {
+        const unsubscribe = onAuthChange((user) => setCurrentUser(user));
+        return unsubscribe;
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -213,62 +220,65 @@ export default function ContactDialog({ open, onClose, dark = false }: ContactDi
                                     <h2 className="text-[9px] uppercase tracking-[0.3em] mb-8" style={{ opacity: 0.4 }}>
                                         Admin Login
                                     </h2>
-
-                                    <form onSubmit={handleAdminLogin} className="space-y-5">
-                                        <div>
-                                            <label className="block text-[9px] uppercase tracking-widest mb-2 opacity-40">ID</label>
-                                            <input
-                                                type="text"
-                                                value={adminId}
-                                                onChange={e => setAdminId(e.target.value)}
-                                                className="w-full px-0 py-2 text-[13px] border-b outline-none transition-colors cursor-text"
-                                                style={{ backgroundColor: 'transparent', borderColor: borderCol, color: fg }}
-                                                placeholder="Admin ID"
-                                                disabled={adminLoading}
-                                                autoComplete="username"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-[9px] uppercase tracking-widest mb-2 opacity-40">Password</label>
-                                            <input
-                                                type="password"
-                                                value={adminPw}
-                                                onChange={e => setAdminPw(e.target.value)}
-                                                className="w-full px-0 py-2 text-[13px] border-b outline-none transition-colors cursor-text"
-                                                style={{ backgroundColor: 'transparent', borderColor: borderCol, color: fg }}
-                                                placeholder="••••••••"
-                                                disabled={adminLoading}
-                                                autoComplete="current-password"
-                                            />
-                                        </div>
-
-                                        {errorMsg && (
-                                            <p className="text-[10px] text-red-500">{errorMsg}</p>
-                                        )}
-
-                                        <button
-                                            type="submit"
-                                            disabled={adminLoading}
-                                            className="w-full py-3 text-[10px] uppercase tracking-[0.3em] transition-all duration-300 cursor-pointer"
-                                            style={{
-                                                backgroundColor: fg,
-                                                color: bg,
-                                                opacity: adminLoading ? 0.5 : 1,
-                                            }}
-                                        >
-                                            {adminLoading ? 'Logging in...' : 'Login'}
-                                        </button>
-
-                                        <div className="text-center">
+                                    {currentUser ? (
+                                        <div className="flex flex-col items-center justify-center py-8">
+                                            <div className="w-12 h-12 rounded-full border border-current flex items-center justify-center mb-4 opacity-50">✓</div>
+                                            <p className="text-[11px] uppercase tracking-widest mb-6 select-none">Admin Session Active</p>
                                             <button
-                                                type="button"
-                                                onClick={() => { setMode('contact'); setErrorMsg(''); }}
-                                                className="text-[9px] uppercase tracking-widest opacity-30 hover:opacity-60 transition-opacity cursor-pointer"
+                                                onClick={() => { handleClose(); navigate('/admin'); }}
+                                                className="w-full py-4 text-[11px] uppercase tracking-widest font-bold bg-current text-white cursor-pointer hover:opacity-80 transition-opacity"
+                                                style={{ color: bg, backgroundColor: fg }}
                                             >
-                                                ← Back to Contact
+                                                Return to Admin
                                             </button>
                                         </div>
-                                    </form>
+                                    ) : (
+                                        <form onSubmit={handleAdminLogin} className="flex flex-col gap-6">
+                                            <div>
+                                                <label className="block text-[9px] uppercase tracking-widest mb-2 opacity-50 select-none">Admin ID</label>
+                                                <input
+                                                    type="text"
+                                                    value={adminId}
+                                                    onChange={e => setAdminId(e.target.value)}
+                                                    className="w-full bg-transparent border-b border-current py-2 text-sm outline-none font-sans"
+                                                    style={{ borderColor: borderCol }}
+                                                    required
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[9px] uppercase tracking-widest mb-2 opacity-50 select-none">Password</label>
+                                                <input
+                                                    type="password"
+                                                    value={adminPw}
+                                                    onChange={e => setAdminPw(e.target.value)}
+                                                    className="w-full bg-transparent border-b border-current py-2 text-sm outline-none font-sans tracking-[0.2em]"
+                                                    style={{ borderColor: borderCol }}
+                                                    required
+                                                />
+                                            </div>
+                                            {errorMsg && (
+                                                <p className="text-[10px] text-red-500">{errorMsg}</p>
+                                            )}
+                                            <button
+                                                type="submit"
+                                                disabled={adminLoading}
+                                                className={`w-full py-4 mt-4 text-[11px] uppercase tracking-widest font-bold bg-current text-white transition-opacity ${adminLoading ? 'opacity-50 cursor-wait' : 'cursor-pointer hover:opacity-80'}`}
+                                                style={{ color: bg, backgroundColor: fg }}
+                                            >
+                                                {adminLoading ? 'Logging in...' : 'Login'}
+                                            </button>
+
+                                            <div className="text-center">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { setMode('contact'); setErrorMsg(''); }}
+                                                    className="text-[9px] uppercase tracking-widest opacity-30 hover:opacity-60 transition-opacity cursor-pointer"
+                                                >
+                                                    ← Back to Contact
+                                                </button>
+                                            </div>
+                                        </form>
+                                    )}
                                 </>
                             )}
                         </div>

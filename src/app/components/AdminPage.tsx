@@ -535,6 +535,19 @@ export default function AdminPage() {
                                                         className="w-full px-0 py-2 text-[13px] border-b border-[#111]/10 bg-transparent outline-none"
                                                     />
                                                 </div>
+                                                <div>
+                                                    <label className="block text-[9px] uppercase tracking-widest mb-1 opacity-40">Hashtags</label>
+                                                    <input
+                                                        type="text"
+                                                        value={editingProject.hashtags?.join(', ') || ''}
+                                                        onChange={e => {
+                                                            const arr = e.target.value.split(/[, ]+/).filter(Boolean);
+                                                            setEditingProject({ ...editingProject, hashtags: arr });
+                                                        }}
+                                                        placeholder="e.g. fashion, editorial"
+                                                        className="w-full px-0 py-2 text-[13px] border-b border-[#111]/10 bg-transparent outline-none"
+                                                    />
+                                                </div>
                                                 <div className="flex gap-4 items-center">
                                                     <div className="flex-1">
                                                         <label className="block text-[9px] uppercase tracking-widest mb-1 opacity-40">External Link</label>
