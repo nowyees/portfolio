@@ -105,7 +105,7 @@ export default function Home() {
     <div
       ref={scrollContainerRef}
       className="relative w-full h-screen overflow-y-auto overflow-x-hidden snap-y snap-mandatory bg-[#f7f6f0] text-[#111] selection:bg-[#111] selection:text-[#f7f6f0]"
-      style={{ fontFamily: "'Champagne & Limousines', sans-serif" }}
+      style={{ fontFamily: "'Champagne & Limousines', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}
     >
       <GridTrail dark={false} overlay={false} />
 

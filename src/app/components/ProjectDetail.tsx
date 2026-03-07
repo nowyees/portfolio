@@ -100,7 +100,7 @@ export default function ProjectDetail() {
     if (loading) {
         return (
             <div className="w-screen h-screen bg-[#f7f6f0] flex items-center justify-center"
-                style={{ fontFamily: "'Champagne & Limousines', sans-serif" }}>
+                style={{ fontFamily: "'Champagne & Limousines', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
                 <motion.div
                     animate={{ opacity: [0.3, 1, 0.3] }}
                     transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
@@ -116,7 +116,7 @@ export default function ProjectDetail() {
     if (!project) {
         return (
             <div className="w-screen h-screen bg-[#f7f6f0] flex flex-col items-center justify-center gap-4"
-                style={{ fontFamily: "'Champagne & Limousines', sans-serif" }}>
+                style={{ fontFamily: "'Champagne & Limousines', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
                 <p className="text-sm opacity-60">Project not found.</p>
                 <button onClick={() => navigate('/')} className="text-[10px] uppercase tracking-widest underline opacity-40 hover:opacity-100 transition-opacity">
                     Go back
@@ -129,7 +129,7 @@ export default function ProjectDetail() {
         <div
             ref={scrollContainerRef}
             className={`w-full h-screen overflow-y-auto overflow-x-hidden bg-[#f7f6f0] text-[#111] selection:bg-[#111] selection:text-[#f7f6f0] ${cols === 1 ? 'snap-y snap-mandatory' : ''}`}
-            style={{ fontFamily: "'Champagne & Limousines', sans-serif" }}
+            style={{ fontFamily: "'Champagne & Limousines', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}
         >
             <GridTrail dark={false} />
 

@@ -145,7 +145,7 @@ export default function PortfolioDetail() {
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.3, ease: [0.25, 1, 0.5, 1] }}
             className={`text-[14vw] md:text-[10vw] leading-[0.9] tracking-tight`}
-            style={{ fontFamily: "'Champagne & Limousines', sans-serif", fontWeight: 700 }}
+            style={{ fontFamily: "'Champagne & Limousines', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontWeight: 700 }}
           >
             {data.title}
           </motion.h1>

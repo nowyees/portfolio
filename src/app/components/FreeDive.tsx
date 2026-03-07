@@ -275,7 +275,7 @@ export default function FreeDive() {
         <div
             className="fixed inset-0 bg-[#f7f6f0] text-[#111] select-none overflow-hidden"
             style={{
-                fontFamily: "'Champagne & Limousines', sans-serif",
+                fontFamily: "'Champagne & Limousines', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
                 animation: 'slideUpIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards',
             }}
         >
