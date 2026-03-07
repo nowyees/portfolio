@@ -67,36 +67,46 @@ export default function Home() {
 
       <div className="flex flex-col md:flex-row w-full relative min-h-max">
         {/* Left Column (Sticky Info) - Desktop Only */}
-        <div className="w-full md:w-[40%] lg:w-[35%] h-screen sticky top-0 flex flex-col justify-center p-8 md:p-16 lg:p-24 z-10 hidden md:flex">
-          {activeProject && (
-            <div className="w-full max-w-none transition-opacity duration-500">
-              <div className="flex justify-between items-end mb-16 font-bold text-lg md:text-2xl lg:text-3xl">
-                <span>{activeProject.title}</span>
-                <span>{activeProject.year}</span>
-              </div>
+        <div className="w-full md:w-[48%] lg:w-[45%] h-screen sticky top-0 flex flex-col justify-between p-8 md:p-16 lg:p-24 z-10 hidden md:flex">
+          <div className="flex-1 flex flex-col justify-center">
+            {/* Large Name Typography */}
+            <h1
+              className="leading-[0.95] tracking-tight mb-16"
+              style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(3.5rem, 6.5vw, 7rem)', fontWeight: 400 }}
+            >
+              Jaydne. L<span style={{ fontSize: '0.55em', fontStyle: 'italic' }}>(ee)</span>
+            </h1>
 
-              <div className="mb-20">
-                <p className="text-sm md:text-base lg:text-lg leading-[1.8] md:leading-[2] opacity-80 text-justify">
-                  {activeProject.desc}
-                </p>
-              </div>
-
-              {activeProject.showExternalLink && activeProject.externalLink && (
-                <div className="mt-10">
-                  <a
-                    href={activeProject.externalLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs font-bold border-b border-[#111] pb-1 hover:opacity-50 transition-opacity"
-                  >
-                    {'>'} Link
-                  </a>
+            {activeProject && (
+              <div className="w-full max-w-none transition-opacity duration-500">
+                <div className="flex justify-between items-end mb-4 font-bold text-xs md:text-sm uppercase tracking-widest">
+                  <span>{activeProject.title}</span>
+                  <span>{activeProject.year}</span>
                 </div>
-              )}
-            </div>
-          )}
 
-          <div className="absolute bottom-6 left-6 md:bottom-12 md:left-12 lg:left-16">
+                <div className="mb-8">
+                  <p className="text-xs md:text-sm leading-[1.8] opacity-50">
+                    {activeProject.desc}
+                  </p>
+                </div>
+
+                {activeProject.showExternalLink && activeProject.externalLink && (
+                  <div>
+                    <a
+                      href={activeProject.externalLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-bold border-b border-[#111] pb-1 hover:opacity-50 transition-opacity"
+                    >
+                      {'>'} Link
+                    </a>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div>
             <button
               onClick={() => setContactOpen(true)}
               className="text-[10px] md:text-xs font-bold transition-opacity hover:opacity-50"
@@ -107,7 +117,7 @@ export default function Home() {
         </div>
 
         {/* Right Column (Scrollable Images) */}
-        <div className="w-full md:w-[60%] lg:w-[65%] flex flex-col items-center z-0 pt-[20vh] pb-[20vh] gap-[4vh]">
+        <div className="w-full md:w-[52%] lg:w-[55%] flex flex-col items-center z-0 pt-[20vh] pb-[20vh] gap-[4vh]">
           {projects.map((project, idx) => {
             const isActive = `${project.category}-${project.id}` === activeProjectId;
             // Get aspect ratio safely, default to 3/4 if missing or malformed
