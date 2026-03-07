@@ -13,6 +13,7 @@ export default function ProjectDetail() {
     const [loading, setLoading] = useState(true);
     const [contactOpen, setContactOpen] = useState(false);
     const [cols, setCols] = useState<1 | 2 | 4>(1);
+    const [landscapeItems, setLandscapeItems] = useState<Record<number, boolean>>({});
 
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -195,44 +196,61 @@ export default function ProjectDetail() {
 
             {/* Media Gallery — Responsive Grid */}
             <div
-                className="px-4 md:px-12 lg:px-24 pb-32 relative z-10"
+                className="pb-32 relative z-10"
                 style={{
                     display: 'grid',
                     gridTemplateColumns: `repeat(${cols}, 1fr)`,
-                    gap: cols === 1 ? '2.5rem' : cols === 2 ? '1.5rem' : '1rem',
+                    gap: cols === 1 ? '1.5rem' : cols === 2 ? '1rem' : '0.5rem',
                     transition: 'all 0.4s cubic-bezier(0.22, 1, 0.36, 1)',
                 }}
             >
-                {allMedia.map((media, i) => (
-                    <motion.div
-                        key={i}
-                        initial={{ opacity: 0, y: 80 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true, margin: '-80px' }}
-                        transition={{ duration: 0.8, delay: i * 0.05, ease: [0.25, 1, 0.5, 1] }}
-                        className="w-full"
-                        layout
-                    >
-                        {media.type === 'video' || isVideoUrl(media.url) ? (
-                            <video
-                                src={media.url}
-                                controls
-                                playsInline
-                                muted
-                                className="w-full h-auto bg-black/5"
-                                style={{ objectFit: 'contain', maxHeight: '85vh' }}
-                            />
-                        ) : (
-                            <img
-                                src={media.url}
-                                alt={`${project.title} — ${i + 1}`}
-                                loading="lazy"
-                                className="w-full h-auto bg-black/5"
-                                style={{ objectFit: 'contain', maxHeight: '85vh' }}
-                            />
-                        )}
-                    </motion.div>
-                ))}
+                {allMedia.map((media, i) => {
+                    const isLandscape = landscapeItems[i];
+                    const spanClass = (cols >= 2 && isLandscape) ? 'md:col-span-2' : '';
+
+                    return (
+                        <motion.div
+                            key={i}
+                            initial={{ opacity: 0, y: 80 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true, margin: '-80px' }}
+                            transition={{ duration: 0.8, delay: (i % 10) * 0.05, ease: [0.25, 1, 0.5, 1] }}
+                            className={`w-full ${spanClass}`}
+                            layout
+                        >
+                            {media.type === 'video' || isVideoUrl(media.url) ? (
+                                <video
+                                    src={media.url}
+                                    controls
+                                    playsInline
+                                    muted
+                                    onLoadedMetadata={(e) => {
+                                        const target = e.target as HTMLVideoElement;
+                                        if (target.videoWidth > target.videoHeight) {
+                                            setLandscapeItems(prev => ({ ...prev, [i]: true }));
+                                        }
+                                    }}
+                                    className="w-full h-auto"
+                                    style={{ objectFit: 'contain', maxHeight: '85vh' }}
+                                />
+                            ) : (
+                                <img
+                                    src={media.url}
+                                    alt={`${project.title} — ${i + 1}`}
+                                    loading="lazy"
+                                    onLoad={(e) => {
+                                        const target = e.target as HTMLImageElement;
+                                        if (target.naturalWidth > target.naturalHeight) {
+                                            setLandscapeItems(prev => ({ ...prev, [i]: true }));
+                                        }
+                                    }}
+                                    className="w-full h-auto"
+                                    style={{ objectFit: 'contain', maxHeight: '85vh' }}
+                                />
+                            )}
+                        </motion.div>
+                    );
+                })}
             </div>
 
             {/* Footer */}
