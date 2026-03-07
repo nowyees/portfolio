@@ -162,19 +162,19 @@ export default function Home() {
                 </div>
 
                 <div className="mb-4">
-                  <p className="text-sm md:text-base leading-[1.8] opacity-80 text-justify">
+                  <p className="text-sm md:text-base leading-[1.8] opacity-80 text-justify font-['Pretendard',sans-serif]">
                     {activeProject.desc}
                   </p>
                 </div>
 
-                <div className="mb-6 font-bold text-[10px] md:text-xs">
+                <div className="mb-6 font-bold text-[10px] md:text-xs font-['Pretendard',sans-serif] tracking-wider">
                   <span className="opacity-70">{activeProject.year}</span>
                 </div>
 
                 {activeProject.hashtags && activeProject.hashtags.length > 0 && (
                   <div className="flex flex-wrap gap-2 mb-6">
                     {activeProject.hashtags.map((tag, i) => (
-                      <span key={i} className="text-[10px] opacity-60 tracking-widest uppercase font-bold">
+                      <span key={i} className="text-[10px] opacity-60 font-['Pretendard',sans-serif] font-bold">
                         #{tag}
                       </span>
                     ))}

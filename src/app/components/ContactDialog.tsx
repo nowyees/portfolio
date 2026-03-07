@@ -120,7 +120,7 @@ export default function ContactDialog({ open, onClose, dark = false }: ContactDi
                     >
                         <button
                             onClick={handleClose}
-                            className="absolute top-5 right-5 text-[10px] uppercase tracking-widest font-bold opacity-70 hover:opacity-100 transition-opacity cursor-pointer"
+                            className="absolute top-8 right-8 md:top-10 md:right-10 text-[10px] uppercase tracking-widest font-bold opacity-70 hover:opacity-100 transition-opacity cursor-pointer"
                         >
                             Close
                         </button>
@@ -128,7 +128,7 @@ export default function ContactDialog({ open, onClose, dark = false }: ContactDi
                         <div className="p-8 md:p-10">
                             {mode === 'contact' ? (
                                 <>
-                                    <h2 className="text-[9px] uppercase tracking-[0.3em] mb-8" style={{ opacity: 0.7 }}>
+                                    <h2 className="text-[9px] uppercase tracking-[0.3em] mb-8 mt-1" style={{ opacity: 0.7 }}>
                                         Get in Touch
                                     </h2>
 
@@ -217,7 +217,7 @@ export default function ContactDialog({ open, onClose, dark = false }: ContactDi
                                 </>
                             ) : (
                                 <>
-                                    <h2 className="text-[9px] uppercase tracking-[0.3em] mb-8" style={{ opacity: 0.7 }}>
+                                    <h2 className="text-[9px] uppercase tracking-[0.3em] mb-8 mt-1" style={{ opacity: 0.7 }}>
                                         Admin Login
                                     </h2>
                                     {currentUser ? (

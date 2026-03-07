@@ -191,17 +191,17 @@ export default function ProjectDetail() {
                     >
                         {project.title}
                     </h1>
-                    <div className="text-xs md:text-sm uppercase tracking-widest opacity-70 mb-12">
+                    <div className="text-xs md:text-sm uppercase tracking-widest opacity-70 mb-12 font-['Pretendard',sans-serif] tracking-wider">
                         {project.year}
                     </div>
-                    <p className="text-base md:text-lg leading-[2] opacity-90 text-justify max-w-2xl mx-auto">
+                    <p className="text-base md:text-lg leading-[2] opacity-90 text-justify max-w-2xl mx-auto font-['Pretendard',sans-serif]">
                         {project.desc}
                     </p>
 
                     {project.hashtags && project.hashtags.length > 0 && (
                         <div className="flex flex-wrap justify-center gap-2 mt-8">
                             {project.hashtags.map((tag, i) => (
-                                <span key={i} className="text-[10px] opacity-60 tracking-widest uppercase font-bold">
+                                <span key={i} className="text-[10px] opacity-60 font-['Pretendard',sans-serif] font-bold">
                                     #{tag}
                                 </span>
                             ))}
