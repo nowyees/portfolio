@@ -120,7 +120,7 @@ export default function ContactDialog({ open, onClose, dark = false }: ContactDi
                     >
                         <button
                             onClick={handleClose}
-                            className="absolute top-5 right-5 text-[10px] uppercase tracking-widest opacity-40 hover:opacity-100 transition-opacity cursor-pointer"
+                            className="absolute top-5 right-5 text-[10px] uppercase tracking-widest font-bold opacity-70 hover:opacity-100 transition-opacity cursor-pointer"
                         >
                             Close
                         </button>
@@ -198,7 +198,7 @@ export default function ContactDialog({ open, onClose, dark = false }: ContactDi
                                             </button>
 
                                             {!isConfigured && (
-                                                <p className="text-[9px] text-center opacity-30 mt-2">
+                                                <p className="text-[9px] text-center opacity-60 mt-2 font-bold font-sans tracking-widest">
                                                     Demo mode — Firebase 설정 후 실제 전송됩니다
                                                 </p>
                                             )}
@@ -209,7 +209,7 @@ export default function ContactDialog({ open, onClose, dark = false }: ContactDi
                                     <div className="mt-8 text-center">
                                         <button
                                             onClick={() => { setMode('admin'); setErrorMsg(''); }}
-                                            className="text-[8px] uppercase tracking-widest opacity-15 hover:opacity-40 transition-opacity cursor-pointer"
+                                            className="text-[8px] uppercase tracking-widest opacity-40 hover:opacity-100 transition-opacity cursor-pointer"
                                         >
                                             Admin
                                         </button>
@@ -272,7 +272,7 @@ export default function ContactDialog({ open, onClose, dark = false }: ContactDi
                                                 <button
                                                     type="button"
                                                     onClick={() => { setMode('contact'); setErrorMsg(''); }}
-                                                    className="text-[9px] uppercase tracking-widest opacity-30 hover:opacity-60 transition-opacity cursor-pointer"
+                                                    className="text-[9px] uppercase tracking-widest opacity-60 hover:opacity-100 transition-opacity cursor-pointer font-bold"
                                                 >
                                                     ← Back to Contact
                                                 </button>
