@@ -14,14 +14,14 @@ import {
 import { uploadImage, isVideoFile, isVideoUrl } from '../../lib/storageService';
 import type { User } from 'firebase/auth';
 
-const CATEGORIES = ['fashion', 'product', 'space', 'speculative', 'freedive'];
+const CATEGORIES = ['portfolio', 'freedive'];
 const ASPECT_OPTIONS = ['aspect-[3/4]', 'aspect-[4/5]', 'aspect-[4/3]', 'aspect-[16/10]'];
 
 export default function AdminPage() {
     const navigate = useNavigate();
     const [user, setUser] = useState<User | null>(null);
     const [authChecked, setAuthChecked] = useState(false);
-    const [activeCategory, setActiveCategory] = useState('fashion');
+    const [activeCategory, setActiveCategory] = useState('portfolio');
     const [data, setData] = useState<CategoryData | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -185,6 +185,7 @@ export default function AdminPage() {
             image: '',
             aspect: 'aspect-[3/4]',
             media: [],
+            hashtags: [],
             externalLink: '',
             showExternalLink: false,
         });

@@ -113,16 +113,29 @@ export default function Home() {
           <div className="pb-12 w-[85%]">
             {activeProject && (
               <div className="w-full transition-opacity duration-500">
-                <div className="flex flex-col mb-4 font-bold text-xs md:text-sm uppercase tracking-widest gap-1">
-                  <span>{activeProject.year}</span>
+                <div className="mb-4 font-bold text-xs md:text-sm uppercase tracking-widest">
                   <span>{activeProject.title}</span>
                 </div>
 
-                <div className="mb-6">
+                <div className="mb-4">
                   <p className="text-xs md:text-sm leading-[1.8] opacity-50">
                     {activeProject.desc}
                   </p>
                 </div>
+
+                <div className="mb-6 font-bold text-[10px] md:text-xs">
+                  <span className="opacity-40">{activeProject.year}</span>
+                </div>
+
+                {activeProject.hashtags && activeProject.hashtags.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-6">
+                    {activeProject.hashtags.map((tag, i) => (
+                      <span key={i} className="text-[10px] opacity-30 tracking-widest uppercase">
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
 
                 {activeProject.showExternalLink && activeProject.externalLink && (
                   <div>
