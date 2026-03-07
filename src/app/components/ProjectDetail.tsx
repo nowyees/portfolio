@@ -164,8 +164,8 @@ export default function ProjectDetail() {
                         key={n}
                         onClick={() => setCols(n)}
                         className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 ${cols === n
-                                ? 'bg-[#111] text-[#f7f6f0]'
-                                : 'hover:bg-[#111]/10 text-[#111]/50'
+                            ? 'bg-[#111] text-[#f7f6f0]'
+                            : 'hover:bg-[#111]/10 text-[#111]/50'
                             }`}
                         title={`${n} column${n > 1 ? 's' : ''}`}
                     >
@@ -220,7 +220,7 @@ export default function ProjectDetail() {
                                 playsInline
                                 muted
                                 className="w-full h-auto bg-black/5"
-                                style={{ objectFit: 'contain' }}
+                                style={{ objectFit: 'contain', maxHeight: '85vh' }}
                             />
                         ) : (
                             <img
@@ -228,7 +228,7 @@ export default function ProjectDetail() {
                                 alt={`${project.title} — ${i + 1}`}
                                 loading="lazy"
                                 className="w-full h-auto bg-black/5"
-                                style={{ objectFit: 'contain' }}
+                                style={{ objectFit: 'contain', maxHeight: '85vh' }}
                             />
                         )}
                     </motion.div>

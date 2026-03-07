@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { getPortfolioByCategory } from '../../lib/portfolioService';
 
-const CELL_W = 460;
-const CELL_H = 640;
+const CELL_W = 540;
+const CELL_H = 700;
 
 export default function FreeDive() {
     const navigate = useNavigate();
@@ -202,16 +202,12 @@ export default function FreeDive() {
                     const itemX = blockOffsetX + localCol * CELL_W + CELL_W / 2;
                     const itemY = blockOffsetY + localRow * CELL_H + CELL_H / 2;
 
-                    // Generate a stable pseudo-random scale based on index to make them look free-flowing
-                    const pseudoRandom = (Math.sin(index * 12.9898 + 78.233) * 43758.5453) % 1;
-                    const scale = 0.6 + Math.abs(pseudoRandom) * 0.6; // between 0.6 and 1.2
-
                     visibleItems.push({
                         key: `${bc}-${br}-${item.id}`,
                         item,
                         x: itemX,
                         y: itemY,
-                        width: (CELL_W - 60) * scale
+                        width: CELL_W - 100
                     });
                 });
             }
@@ -346,7 +342,8 @@ export default function FreeDive() {
                                     e.stopPropagation();
                                     handleItemClick(renderData.x, renderData.y);
                                 }}
-                                className="w-full h-auto pointer-events-auto cursor-pointer opacity-90 hover:opacity-100 transition-opacity duration-300 block bg-black/5"
+                                className="w-full pointer-events-auto cursor-pointer opacity-90 hover:opacity-100 transition-opacity duration-300 block bg-black/5"
+                                style={{ aspectRatio: '4/5', objectFit: 'cover' }}
                             />
                         )}
                     </div>
