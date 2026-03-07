@@ -62,6 +62,7 @@ export default function FreeDive() {
     const [visibleBounds, setVisibleBounds] = useState({ startCol: -1, endCol: 1, startRow: -1, endRow: 1 });
     const isDragging = useRef(false);
     const lastPan = useRef({ x: 0, y: 0 });
+    const lastInteractionTime = useRef(performance.now());
     const [landingDone, setLandingDone] = useState(false);
 
     // Slide-up + zoom-out/zoom-in landing animation
@@ -94,6 +95,14 @@ export default function FreeDive() {
             const dx = tX.current - cX.current;
             const dy = tY.current - cY.current;
             const dz = tZ.current - cZ.current;
+
+            // Screensaver Drift: If no interaction for 3 seconds, slowly pan
+            const now = performance.now();
+            if (now - lastInteractionTime.current > 3000 && !isDragging.current && landingDone) {
+                // Drift logic
+                tX.current -= 0.8 / cZ.current;
+                tY.current -= 0.6 / cZ.current;
+            }
 
             if (Math.abs(dx) > 0.01 || Math.abs(dy) > 0.01 || Math.abs(dz) > 0.001) {
                 cX.current += dx * 0.08; // lerp speed
@@ -133,7 +142,10 @@ export default function FreeDive() {
     }, [blockW, blockH]);
 
     // Interaction handlers
+    const markInteraction = () => { lastInteractionTime.current = performance.now(); };
+
     const handleWheel = (e: React.WheelEvent) => {
+        markInteraction();
         let zoomDelta = 0;
         if (e.ctrlKey || e.metaKey) {
             zoomDelta = e.deltaY * -0.01;
@@ -142,14 +154,12 @@ export default function FreeDive() {
         }
 
         let newZoom = tZ.current * (1 + zoomDelta);
-        // Limit zoom out so we don't see more than ~10-15 items at once 
-        // 0.35 is roughly 3x3 or 4x3 items depending on screen size
         newZoom = Math.max(0.35, Math.min(newZoom, 5.0));
         tZ.current = newZoom;
     };
 
     const handlePointerDown = (e: React.PointerEvent) => {
-        // Only trigger drag for primary buttons (mostly left click/touch)
+        markInteraction();
         if (e.button !== 0 && e.pointerType === 'mouse') return;
         isDragging.current = true;
         lastPan.current = { x: e.clientX, y: e.clientY };
@@ -158,16 +168,17 @@ export default function FreeDive() {
 
     const handlePointerMove = (e: React.PointerEvent) => {
         if (!isDragging.current) return;
+        markInteraction();
         const dx = e.clientX - lastPan.current.x;
         const dy = e.clientY - lastPan.current.y;
         lastPan.current = { x: e.clientX, y: e.clientY };
 
-        // Move camera in opposite direction of drag, scaled by zoom
         tX.current += dx / tZ.current;
         tY.current += dy / tZ.current;
     };
 
     const handlePointerUp = (e: React.PointerEvent) => {
+        markInteraction();
         isDragging.current = false;
         e.currentTarget.releasePointerCapture(e.pointerId);
     };
@@ -175,6 +186,7 @@ export default function FreeDive() {
     // Keyboard panning
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
+            markInteraction();
             const step = 60 / tZ.current;
             switch (e.key) {
                 case 'ArrowUp': tY.current += step; break;
@@ -215,19 +227,21 @@ export default function FreeDive() {
     }
 
     const handleItemClick = (x: number, y: number) => {
+        markInteraction();
         if (!isDragging.current) {
-            // Center camera on this item
             tX.current = -x;
             tY.current = -y;
-            // Zoom in to focus on the item
-            tZ.current = Math.max(1.5, tZ.current);
+            // 1.15 zoom leaves vertical padding above and below the CELL_H
+            tZ.current = 1.15;
         }
     };
 
     // Video Player Component to handle individual play states without rerendering the whole canvas
     const VideoItem = ({ src, onClick }: { src: string, onClick: () => void }) => {
         const [isPlaying, setIsPlaying] = useState(false);
+        const [tilt, setTilt] = useState({ x: 0, y: 0 });
         const videoRef = useRef<HTMLVideoElement>(null);
+        const containerRef = useRef<HTMLDivElement>(null);
 
         const togglePlay = () => {
             if (videoRef.current) {
@@ -240,9 +254,25 @@ export default function FreeDive() {
             }
         };
 
+        const handleMouseMove = (e: React.MouseEvent) => {
+            if (!containerRef.current) return;
+            const rect = containerRef.current.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const xPct = x / rect.width;
+            const yPct = y / rect.height;
+            // Max tilt of 10 degrees
+            setTilt({ x: (yPct - 0.5) * -20, y: (xPct - 0.5) * 20 });
+        };
+
         return (
             <div
+                ref={containerRef}
                 className="w-full h-auto relative cursor-pointer"
+                style={{
+                    perspective: '1000px',
+                    transformStyle: 'preserve-3d',
+                }}
                 onClick={(e) => {
                     e.stopPropagation(); // prevent bubbling to canvas if we had any
                     if (!isDragging.current) {
@@ -250,6 +280,8 @@ export default function FreeDive() {
                         onClick(); // Trigger camera centering
                     }
                 }}
+                onMouseMove={handleMouseMove}
+                onMouseLeave={() => setTilt({ x: 0, y: 0 })}
             >
                 <video
                     ref={videoRef}
@@ -257,16 +289,67 @@ export default function FreeDive() {
                     loop
                     muted
                     playsInline
-                    className="w-full h-auto pointer-events-none opacity-90 transition-opacity duration-300 block"
-                    style={{ opacity: isPlaying ? 1 : 0.8 }}
+                    className="w-full h-auto transition-transform duration-[400ms] ease-out block rounded-sm pointer-events-none"
+                    style={{
+                        transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) scale(${tilt.x || tilt.y ? 1.05 : 1})`,
+                        opacity: 1
+                    }}
                 />
                 {!isPlaying && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none">
-                        <div className="w-12 h-12 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center">
+                    <div
+                        className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none transition-transform duration-[400ms]"
+                        style={{ transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) scale(${tilt.x || tilt.y ? 1.05 : 1}) translateZ(30px)` }}
+                    >
+                        <div className="w-12 h-12 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center shadow-lg">
                             <span className="text-white ml-1 text-xl">▶</span>
                         </div>
                     </div>
                 )}
+            </div>
+        );
+    };
+
+    const ImageItem = ({ src, onClick }: { src: string, onClick: (e: React.MouseEvent) => void }) => {
+        const [tilt, setTilt] = useState({ x: 0, y: 0 });
+        const containerRef = useRef<HTMLDivElement>(null);
+
+        const handleMouseMove = (e: React.MouseEvent) => {
+            if (!containerRef.current) return;
+            // Prevent interference from drag interaction state
+            if (isDragging.current) return setTilt({ x: 0, y: 0 });
+
+            const rect = containerRef.current.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const xPct = x / rect.width;
+            const yPct = y / rect.height;
+            // Max tilt 15 degrees
+            setTilt({ x: (yPct - 0.5) * -30, y: (xPct - 0.5) * 30 });
+        };
+
+        return (
+            <div
+                ref={containerRef}
+                className="w-full h-full relative"
+                style={{ perspective: '1200px' }}
+                onMouseMove={handleMouseMove}
+                onMouseLeave={() => setTilt({ x: 0, y: 0 })}
+            >
+                <img
+                    src={src}
+                    alt=""
+                    loading="lazy"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onClick(e);
+                    }}
+                    className="w-full h-full pointer-events-auto cursor-pointer block bg-[#e5e4de] rounded-sm transition-transform duration-[400ms] ease-out shadow-[0_15px_35px_rgba(0,0,0,0.15)]"
+                    style={{
+                        aspectRatio: '3/4',
+                        objectFit: 'cover',
+                        transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) scale(${tilt.x || tilt.y ? 1.08 : 1})`,
+                    }}
+                />
             </div>
         );
     };
@@ -334,16 +417,9 @@ export default function FreeDive() {
                                 onClick={() => handleItemClick(renderData.x, renderData.y)}
                             />
                         ) : (
-                            <img
+                            <ImageItem
                                 src={renderData.item.url}
-                                alt=""
-                                loading="lazy"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleItemClick(renderData.x, renderData.y);
-                                }}
-                                className="w-full pointer-events-auto cursor-pointer opacity-90 hover:opacity-100 transition-opacity duration-300 block bg-black/5"
-                                style={{ aspectRatio: '3/4', objectFit: 'cover' }}
+                                onClick={(e) => handleItemClick(renderData.x, renderData.y)}
                             />
                         )}
                     </div>
