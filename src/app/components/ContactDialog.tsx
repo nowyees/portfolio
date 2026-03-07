@@ -128,7 +128,7 @@ export default function ContactDialog({ open, onClose, dark = false }: ContactDi
                         <div className="p-8 md:p-10">
                             {mode === 'contact' ? (
                                 <>
-                                    <h2 className="text-[9px] uppercase tracking-[0.3em] mb-8 mt-1" style={{ opacity: 0.7 }}>
+                                    <h2 className="text-[10px] uppercase tracking-widest font-bold mb-8 mt-1 opacity-70">
                                         Get in Touch
                                     </h2>
 
@@ -217,7 +217,7 @@ export default function ContactDialog({ open, onClose, dark = false }: ContactDi
                                 </>
                             ) : (
                                 <>
-                                    <h2 className="text-[9px] uppercase tracking-[0.3em] mb-8 mt-1" style={{ opacity: 0.7 }}>
+                                    <h2 className="text-[10px] uppercase tracking-widest font-bold mb-8 mt-1 opacity-70">
                                         Admin Login
                                     </h2>
                                     {currentUser ? (
