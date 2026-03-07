@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import GridTrail from './GridTrail';
 import ContactDialog from './ContactDialog';
 import { getPortfolioByCategory, type Project, type MediaItem } from '../../lib/portfolioService';
@@ -14,6 +14,7 @@ export default function ProjectDetail() {
     const [contactOpen, setContactOpen] = useState(false);
     const [cols, setCols] = useState<1 | 4>(1);
     const [landscapeItems, setLandscapeItems] = useState<Record<number, boolean>>({});
+    const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
 
     // We'll keep the scroll refs for Hero vs Gallery navigation
     const [activeIndex, setActiveIndex] = useState(0);
@@ -81,7 +82,18 @@ export default function ProjectDetail() {
         window.addEventListener('keydown', handleKeyDown, { passive: false });
         // Clean up
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [activeIndex, allMedia.length]);
+    }, [activeIndex, allMedia.length, selectedMedia]);
+
+    // Close modal on Escape
+    useEffect(() => {
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && selectedMedia) {
+                setSelectedMedia(null);
+            }
+        };
+        window.addEventListener('keydown', handleEscape);
+        return () => window.removeEventListener('keydown', handleEscape);
+    }, [selectedMedia]);
 
 
     // Loading
@@ -282,7 +294,12 @@ export default function ProjectDetail() {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true, margin: '-80px' }}
                             transition={{ duration: 0.8, delay: (i % 10) * 0.05, ease: [0.25, 1, 0.5, 1] }}
-                            className={viewClass}
+                            className={`${viewClass} ${cols !== 1 ? 'cursor-pointer hover:opacity-90 transition-opacity' : ''}`}
+                            onClick={() => {
+                                if (cols !== 1) {
+                                    setSelectedMedia(media);
+                                }
+                            }}
                             layout
                         >
                             {media.type === 'video' || isVideoUrl(media.url) ? (
@@ -342,6 +359,52 @@ export default function ProjectDetail() {
                 </button>
             </motion.div>
             <ContactDialog open={contactOpen} onClose={() => setContactOpen(false)} />
+
+            {/* Fullscreen Media Modal */}
+            <AnimatePresence>
+                {selectedMedia && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="fixed inset-0 z-[100] bg-[#f7f6f0]/95 backdrop-blur-md flex items-center justify-center p-4 md:p-12 cursor-zoom-out"
+                        onClick={() => setSelectedMedia(null)}
+                    >
+                        <button
+                            onClick={() => setSelectedMedia(null)}
+                            className="absolute top-6 right-6 md:top-10 md:right-10 text-[10px] uppercase tracking-widest font-bold opacity-60 hover:opacity-100 transition-opacity z-10 mix-blend-difference text-[#f7f6f0]"
+                        >
+                            CLOSE
+                        </button>
+
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                            className="relative w-full h-full flex items-center justify-center pointer-events-none"
+                        >
+                            {selectedMedia.type === 'video' || isVideoUrl(selectedMedia.url) ? (
+                                <video
+                                    src={selectedMedia.url}
+                                    controls
+                                    autoPlay
+                                    className="max-w-full max-h-full object-contain drop-shadow-2xl pointer-events-auto rounded-sm"
+                                    onClick={(e) => e.stopPropagation()}
+                                />
+                            ) : (
+                                <img
+                                    src={selectedMedia.url}
+                                    alt="Enlarged view"
+                                    className="max-w-full max-h-full object-contain drop-shadow-2xl pointer-events-auto rounded-sm"
+                                    onClick={(e) => e.stopPropagation()}
+                                />
+                            )}
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
