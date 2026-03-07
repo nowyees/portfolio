@@ -96,13 +96,13 @@ export default function Home() {
 
       <div className="flex flex-col md:flex-row w-full relative min-h-max">
         {/* Left Column (Sticky Info) - Desktop Only */}
-        <div className="w-full md:w-[48%] lg:w-[45%] h-screen sticky top-0 flex flex-col p-8 md:p-16 lg:px-24 lg:py-16 z-10 hidden md:flex">
+        <div className="w-full md:w-[48%] lg:w-[45%] h-screen sticky top-0 flex flex-col pl-6 pr-8 py-8 md:pl-12 md:pr-16 md:py-16 lg:pl-12 lg:pr-24 lg:py-16 z-10 hidden md:flex">
           {/* Logo — upper area (approx 15% from top) */}
           <div className="pt-[10vh]">
             <img
               src="/images/logo.png"
               alt="Jaydne. L(ee)"
-              className="w-full max-w-[650px] h-auto select-none pointer-events-none"
+              className="w-full max-w-full h-auto select-none pointer-events-none"
               draggable={false}
             />
           </div>
@@ -176,7 +176,7 @@ export default function Home() {
                 key={`${project.category}-${project.id}`}
                 data-id={`${project.category}-${project.id}`}
                 ref={(el) => { imageRefs.current[idx] = el; }}
-                className="w-full h-[82vh] flex justify-center items-center snap-center cursor-pointer group px-6 md:px-[8%] shrink-0 pointer-events-none"
+                className="w-full h-[82vh] flex justify-center items-center snap-center cursor-pointer group pl-6 pr-0 md:pl-[8%] md:pr-12 shrink-0 pointer-events-none"
                 onClick={() => navigate(`/project/${project.category}/${project.id}`)}
               >
                 <div
