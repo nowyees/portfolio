@@ -207,7 +207,7 @@ export default function FreeDive() {
                         item,
                         x: itemX,
                         y: itemY,
-                        width: CELL_W - 100
+                        width: 520
                     });
                 });
             }
