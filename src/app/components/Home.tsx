@@ -67,21 +67,23 @@ export default function Home() {
 
       <div className="flex flex-col md:flex-row w-full relative min-h-max">
         {/* Left Column (Sticky Info) - Desktop Only */}
-        <div className="w-full md:w-[48%] lg:w-[45%] h-screen sticky top-0 flex flex-col p-8 md:p-16 lg:p-24 z-10 hidden md:flex">
-          {/* Logo — upper area */}
-          <div className="flex-1 flex items-center pt-8">
+        <div className="w-full md:w-[48%] lg:w-[45%] h-screen sticky top-0 flex flex-col p-8 md:p-16 lg:px-24 lg:py-16 z-10 hidden md:flex">
+          {/* Logo — upper area (approx 15% from top) */}
+          <div className="pt-[10vh]">
             <img
               src="/images/logo.png"
               alt="Jaydne. L(ee)"
-              className="w-full max-w-[480px] h-auto select-none pointer-events-none"
+              className="w-[90%] max-w-[550px] h-auto select-none pointer-events-none"
               draggable={false}
             />
           </div>
 
-          {/* Project Info — lower area */}
-          <div className="pb-16">
+          <div className="flex-1"></div>
+
+          {/* Project Info — lower area (approx 70% from top) */}
+          <div className="pb-12 w-[85%]">
             {activeProject && (
-              <div className="w-full max-w-none transition-opacity duration-500">
+              <div className="w-full transition-opacity duration-500">
                 <div className="flex justify-between items-end mb-4 font-bold text-xs md:text-sm uppercase tracking-widest">
                   <span>{activeProject.title}</span>
                   <span>{activeProject.year}</span>
@@ -121,7 +123,7 @@ export default function Home() {
         </div>
 
         {/* Right Column (Scrollable Images) */}
-        <div className="w-full md:w-[52%] lg:w-[55%] flex flex-col items-center z-0 pt-[10vh] pb-[20vh] gap-[4vh]">
+        <div className="w-full md:w-[52%] lg:w-[55%] flex flex-col items-center z-0 pt-[12vh] pb-[20vh] gap-[6vh]">
           {projects.map((project, idx) => {
             const isActive = `${project.category}-${project.id}` === activeProjectId;
             // Get aspect ratio safely, default to 3/4 if missing or malformed
@@ -132,7 +134,7 @@ export default function Home() {
                 key={`${project.category}-${project.id}`}
                 data-id={`${project.category}-${project.id}`}
                 ref={(el) => { imageRefs.current[idx] = el; }}
-                className="w-full h-[65vh] flex justify-center items-center snap-center cursor-pointer group px-6 md:px-12 shrink-0 pointer-events-none"
+                className="w-full h-[75vh] flex justify-center items-center snap-center cursor-pointer group px-6 md:px-[8%] shrink-0 pointer-events-none"
                 onClick={() => navigate(`/project/${project.category}/${project.id}`)}
               >
                 <div
