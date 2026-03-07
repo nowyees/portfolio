@@ -72,9 +72,7 @@ export default function AdminPage() {
         setUploadingImage(true);
         try {
             const url = await uploadImage(file);
-            if (editingProject) {
-                setEditingProject({ ...editingProject, image: url });
-            }
+            setEditingProject(prev => prev ? { ...prev, image: url } : prev);
             showNotification('썸네일 업로드 완료');
         } catch (err) {
             showNotification('썸네일 업로드 실패');
@@ -83,21 +81,21 @@ export default function AdminPage() {
     };
 
     const handleMediaUpload = async (files: FileList) => {
-        if (!editingProject) return;
         setUploadingImage(true);
-        const newMedia: MediaItem[] = [...(editingProject.media || [])];
 
         for (const file of Array.from(files)) {
             try {
                 const url = await uploadImage(file);
                 const type = isVideoFile(file) ? 'video' : 'image';
-                newMedia.push({ url, type });
+
+                setEditingProject(prev => {
+                    if (!prev) return prev;
+                    return { ...prev, media: [...(prev.media || []), { url, type }] };
+                });
             } catch (err) {
                 showNotification(`"${file.name}" 업로드 실패`);
             }
         }
-
-        setEditingProject({ ...editingProject, media: newMedia });
         showNotification(`${files.length}개 미디어 업로드 완료`);
         setUploadingImage(false);
     };
