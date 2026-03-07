@@ -112,17 +112,17 @@ export default function Home() {
       {/* Navigation */}
       <nav className="fixed top-0 w-full flex justify-between items-center px-6 pt-4 pb-0 md:px-12 z-50 mix-blend-difference text-[#f7f6f0] md:mix-blend-normal md:text-[#111]">
         <div className="flex-none">
-          <button onClick={() => { scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' }) }} className="text-[9px] md:text-[11px] font-bold uppercase transition-opacity hover:opacity-50">LEE JAEWOONG</button>
+          <button onClick={() => { scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' }) }} className="text-[9px] md:text-[11px] font-bold uppercase transition-opacity hover:opacity-70">LEE JAEWOONG</button>
         </div>
         <div className="flex-1 flex justify-end items-center gap-6 md:gap-16">
-          <button onClick={() => navigate('/freedive')} className="text-[9px] md:text-[11px] font-bold uppercase transition-opacity hover:opacity-50 opacity-40">FREE DIVE</button>
+          <button onClick={() => navigate('/freedive')} className="text-[9px] md:text-[11px] font-bold uppercase transition-opacity hover:opacity-100 opacity-60">FREE DIVE</button>
         </div>
       </nav>
 
       {/* Side Navigator */}
       <div className="fixed right-4 md:right-8 lg:right-12 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-4 mix-blend-difference text-[#f7f6f0] md:mix-blend-normal md:text-[#111] pointer-events-none">
         {/* Tracker text */}
-        <div className="text-[9px] md:text-[10px] tracking-widest font-bold opacity-60" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
+        <div className="text-[9px] md:text-[10px] tracking-widest font-bold opacity-80" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
           {projects.length > 0 ? `${String(Math.max(0, projects.findIndex(p => `${p.category}-${p.id}` === activeProjectId)) + 1).padStart(2, '0')} / ${String(projects.length).padStart(2, '0')}` : ''}
         </div>
         {/* Dots */}
@@ -131,7 +131,7 @@ export default function Home() {
             <button
               key={`${p.category}-${p.id}`}
               onClick={() => imageRefs.current[i]?.scrollIntoView({ behavior: 'smooth' })}
-              className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${projects.findIndex(p => `${p.category}-${p.id}` === activeProjectId) === i ? 'bg-current scale-150' : 'bg-current opacity-20 hover:opacity-50'}`}
+              className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${projects.findIndex(p => `${p.category}-${p.id}` === activeProjectId) === i ? 'bg-current scale-150' : 'bg-current opacity-40 hover:opacity-80'}`}
               aria-label={`Go to project ${i + 1}`}
             />
           ))}
@@ -162,19 +162,19 @@ export default function Home() {
                 </div>
 
                 <div className="mb-4">
-                  <p className="text-sm md:text-base leading-[1.8] opacity-50">
+                  <p className="text-sm md:text-base leading-[1.8] opacity-80 text-justify">
                     {activeProject.desc}
                   </p>
                 </div>
 
                 <div className="mb-6 font-bold text-[10px] md:text-xs">
-                  <span className="opacity-40">{activeProject.year}</span>
+                  <span className="opacity-70">{activeProject.year}</span>
                 </div>
 
                 {activeProject.hashtags && activeProject.hashtags.length > 0 && (
                   <div className="flex flex-wrap gap-2 mb-6">
                     {activeProject.hashtags.map((tag, i) => (
-                      <span key={i} className="text-[10px] opacity-30 tracking-widest uppercase">
+                      <span key={i} className="text-[10px] opacity-60 tracking-widest uppercase font-bold">
                         #{tag}
                       </span>
                     ))}
@@ -187,7 +187,7 @@ export default function Home() {
                       href={activeProject.externalLink}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs font-bold border-b border-[#111] pb-1 hover:opacity-50 transition-opacity"
+                      className="text-xs font-bold border-b border-[#111] pb-1 hover:opacity-70 transition-opacity"
                     >
                       {'>'} Link
                     </a>
@@ -201,7 +201,7 @@ export default function Home() {
           <div>
             <button
               onClick={() => setContactOpen(true)}
-              className="text-[10px] md:text-xs font-bold transition-opacity hover:opacity-50"
+              className="text-[10px] md:text-xs font-bold transition-opacity hover:opacity-70"
             >
               Contact me
             </button>

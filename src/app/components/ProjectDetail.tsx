@@ -116,7 +116,7 @@ export default function ProjectDetail() {
     return (
         <div
             ref={scrollContainerRef}
-            className="w-full h-screen overflow-y-auto overflow-x-hidden bg-[#f7f6f0] text-[#111] selection:bg-[#111] selection:text-[#f7f6f0] scroll-smooth"
+            className={`w-full h-screen overflow-y-auto overflow-x-hidden bg-[#f7f6f0] text-[#111] selection:bg-[#111] selection:text-[#f7f6f0] scroll-smooth ${cols === 1 ? 'snap-y snap-mandatory' : ''}`}
             style={{ fontFamily: "'Champagne & Limousines', sans-serif" }}
         >
             <GridTrail dark={false} />
@@ -126,7 +126,7 @@ export default function ProjectDetail() {
                 <div className="flex-none pointer-events-auto">
                     <button
                         onClick={() => navigate('/')}
-                        className="text-[9px] md:text-[11px] font-bold uppercase transition-opacity hover:opacity-50"
+                        className="text-[9px] md:text-[11px] font-bold uppercase transition-opacity hover:opacity-70"
                     >
                         LEE JAEWOONG
                     </button>
@@ -134,7 +134,7 @@ export default function ProjectDetail() {
                 <div className="flex-1 flex justify-end items-center gap-6 md:gap-16 pointer-events-auto">
                     <button
                         onClick={() => navigate('/freedive')}
-                        className="text-[9px] md:text-[11px] font-bold uppercase transition-opacity hover:opacity-50 opacity-40"
+                        className="text-[9px] md:text-[11px] font-bold uppercase transition-opacity hover:opacity-100 opacity-60"
                     >
                         FREE DIVE
                     </button>
@@ -144,16 +144,16 @@ export default function ProjectDetail() {
             {/* Side Navigator */}
             <div className="fixed right-6 md:right-12 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-4 mix-blend-difference text-[#f7f6f0] md:mix-blend-normal md:text-[#111] pointer-events-none">
                 {/* Tracker text */}
-                <div className="text-[9px] md:text-[10px] tracking-widest font-bold opacity-60" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
-                    {activeIndex === 0 ? 'INFO' : 'GALLERY'}
+                <div className="text-[9px] md:text-[10px] tracking-widest font-bold opacity-80" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
+                    {activeIndex === 0 ? 'INFO' : `${String(activeIndex).padStart(2, '0')} / ${String(allMedia.length).padStart(2, '0')}`}
                 </div>
                 {/* Dots */}
                 <div className="flex flex-col gap-3 mt-4 pointer-events-auto">
-                    {[0, 1].map((_, i) => (
+                    {Array.from({ length: allMedia.length + 1 }).map((_, i) => (
                         <button
                             key={i}
                             onClick={() => sectionRefs.current[i]?.scrollIntoView({ behavior: 'smooth' })}
-                            className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${activeIndex === i ? 'bg-current scale-150' : 'bg-current opacity-20 hover:opacity-50'}`}
+                            className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${activeIndex === i ? 'bg-current scale-150' : 'bg-current opacity-40 hover:opacity-80'}`}
                             aria-label={`Go to slide ${i}`}
                         />
                     ))}
@@ -164,7 +164,7 @@ export default function ProjectDetail() {
             <div
                 data-index={0}
                 ref={(el) => { sectionRefs.current[0] = el; }}
-                className="w-full min-h-screen flex flex-col items-center justify-center px-6 py-20 relative z-10"
+                className={`w-full min-h-screen flex flex-col items-center justify-center px-6 py-20 relative z-10 ${cols === 1 ? 'snap-center' : ''}`}
             >
                 <motion.div
                     initial={{ opacity: 0, y: 40 }}
@@ -179,17 +179,17 @@ export default function ProjectDetail() {
                     >
                         {project.title}
                     </h1>
-                    <div className="text-xs md:text-sm uppercase tracking-widest opacity-50 mb-12">
+                    <div className="text-xs md:text-sm uppercase tracking-widest opacity-70 mb-12">
                         {project.year}
                     </div>
-                    <p className="text-base md:text-lg leading-[2] opacity-80 text-justify max-w-2xl mx-auto">
+                    <p className="text-base md:text-lg leading-[2] opacity-90 text-justify max-w-2xl mx-auto">
                         {project.desc}
                     </p>
 
                     {project.hashtags && project.hashtags.length > 0 && (
                         <div className="flex flex-wrap justify-center gap-2 mt-8">
                             {project.hashtags.map((tag, i) => (
-                                <span key={i} className="text-[10px] opacity-30 tracking-widest uppercase">
+                                <span key={i} className="text-[10px] opacity-60 tracking-widest uppercase font-bold">
                                     #{tag}
                                 </span>
                             ))}
@@ -202,7 +202,7 @@ export default function ProjectDetail() {
                                 href={project.externalLink}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-xs font-bold border-b border-[#111] pb-1 hover:opacity-50 transition-opacity"
+                                className="text-xs font-bold border-b border-[#111] pb-1 hover:opacity-70 transition-opacity"
                             >
                                 {'>'} Link
                             </a>
@@ -216,7 +216,7 @@ export default function ProjectDetail() {
                         width="16" height="16" viewBox="0 0 16 16" fill="none"
                         animate={{ y: [0, 8, 0] }}
                         transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
-                        className="opacity-30"
+                        className="opacity-50"
                     >
                         <path d="M8 2v12M8 14l-4-4M8 14l4-4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
                     </motion.svg>
@@ -231,7 +231,7 @@ export default function ProjectDetail() {
                         onClick={() => setCols(n)}
                         className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 ${cols === n
                             ? 'bg-[#111] text-[#f7f6f0]'
-                            : 'hover:bg-[#111]/10 text-[#111]/50'
+                            : 'hover:bg-[#111]/20 text-[#111]/70'
                             }`}
                         title={`${n} column${n > 1 ? 's' : ''}`}
                     >
@@ -255,29 +255,34 @@ export default function ProjectDetail() {
 
             {/* Media Gallery : Responsive Grid */}
             <div
-                data-index={1}
-                ref={(el) => { sectionRefs.current[1] = el; }}
-                className="px-4 md:px-12 lg:px-24 pb-32 relative z-10"
-                style={{
+                className={`px-4 md:px-12 lg:px-24 pb-32 relative z-10 ${cols === 1 ? 'space-y-6' : ''}`}
+                style={cols === 4 ? {
                     display: 'grid',
                     gridTemplateColumns: `repeat(${cols}, 1fr)`,
-                    gap: cols === 1 ? '1.5rem' : '0.5rem',
+                    gap: '0.5rem',
                     transition: 'all 0.4s cubic-bezier(0.22, 1, 0.36, 1)',
-                }}
+                } : {}}
             >
                 {allMedia.map((media, i) => {
                     const isLandscape = landscapeItems[i];
                     // If image is landscape and columns configured >= 2, span 2 columns
                     const spanClass = (cols >= 2 && isLandscape) ? 'md:col-span-2' : '';
 
+                    // If cols === 1, act like the full-screen snap slides
+                    const viewClass = cols === 1
+                        ? 'w-full h-[90vh] md:h-screen snap-center flex items-center justify-center'
+                        : `w-full ${spanClass}`;
+
                     return (
                         <motion.div
                             key={i}
+                            data-index={i + 1}
+                            ref={(el) => { sectionRefs.current[i + 1] = el; }}
                             initial={{ opacity: 0, y: 80 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true, margin: '-80px' }}
                             transition={{ duration: 0.8, delay: (i % 10) * 0.05, ease: [0.25, 1, 0.5, 1] }}
-                            className={`w-full ${spanClass}`}
+                            className={viewClass}
                             layout
                         >
                             {media.type === 'video' || isVideoUrl(media.url) ? (
@@ -292,8 +297,8 @@ export default function ProjectDetail() {
                                             setLandscapeItems(prev => ({ ...prev, [i]: true }));
                                         }
                                     }}
-                                    className="w-full h-auto"
-                                    style={{ objectFit: 'contain', maxHeight: '85vh' }}
+                                    className={cols === 1 ? 'max-w-full max-h-[85vh] object-contain drop-shadow-sm' : 'w-full h-auto object-contain'}
+                                    style={cols !== 1 ? { maxHeight: '85vh' } : undefined}
                                 />
                             ) : (
                                 <img
@@ -306,8 +311,8 @@ export default function ProjectDetail() {
                                             setLandscapeItems(prev => ({ ...prev, [i]: true }));
                                         }
                                     }}
-                                    className="w-full h-auto drop-shadow-sm"
-                                    style={{ objectFit: 'contain', maxHeight: '85vh' }}
+                                    className={cols === 1 ? 'max-w-full max-h-[85vh] object-contain drop-shadow-sm' : 'w-full h-auto drop-shadow-sm object-contain'}
+                                    style={cols !== 1 ? { maxHeight: '85vh' } : undefined}
                                 />
                             )}
                         </motion.div>
@@ -321,17 +326,17 @@ export default function ProjectDetail() {
                 whileInView={{ opacity: 1 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.8 }}
-                className="border-t border-[#111]/10 px-6 md:px-16 py-12 flex justify-between items-center relative z-10"
+                className={`border-t border-[#111]/20 px-6 md:px-16 py-12 flex justify-between items-center relative z-10 ${cols === 1 ? 'snap-center' : ''}`}
             >
                 <button
                     onClick={() => navigate('/')}
-                    className="text-[10px] uppercase tracking-widest opacity-40 hover:opacity-100 transition-opacity"
+                    className="text-[10px] uppercase tracking-widest font-bold opacity-70 hover:opacity-100 transition-opacity"
                 >
                     Back to Home
                 </button>
                 <button
                     onClick={() => setContactOpen(true)}
-                    className="text-[10px] uppercase tracking-widest opacity-40 hover:opacity-100 transition-opacity"
+                    className="text-[10px] uppercase tracking-widest font-bold opacity-70 hover:opacity-100 transition-opacity"
                 >
                     Contact
                 </button>
