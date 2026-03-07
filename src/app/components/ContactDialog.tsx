@@ -149,7 +149,7 @@ export default function ContactDialog({ open, onClose, dark = false }: ContactDi
                                                     type="text"
                                                     value={name}
                                                     onChange={e => setName(e.target.value)}
-                                                    className="w-full px-0 py-2 text-[13px] border-b outline-none transition-colors cursor-text"
+                                                    className="w-full px-0 py-2 text-[13px] border-b outline-none transition-colors cursor-text font-['Pretendard',sans-serif] font-medium placeholder:text-current placeholder:opacity-50"
                                                     style={{ backgroundColor: 'transparent', borderColor: borderCol, color: fg }}
                                                     placeholder="Your name"
                                                     disabled={status === 'sending'}
@@ -161,7 +161,7 @@ export default function ContactDialog({ open, onClose, dark = false }: ContactDi
                                                     type="email"
                                                     value={email}
                                                     onChange={e => setEmail(e.target.value)}
-                                                    className="w-full px-0 py-2 text-[13px] border-b outline-none transition-colors cursor-text"
+                                                    className="w-full px-0 py-2 text-[13px] border-b outline-none transition-colors cursor-text font-['Pretendard',sans-serif] font-medium placeholder:text-current placeholder:opacity-50"
                                                     style={{ backgroundColor: 'transparent', borderColor: borderCol, color: fg }}
                                                     placeholder="your@email.com"
                                                     disabled={status === 'sending'}
@@ -173,7 +173,7 @@ export default function ContactDialog({ open, onClose, dark = false }: ContactDi
                                                     value={message}
                                                     onChange={e => setMessage(e.target.value)}
                                                     rows={4}
-                                                    className="w-full px-0 py-2 text-[13px] border-b outline-none transition-colors resize-none cursor-text"
+                                                    className="w-full px-0 py-2 text-[13px] border-b outline-none transition-colors resize-none cursor-text font-['Pretendard',sans-serif] font-medium placeholder:text-current placeholder:opacity-50"
                                                     style={{ backgroundColor: 'transparent', borderColor: borderCol, color: fg }}
                                                     placeholder="Tell me about your project..."
                                                     disabled={status === 'sending'}
@@ -209,7 +209,7 @@ export default function ContactDialog({ open, onClose, dark = false }: ContactDi
                                     <div className="mt-8 text-center">
                                         <button
                                             onClick={() => { setMode('admin'); setErrorMsg(''); }}
-                                            className="text-[8px] uppercase tracking-widest opacity-40 hover:opacity-100 transition-opacity cursor-pointer"
+                                            className="text-[9px] uppercase tracking-widest opacity-60 hover:opacity-100 transition-opacity cursor-pointer font-bold"
                                         >
                                             Admin
                                         </button>
