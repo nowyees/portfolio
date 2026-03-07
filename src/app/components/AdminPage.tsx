@@ -32,17 +32,21 @@ export default function AdminPage() {
     const freediveFileInputRef = useRef<HTMLInputElement>(null);
     const [uploadingImage, setUploadingImage] = useState(false);
 
-    // Auth 체크
+    // Auth 체크 — Firebase 세션 복원 대기
     useEffect(() => {
         const unsubscribe = onAuthChange((u) => {
             setUser(u);
             setAuthChecked(true);
-            if (!u || !isAdmin(u)) {
-                navigate('/');
-            }
         });
         return unsubscribe;
-    }, [navigate]);
+    }, []);
+
+    // 인증 확인 후 비관리자면 리다이렉트
+    useEffect(() => {
+        if (authChecked && (!user || !isAdmin(user))) {
+            navigate('/');
+        }
+    }, [authChecked, user, navigate]);
 
     // 카테고리 데이터 로드
     useEffect(() => {
