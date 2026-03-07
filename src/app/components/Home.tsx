@@ -16,11 +16,30 @@ export default function Home() {
   const imageRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
-    if (scrollContainerRef.current) scrollContainerRef.current.scrollTo(0, 0);
+    // When mounting, prioritize the saved active project ID if available
+    const savedProjectId = sessionStorage.getItem('lastActiveProject');
+    let targetId: string | null = null;
+
     getAllProjects().then(res => {
       setProjects(res);
       if (res.length > 0) {
-        setActiveProjectId(`${res[0].category}-${res[0].id}`);
+        targetId = savedProjectId && res.some(p => `${p.category}-${p.id}` === savedProjectId)
+          ? savedProjectId
+          : `${res[0].category}-${res[0].id}`;
+
+        setActiveProjectId(targetId);
+
+        // Scroll to the restored position after rendering
+        if (targetId) {
+          setTimeout(() => {
+            const idx = res.findIndex(p => `${p.category}-${p.id}` === targetId);
+            if (idx !== -1 && imageRefs.current[idx]) {
+              imageRefs.current[idx]?.scrollIntoView({ behavior: 'auto', block: 'center' });
+            } else if (scrollContainerRef.current) {
+              scrollContainerRef.current.scrollTo(0, 0);
+            }
+          }, 100); // Short delay to allow DOM refs to attach
+        }
       }
     });
   }, []);
@@ -29,7 +48,11 @@ export default function Home() {
     observerRef.current = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
-          setActiveProjectId(entry.target.getAttribute('data-id'));
+          const id = entry.target.getAttribute('data-id');
+          if (id) {
+            setActiveProjectId(id);
+            sessionStorage.setItem('lastActiveProject', id);
+          }
         }
       });
     }, {
