@@ -189,7 +189,8 @@ export default function ProjectDetail() {
                         {project.year}
                     </div>
                     <h1
-                        className="text-[14vw] md:text-[9vw] leading-[0.9] tracking-tighter mb-16 text-center font-bold font-['Pretendard',sans-serif]"
+                        className="text-[14vw] md:text-[9vw] leading-[0.9] tracking-tighter mb-16 text-center"
+                        style={{ fontWeight: 700 }}
                     >
                         {project.title}
                     </h1>
