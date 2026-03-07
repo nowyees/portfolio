@@ -194,7 +194,7 @@ export default function ProjectDetail() {
                     <div className="text-xs md:text-sm uppercase tracking-widest opacity-70 mb-12 font-['Pretendard',sans-serif] tracking-wider">
                         {project.year}
                     </div>
-                    <p className="text-base md:text-lg leading-[2] opacity-90 text-justify max-w-2xl mx-auto font-['Pretendard',sans-serif]">
+                    <p className="text-base md:text-lg leading-relaxed opacity-60 text-justify max-w-2xl mx-auto font-['Pretendard',sans-serif]">
                         {project.desc}
                     </p>
 
