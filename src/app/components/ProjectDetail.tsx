@@ -116,7 +116,7 @@ export default function ProjectDetail() {
     return (
         <div
             ref={scrollContainerRef}
-            className={`w-full h-screen overflow-y-auto overflow-x-hidden bg-[#f7f6f0] text-[#111] selection:bg-[#111] selection:text-[#f7f6f0] scroll-smooth ${cols === 1 ? 'snap-y snap-mandatory' : ''}`}
+            className={`w-full h-screen overflow-y-auto overflow-x-hidden bg-[#f7f6f0] text-[#111] selection:bg-[#111] selection:text-[#f7f6f0] ${cols === 1 ? 'snap-y snap-mandatory' : ''}`}
             style={{ fontFamily: "'Champagne & Limousines', sans-serif" }}
         >
             <GridTrail dark={false} />

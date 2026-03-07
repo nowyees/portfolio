@@ -128,7 +128,7 @@ export default function ContactDialog({ open, onClose, dark = false }: ContactDi
                         <div className="p-8 md:p-10">
                             {mode === 'contact' ? (
                                 <>
-                                    <h2 className="text-[9px] uppercase tracking-[0.3em] mb-8" style={{ opacity: 0.4 }}>
+                                    <h2 className="text-[9px] uppercase tracking-[0.3em] mb-8" style={{ opacity: 0.7 }}>
                                         Get in Touch
                                     </h2>
 
@@ -138,13 +138,13 @@ export default function ContactDialog({ open, onClose, dark = false }: ContactDi
                                             animate={{ opacity: 1, y: 0 }}
                                             className="py-12 text-center"
                                         >
-                                            <p className="text-[11px] uppercase tracking-widest">메시지가 전송되었습니다</p>
-                                            <p className="text-[10px] mt-2 opacity-40">Thank you for reaching out</p>
+                                            <p className="text-[11px] uppercase tracking-widest font-bold">메시지가 전송되었습니다</p>
+                                            <p className="text-[10px] mt-2 opacity-70">Thank you for reaching out</p>
                                         </motion.div>
                                     ) : (
                                         <form onSubmit={handleSubmit} className="space-y-5">
                                             <div>
-                                                <label className="block text-[9px] uppercase tracking-widest mb-2 opacity-40">Name</label>
+                                                <label className="block text-[9px] uppercase tracking-widest mb-2 opacity-70 font-bold">Name</label>
                                                 <input
                                                     type="text"
                                                     value={name}
@@ -156,7 +156,7 @@ export default function ContactDialog({ open, onClose, dark = false }: ContactDi
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-[9px] uppercase tracking-widest mb-2 opacity-40">Email</label>
+                                                <label className="block text-[9px] uppercase tracking-widest mb-2 opacity-70 font-bold">Email</label>
                                                 <input
                                                     type="email"
                                                     value={email}
@@ -168,7 +168,7 @@ export default function ContactDialog({ open, onClose, dark = false }: ContactDi
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-[9px] uppercase tracking-widest mb-2 opacity-40">Message</label>
+                                                <label className="block text-[9px] uppercase tracking-widest mb-2 opacity-70 font-bold">Message</label>
                                                 <textarea
                                                     value={message}
                                                     onChange={e => setMessage(e.target.value)}
@@ -217,13 +217,13 @@ export default function ContactDialog({ open, onClose, dark = false }: ContactDi
                                 </>
                             ) : (
                                 <>
-                                    <h2 className="text-[9px] uppercase tracking-[0.3em] mb-8" style={{ opacity: 0.4 }}>
+                                    <h2 className="text-[9px] uppercase tracking-[0.3em] mb-8" style={{ opacity: 0.7 }}>
                                         Admin Login
                                     </h2>
                                     {currentUser ? (
                                         <div className="flex flex-col items-center justify-center py-8">
                                             <div className="w-12 h-12 rounded-full border border-current flex items-center justify-center mb-4 opacity-50">✓</div>
-                                            <p className="text-[11px] uppercase tracking-widest mb-6 select-none">Admin Session Active</p>
+                                            <p className="text-[11px] uppercase tracking-widest mb-6 select-none font-bold">Admin Session Active</p>
                                             <button
                                                 onClick={() => { handleClose(); navigate('/admin'); }}
                                                 className="w-full py-4 text-[11px] uppercase tracking-widest font-bold bg-current text-white cursor-pointer hover:opacity-80 transition-opacity"
@@ -235,7 +235,7 @@ export default function ContactDialog({ open, onClose, dark = false }: ContactDi
                                     ) : (
                                         <form onSubmit={handleAdminLogin} className="flex flex-col gap-6">
                                             <div>
-                                                <label className="block text-[9px] uppercase tracking-widest mb-2 opacity-50 select-none">Admin ID</label>
+                                                <label className="block text-[9px] uppercase tracking-widest mb-2 opacity-70 font-bold select-none">Admin ID</label>
                                                 <input
                                                     type="text"
                                                     value={adminId}
@@ -246,7 +246,7 @@ export default function ContactDialog({ open, onClose, dark = false }: ContactDi
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-[9px] uppercase tracking-widest mb-2 opacity-50 select-none">Password</label>
+                                                <label className="block text-[9px] uppercase tracking-widest mb-2 opacity-70 font-bold select-none">Password</label>
                                                 <input
                                                     type="password"
                                                     value={adminPw}
