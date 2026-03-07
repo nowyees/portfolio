@@ -534,17 +534,18 @@ export default function AdminPage() {
                                                     />
                                                 </div>
                                                 <div>
-                                                    <label className="block text-[9px] uppercase tracking-widest mb-1 opacity-40">Hashtags</label>
+                                                    <label className="block text-[9px] uppercase tracking-widest mb-1 opacity-40 text-blue-600 font-bold">Hashtags (Comma Separated)</label>
                                                     <input
                                                         type="text"
                                                         value={editingProject.hashtags?.join(', ') || ''}
                                                         onChange={e => {
-                                                            const arr = e.target.value.split(/[, ]+/).filter(Boolean);
+                                                            const arr = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
                                                             setEditingProject({ ...editingProject, hashtags: arr });
                                                         }}
-                                                        placeholder="e.g. fashion, editorial"
-                                                        className="w-full px-0 py-2 text-[13px] border-b border-[#111]/10 bg-transparent outline-none"
+                                                        placeholder="e.g. fashion, editorial, 2024"
+                                                        className="w-full px-0 py-2 text-[13px] border-b border-[#111]/10 bg-transparent outline-none focus:border-blue-500 transition-colors"
                                                     />
+                                                    <p className="text-[9px] opacity-40 mt-1">쉼표(,)로 구분지어 여러 개의 해시태그를 입력하세요.</p>
                                                 </div>
                                                 <div className="flex gap-4 items-center">
                                                     <div className="flex-1">
