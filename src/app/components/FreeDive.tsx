@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { getPortfolioByCategory } from '../../lib/portfolioService';
 
-const CELL_W = 540;
-const CELL_H = 700;
+const CELL_W = 620;
+const CELL_H = 780;
 
 export default function FreeDive() {
     const navigate = useNavigate();
@@ -343,7 +343,7 @@ export default function FreeDive() {
                                     handleItemClick(renderData.x, renderData.y);
                                 }}
                                 className="w-full pointer-events-auto cursor-pointer opacity-90 hover:opacity-100 transition-opacity duration-300 block bg-black/5"
-                                style={{ aspectRatio: '4/5', objectFit: 'cover' }}
+                                style={{ aspectRatio: '3/4', objectFit: 'cover' }}
                             />
                         )}
                     </div>
