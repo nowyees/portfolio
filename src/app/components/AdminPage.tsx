@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { doc, getDoc, collection, getDocs, setDoc } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { onAuthChange, isAdmin, adminLogout } from '../../lib/authService';
@@ -196,6 +198,37 @@ export default function AdminPage() {
         navigate('/');
     };
 
+    const handleMigrateLegacyData = async () => {
+        if (!confirm('레거시 카테고리(fashion, product, space, speculative)의 프로젝트들을 portfolio로 마이그레이션 하시겠습니까? 이미 복사된 항목은 건너뜁니다.')) return;
+        setLoading(true);
+        try {
+            const LEGACY = ['fashion', 'product', 'space', 'speculative'];
+            let maxId = data?.projects.reduce((max, p) => Math.max(max, p.id), 0) || 0;
+            const existingTitles = new Set(data?.projects.map(p => p.title.toLowerCase()) || []);
+            let count = 0;
+
+            for (const cat of LEGACY) {
+                const snap = await getDocs(collection(db!, 'portfolios', cat, 'projects'));
+                for (const d of snap.docs) {
+                    const pData = d.data() as Project;
+                    if (!existingTitles.has(pData.title.toLowerCase())) {
+                        maxId++;
+                        const newData = { ...pData, id: maxId };
+                        if (!newData.hashtags) newData.hashtags = [cat];
+                        await setDoc(doc(db!, 'portfolios', 'portfolio', 'projects', `project-${maxId}`), newData);
+                        existingTitles.add(pData.title.toLowerCase());
+                        count++;
+                    }
+                }
+            }
+            showNotification(`마이그레이션 완료: ${count}개 프로젝트 이동됨`);
+            await loadData();
+        } catch (err: any) {
+            showNotification(`마이그레이션 오류: ${err.message}`);
+        }
+        setLoading(false);
+    };
+
     if (!authChecked || !user || !isAdmin(user)) {
         return (
             <div className="w-screen h-screen bg-[#f7f6f0] flex items-center justify-center">
@@ -275,6 +308,12 @@ export default function AdminPage() {
                     <span className="text-[10px] uppercase tracking-[0.3em] opacity-40">Admin Dashboard</span>
                 </div>
                 <div className="flex items-center gap-4">
+                    <button
+                        onClick={handleMigrateLegacyData}
+                        className="text-[10px] uppercase font-bold text-red-500 tracking-widest hover:opacity-100 opacity-60 transition-opacity mr-4"
+                    >
+                        [데이터 마이그레이션]
+                    </button>
                     <span className="text-[10px] opacity-30">{user.email}</span>
                     <button
                         onClick={handleLogout}
