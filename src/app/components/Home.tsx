@@ -157,7 +157,7 @@ export default function Home() {
           <div className="pb-12 w-[85%]">
             {activeProject && (
               <div className="w-full transition-opacity duration-500">
-                <div className="mb-8 font-bold text-xs md:text-sm uppercase tracking-widest">
+                <div className="mb-8 font-bold text-xs md:text-sm uppercase tracking-widest font-['Pretendard',sans-serif]">
                   <span>{activeProject.title}</span>
                 </div>
 
@@ -167,14 +167,14 @@ export default function Home() {
                   </p>
                 </div>
 
-                <div className="mb-2 font-bold text-[10px] md:text-xs font-['Pretendard',sans-serif] tracking-wider">
+                <div className="mb-2 text-[10px] md:text-xs font-['Pretendard',sans-serif] tracking-wider font-normal">
                   <span className="opacity-70">{activeProject.year}</span>
                 </div>
 
                 {activeProject.hashtags && activeProject.hashtags.length > 0 && (
                   <div className="flex flex-wrap gap-2 mb-6">
                     {activeProject.hashtags.map((tag, i) => (
-                      <span key={i} className="text-[10px] opacity-60 font-['Pretendard',sans-serif] font-bold">
+                      <span key={i} className="text-[10px] opacity-60 font-['Pretendard',sans-serif] font-normal">
                         #{tag}
                       </span>
                     ))}
