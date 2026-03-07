@@ -67,16 +67,19 @@ export default function Home() {
 
       <div className="flex flex-col md:flex-row w-full relative min-h-max">
         {/* Left Column (Sticky Info) - Desktop Only */}
-        <div className="w-full md:w-[48%] lg:w-[45%] h-screen sticky top-0 flex flex-col justify-between p-8 md:p-16 lg:p-24 z-10 hidden md:flex">
-          <div className="flex-1 flex flex-col justify-center">
-            {/* Large Name Typography */}
-            <h1
-              className="leading-[0.95] tracking-tight mb-16"
-              style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(3.5rem, 6.5vw, 7rem)', fontWeight: 400 }}
-            >
-              Jaydne. L<span style={{ fontSize: '0.55em', fontStyle: 'italic' }}>(ee)</span>
-            </h1>
+        <div className="w-full md:w-[48%] lg:w-[45%] h-screen sticky top-0 flex flex-col p-8 md:p-16 lg:p-24 z-10 hidden md:flex">
+          {/* Logo — upper area */}
+          <div className="flex-1 flex items-center pt-8">
+            <img
+              src="/images/logo.png"
+              alt="Jaydne. L(ee)"
+              className="w-full max-w-[480px] h-auto select-none pointer-events-none"
+              draggable={false}
+            />
+          </div>
 
+          {/* Project Info — lower area */}
+          <div className="pb-16">
             {activeProject && (
               <div className="w-full max-w-none transition-opacity duration-500">
                 <div className="flex justify-between items-end mb-4 font-bold text-xs md:text-sm uppercase tracking-widest">
@@ -84,7 +87,7 @@ export default function Home() {
                   <span>{activeProject.year}</span>
                 </div>
 
-                <div className="mb-8">
+                <div className="mb-6">
                   <p className="text-xs md:text-sm leading-[1.8] opacity-50">
                     {activeProject.desc}
                   </p>
@@ -106,6 +109,7 @@ export default function Home() {
             )}
           </div>
 
+          {/* Contact — bottom */}
           <div>
             <button
               onClick={() => setContactOpen(true)}
@@ -117,7 +121,7 @@ export default function Home() {
         </div>
 
         {/* Right Column (Scrollable Images) */}
-        <div className="w-full md:w-[52%] lg:w-[55%] flex flex-col items-center z-0 pt-[20vh] pb-[20vh] gap-[4vh]">
+        <div className="w-full md:w-[52%] lg:w-[55%] flex flex-col items-center z-0 pt-[10vh] pb-[20vh] gap-[4vh]">
           {projects.map((project, idx) => {
             const isActive = `${project.category}-${project.id}` === activeProjectId;
             // Get aspect ratio safely, default to 3/4 if missing or malformed
