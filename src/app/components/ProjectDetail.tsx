@@ -12,7 +12,7 @@ export default function ProjectDetail() {
     const [project, setProject] = useState<Project | null>(null);
     const [loading, setLoading] = useState(true);
     const [contactOpen, setContactOpen] = useState(false);
-    const [cols, setCols] = useState<1 | 2 | 4>(1);
+    const [cols, setCols] = useState<1 | 4>(1);
     const [landscapeItems, setLandscapeItems] = useState<Record<number, boolean>>({});
 
     // We'll keep the scroll refs for Hero vs Gallery navigation
@@ -116,7 +116,7 @@ export default function ProjectDetail() {
     return (
         <div
             ref={scrollContainerRef}
-            className="w-full h-screen overflow-y-auto overflow-x-hidden snap-y snap-mandatory bg-[#f7f6f0] text-[#111] selection:bg-[#111] selection:text-[#f7f6f0] scroll-smooth"
+            className="w-full h-screen overflow-y-auto overflow-x-hidden bg-[#f7f6f0] text-[#111] selection:bg-[#111] selection:text-[#f7f6f0] scroll-smooth"
             style={{ fontFamily: "'Champagne & Limousines', sans-serif" }}
         >
             <GridTrail dark={false} />
@@ -164,7 +164,7 @@ export default function ProjectDetail() {
             <div
                 data-index={0}
                 ref={(el) => { sectionRefs.current[0] = el; }}
-                className="w-full h-screen snap-center flex flex-col items-center justify-center px-6 relative z-10"
+                className="w-full min-h-screen flex flex-col items-center justify-center px-6 py-20 relative z-10"
             >
                 <motion.div
                     initial={{ opacity: 0, y: 40 }}
@@ -225,7 +225,7 @@ export default function ProjectDetail() {
 
             {/* Layout Navigator */}
             <div className="fixed bottom-8 right-8 z-50 flex items-center gap-2 bg-[#f7f6f0]/80 backdrop-blur-md rounded-full px-3 py-2 shadow-[0_4px_20px_rgba(0,0,0,0.05)] border border-[#111]/10">
-                {([1, 2, 4] as const).map(n => (
+                {([1, 4] as const).map(n => (
                     <button
                         key={n}
                         onClick={() => setCols(n)}
@@ -239,12 +239,6 @@ export default function ProjectDetail() {
                         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                             {n === 1 && (
                                 <rect x="2" y="1" width="10" height="12" rx="1" stroke="currentColor" strokeWidth="1.3" />
-                            )}
-                            {n === 2 && (
-                                <>
-                                    <rect x="1" y="1" width="5" height="12" rx="1" stroke="currentColor" strokeWidth="1.3" />
-                                    <rect x="8" y="1" width="5" height="12" rx="1" stroke="currentColor" strokeWidth="1.3" />
-                                </>
                             )}
                             {n === 4 && (
                                 <>
@@ -263,11 +257,11 @@ export default function ProjectDetail() {
             <div
                 data-index={1}
                 ref={(el) => { sectionRefs.current[1] = el; }}
-                className="px-4 md:px-12 lg:px-24 pb-32 relative z-10 snap-start"
+                className="px-4 md:px-12 lg:px-24 pb-32 relative z-10"
                 style={{
                     display: 'grid',
                     gridTemplateColumns: `repeat(${cols}, 1fr)`,
-                    gap: cols === 1 ? '1.5rem' : cols === 2 ? '1rem' : '0.5rem',
+                    gap: cols === 1 ? '1.5rem' : '0.5rem',
                     transition: 'all 0.4s cubic-bezier(0.22, 1, 0.36, 1)',
                 }}
             >
