@@ -142,7 +142,7 @@ export default function Home() {
         {/* Left Column (Sticky Info) - Desktop Only */}
         <div className="w-full md:w-[48%] lg:w-[45%] h-screen sticky top-0 flex flex-col pl-6 pr-8 py-8 md:pl-12 md:pr-16 md:py-16 lg:pl-12 lg:pr-24 lg:py-16 z-10 hidden md:flex">
           {/* Logo — upper area (approx 15% from top) */}
-          <div className="pt-[10vh]">
+          <div className="pt-[10vh] w-[110%] -ml-2">
             <img
               src="/images/logo.png"
               alt="Jaydne. L(ee)"
@@ -154,27 +154,27 @@ export default function Home() {
           <div className="flex-1"></div>
 
           {/* Project Info — lower area (approx 70% from top) */}
-          <div className="pb-12 w-[85%]">
+          <div className="pb-12 w-[95%]">
             {activeProject && (
               <div className="w-full transition-opacity duration-500">
-                <div className="mb-8 font-bold text-xs md:text-sm uppercase tracking-widest font-['Pretendard',sans-serif]">
+                <div className="mb-8 font-bold text-base md:text-lg uppercase tracking-widest font-['Pretendard',sans-serif]">
                   <span>{activeProject.title}</span>
                 </div>
 
                 <div className="mb-2">
-                  <p className="text-sm md:text-base leading-relaxed opacity-60 text-justify font-['Pretendard',sans-serif]">
+                  <p className="text-base md:text-lg leading-relaxed opacity-60 text-justify font-['Pretendard',sans-serif]">
                     {activeProject.desc}
                   </p>
                 </div>
 
-                <div className="mb-2 text-[10px] md:text-xs font-['Pretendard',sans-serif] tracking-wider font-normal">
+                <div className="mb-3 text-xs md:text-sm font-['Pretendard',sans-serif] tracking-wider font-normal mt-4">
                   <span className="opacity-70">{activeProject.year}</span>
                 </div>
 
                 {activeProject.hashtags && activeProject.hashtags.length > 0 && (
                   <div className="flex flex-wrap gap-2 mb-6">
                     {activeProject.hashtags.map((tag, i) => (
-                      <span key={i} className="text-[10px] opacity-60 font-['Pretendard',sans-serif] font-normal">
+                      <span key={i} className="text-xs opacity-60 font-['Pretendard',sans-serif] font-normal">
                         #{tag}
                       </span>
                     ))}

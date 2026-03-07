@@ -185,24 +185,24 @@ export default function ProjectDetail() {
                     transition={{ duration: 0.8 }}
                     className="max-w-4xl px-4 md:px-12 w-full flex flex-col items-center"
                 >
-                    <div className="text-[10px] md:text-xs uppercase tracking-widest opacity-70 mb-6 font-['Pretendard',sans-serif] tracking-wider text-center font-normal">
+                    <div className="text-xs md:text-sm uppercase tracking-widest opacity-70 mb-6 font-['Pretendard',sans-serif] tracking-wider text-center font-normal">
                         {project.year}
                     </div>
                     <h1
-                        className="text-[12vw] md:text-[8vw] leading-[0.9] tracking-tight mb-12 text-center font-bold font-['Pretendard',sans-serif]"
+                        className="text-[14vw] md:text-[9vw] leading-[0.9] tracking-tight mb-16 text-center font-bold font-['Pretendard',sans-serif]"
                     >
                         {project.title}
                     </h1>
 
-                    <div className="w-full max-w-2xl mx-auto flex flex-col items-start text-left">
-                        <p className="text-base md:text-lg leading-relaxed opacity-60 font-['Pretendard',sans-serif]">
+                    <div className="w-full max-w-3xl mx-auto flex flex-col items-start text-left">
+                        <p className="text-lg md:text-xl leading-relaxed opacity-60 font-['Pretendard',sans-serif]">
                             {project.desc}
                         </p>
 
                         {project.hashtags && project.hashtags.length > 0 && (
                             <div className="flex flex-wrap gap-2 mt-8">
                                 {project.hashtags.map((tag, i) => (
-                                    <span key={i} className="text-[10px] opacity-60 font-['Pretendard',sans-serif] font-normal">
+                                    <span key={i} className="text-xs opacity-60 font-['Pretendard',sans-serif] font-normal">
                                         #{tag}
                                     </span>
                                 ))}
