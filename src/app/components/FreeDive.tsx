@@ -92,10 +92,6 @@ export default function FreeDive() {
         let frame: number;
         const tick = () => {
             let changed = false;
-            const dx = tX.current - cX.current;
-            const dy = tY.current - cY.current;
-            const dz = tZ.current - cZ.current;
-
             // Screensaver Drift: If no interaction for 3 seconds, slowly pan
             const now = performance.now();
             if (now - lastInteractionTime.current > 3000 && !isDragging.current && landingDone) {
@@ -103,6 +99,10 @@ export default function FreeDive() {
                 tX.current -= 0.8 / cZ.current;
                 tY.current -= 0.6 / cZ.current;
             }
+
+            const dx = tX.current - cX.current;
+            const dy = tY.current - cY.current;
+            const dz = tZ.current - cZ.current;
 
             if (Math.abs(dx) > 0.01 || Math.abs(dy) > 0.01 || Math.abs(dz) > 0.001) {
                 cX.current += dx * 0.08; // lerp speed

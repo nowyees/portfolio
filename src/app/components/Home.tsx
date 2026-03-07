@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
+import { motion, AnimatePresence } from 'motion/react';
 import ContactDialog from './ContactDialog';
 import GridTrail from './GridTrail';
 import { getAllProjects, type Project } from '../../lib/portfolioService';
@@ -11,11 +12,23 @@ export default function Home() {
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
   const [contactOpen, setContactOpen] = useState(false);
 
+  // Landing Animation State
+  const [showLanding, setShowLanding] = useState(false);
+  const [landingWordIndex, setLandingWordIndex] = useState(0);
+  const words = ["industrial", "fashion", "ai", "speculative", "product", "branding"];
+
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const imageRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
+    // Show landing animation once per session
+    if (!sessionStorage.getItem('hasSeenLanding')) {
+      setShowLanding(true);
+      document.body.style.overflow = 'hidden';
+      sessionStorage.setItem('hasSeenLanding', 'true');
+    }
+
     // When mounting, prioritize the saved active project ID if available
     const savedProjectId = sessionStorage.getItem('lastActiveProject');
     let targetId: string | null = null;
@@ -101,12 +114,50 @@ export default function Home() {
 
   const activeProject = projects.find(p => `${p.category}-${p.id}` === activeProjectId) || projects[0];
 
+  // Landing Animation Timer
+  useEffect(() => {
+    if (showLanding) {
+      if (landingWordIndex < words.length) {
+        const timer = setTimeout(() => {
+          setLandingWordIndex(prev => prev + 1);
+        }, 120); // Fast switch (촤라락)
+        return () => clearTimeout(timer);
+      } else {
+        const timer = setTimeout(() => {
+          setShowLanding(false);
+          document.body.style.overflow = 'auto';
+        }, 800); // Hold on the final word before fading
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [showLanding, landingWordIndex, words.length]);
+
   return (
     <div
       ref={scrollContainerRef}
       className="relative w-full h-screen overflow-y-auto overflow-x-hidden snap-y snap-mandatory bg-[#f7f6f0] text-[#111] selection:bg-[#111] selection:text-[#f7f6f0]"
       style={{ fontFamily: "'Champagne & Limousines', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}
     >
+      {/* Landing Animation Overlay */}
+      <AnimatePresence>
+        {showLanding && (
+          <motion.div
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.8, ease: "easeInOut" }}
+            className="fixed inset-0 z-[200] bg-[#f7f6f0] flex flex-col items-center justify-center text-[#111] px-6 select-none"
+          >
+            <div className="text-[6vw] md:text-[3vw] uppercase font-bold tracking-widest flex items-center justify-center flex-wrap gap-x-4 gap-y-2">
+              <span>I'm</span>
+              <span className="text-[#111]/40 min-w-[20vw] text-center" style={{ fontFamily: "'Playfair Display', serif", fontStyle: "italic", textTransform: "lowercase" }}>
+                {words[Math.min(landingWordIndex, words.length - 1)]}
+              </span>
+              <span>designer</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <GridTrail dark={false} overlay={false} />
 
       {/* Navigation */}
