@@ -12,6 +12,10 @@ export default function ProjectDetail() {
     const [project, setProject] = useState<Project | null>(null);
     const [loading, setLoading] = useState(true);
     const [contactOpen, setContactOpen] = useState(false);
+    const [cols, setCols] = useState<1 | 2 | 4>(1);
+    const [landscapeItems, setLandscapeItems] = useState<Record<number, boolean>>({});
+
+    // We'll keep the scroll refs for Hero vs Gallery navigation
     const [activeIndex, setActiveIndex] = useState(0);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const sectionRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -141,11 +145,11 @@ export default function ProjectDetail() {
             <div className="fixed right-6 md:right-12 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-4 mix-blend-difference text-[#f7f6f0] md:mix-blend-normal md:text-[#111] pointer-events-none">
                 {/* Tracker text */}
                 <div className="text-[9px] md:text-[10px] tracking-widest font-bold opacity-60" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
-                    {activeIndex === 0 ? 'INFO' : `${String(activeIndex).padStart(2, '0')} / ${String(allMedia.length).padStart(2, '0')}`}
+                    {activeIndex === 0 ? 'INFO' : 'GALLERY'}
                 </div>
                 {/* Dots */}
                 <div className="flex flex-col gap-3 mt-4 pointer-events-auto">
-                    {Array.from({ length: allMedia.length + 1 }).map((_, i) => (
+                    {[0, 1].map((_, i) => (
                         <button
                             key={i}
                             onClick={() => sectionRefs.current[i]?.scrollIntoView({ behavior: 'smooth' })}
@@ -219,40 +223,103 @@ export default function ProjectDetail() {
                 </div>
             </div>
 
-            {/* Slides 1..N: Media Items */}
-            {allMedia.map((media, i) => (
-                <div
-                    key={i}
-                    data-index={i + 1}
-                    ref={(el) => { sectionRefs.current[i + 1] = el; }}
-                    className="w-full h-screen snap-center flex items-center justify-center relative z-10 px-8 py-20 md:px-24 md:py-24"
-                >
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        whileInView={{ opacity: 1, scale: 1 }}
-                        viewport={{ margin: '-100px' }}
-                        transition={{ duration: 0.8, ease: [0.25, 1, 0.5, 1] }}
-                        className="w-full h-full flex items-center justify-center"
+            {/* Layout Navigator */}
+            <div className="fixed bottom-8 right-8 z-50 flex items-center gap-2 bg-[#f7f6f0]/80 backdrop-blur-md rounded-full px-3 py-2 shadow-[0_4px_20px_rgba(0,0,0,0.05)] border border-[#111]/10">
+                {([1, 2, 4] as const).map(n => (
+                    <button
+                        key={n}
+                        onClick={() => setCols(n)}
+                        className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 ${cols === n
+                            ? 'bg-[#111] text-[#f7f6f0]'
+                            : 'hover:bg-[#111]/10 text-[#111]/50'
+                            }`}
+                        title={`${n} column${n > 1 ? 's' : ''}`}
                     >
-                        {media.type === 'video' || isVideoUrl(media.url) ? (
-                            <video
-                                src={media.url}
-                                controls
-                                playsInline
-                                muted
-                                className="max-w-full max-h-full object-contain"
-                            />
-                        ) : (
-                            <img
-                                src={media.url}
-                                alt={`${project.title} — ${i + 1}`}
-                                loading="lazy"
-                                className="max-w-full max-h-full object-contain drop-shadow-sm"
-                            />
-                        )}
-                    </motion.div>
-                </div>
-            ))}
+                        {/* Grid icon */}
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            {n === 1 && (
+                                <rect x="2" y="1" width="10" height="12" rx="1" stroke="currentColor" strokeWidth="1.3" />
+                            )}
+                            {n === 2 && (
+                                <>
+                                    <rect x="1" y="1" width="5" height="12" rx="1" stroke="currentColor" strokeWidth="1.3" />
+                                    <rect x="8" y="1" width="5" height="12" rx="1" stroke="currentColor" strokeWidth="1.3" />
+                                </>
+                            )}
+                            {n === 4 && (
+                                <>
+                                    <rect x="1" y="1" width="5" height="5" rx="0.5" stroke="currentColor" strokeWidth="1.2" />
+                                    <rect x="8" y="1" width="5" height="5" rx="0.5" stroke="currentColor" strokeWidth="1.2" />
+                                    <rect x="1" y="8" width="5" height="5" rx="0.5" stroke="currentColor" strokeWidth="1.2" />
+                                    <rect x="8" y="8" width="5" height="5" rx="0.5" stroke="currentColor" strokeWidth="1.2" />
+                                </>
+                            )}
+                        </svg>
+                    </button>
+                ))}
+            </div>
+
+            {/* Media Gallery : Responsive Grid */}
+            <div
+                data-index={1}
+                ref={(el) => { sectionRefs.current[1] = el; }}
+                className="px-4 md:px-12 lg:px-24 pb-32 relative z-10 snap-start"
+                style={{
+                    display: 'grid',
+                    gridTemplateColumns: `repeat(${cols}, 1fr)`,
+                    gap: cols === 1 ? '1.5rem' : cols === 2 ? '1rem' : '0.5rem',
+                    transition: 'all 0.4s cubic-bezier(0.22, 1, 0.36, 1)',
+                }}
+            >
+                {allMedia.map((media, i) => {
+                    const isLandscape = landscapeItems[i];
+                    // If image is landscape and columns configured >= 2, span 2 columns
+                    const spanClass = (cols >= 2 && isLandscape) ? 'md:col-span-2' : '';
+
+                    return (
+                        <motion.div
+                            key={i}
+                            initial={{ opacity: 0, y: 80 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true, margin: '-80px' }}
+                            transition={{ duration: 0.8, delay: (i % 10) * 0.05, ease: [0.25, 1, 0.5, 1] }}
+                            className={`w-full ${spanClass}`}
+                            layout
+                        >
+                            {media.type === 'video' || isVideoUrl(media.url) ? (
+                                <video
+                                    src={media.url}
+                                    controls
+                                    playsInline
+                                    muted
+                                    onLoadedMetadata={(e) => {
+                                        const target = e.target as HTMLVideoElement;
+                                        if (target.videoWidth > target.videoHeight) {
+                                            setLandscapeItems(prev => ({ ...prev, [i]: true }));
+                                        }
+                                    }}
+                                    className="w-full h-auto"
+                                    style={{ objectFit: 'contain', maxHeight: '85vh' }}
+                                />
+                            ) : (
+                                <img
+                                    src={media.url}
+                                    alt={`${project.title} — ${i + 1}`}
+                                    loading="lazy"
+                                    onLoad={(e) => {
+                                        const target = e.target as HTMLImageElement;
+                                        if (target.naturalWidth > target.naturalHeight) {
+                                            setLandscapeItems(prev => ({ ...prev, [i]: true }));
+                                        }
+                                    }}
+                                    className="w-full h-auto drop-shadow-sm"
+                                    style={{ objectFit: 'contain', maxHeight: '85vh' }}
+                                />
+                            )}
+                        </motion.div>
+                    );
+                })}
+            </div>
 
             {/* Footer */}
             <motion.div
