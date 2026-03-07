@@ -120,13 +120,13 @@ export default function Home() {
       if (landingWordIndex < words.length) {
         const timer = setTimeout(() => {
           setLandingWordIndex(prev => prev + 1);
-        }, 120); // Fast switch (촤라락)
+        }, 180); // Slower switch
         return () => clearTimeout(timer);
       } else {
         const timer = setTimeout(() => {
           setShowLanding(false);
           document.body.style.overflow = 'auto';
-        }, 800); // Hold on the final word before fading
+        }, 1200); // Longer hold on the final word
         return () => clearTimeout(timer);
       }
     }
@@ -147,12 +147,12 @@ export default function Home() {
             transition={{ duration: 0.8, ease: "easeInOut" }}
             className="fixed inset-0 z-[200] bg-[#f7f6f0] flex flex-col items-center justify-center text-[#111] px-6 select-none"
           >
-            <div className="text-[6vw] md:text-[3vw] uppercase font-bold tracking-widest flex items-center justify-center flex-wrap gap-x-4 gap-y-2">
-              <span>I'm</span>
-              <span className="text-[#111]/40 min-w-[20vw] text-center" style={{ fontFamily: "'Playfair Display', serif", fontStyle: "italic", textTransform: "lowercase" }}>
+            <div className="text-[14px] md:text-[16px] tracking-[0.2em] flex items-center justify-center flex-wrap gap-x-3 gap-y-2 opacity-80" style={{ fontFamily: "'Champagne & Limousines', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
+              <span className="uppercase">I'm</span>
+              <span className="text-[#111] min-w-[120px] text-center lowercase opacity-60">
                 {words[Math.min(landingWordIndex, words.length - 1)]}
               </span>
-              <span>designer</span>
+              <span className="uppercase">designer</span>
             </div>
           </motion.div>
         )}
