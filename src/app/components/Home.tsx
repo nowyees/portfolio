@@ -179,8 +179,8 @@ export default function Home() {
       {/* Navigation */}
       <motion.nav
         initial={{ opacity: 0, y: -40 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1.2, delay: showLanding ? 1.4 : 0, ease: [0.22, 1, 0.36, 1] }}
+        animate={showLanding ? { opacity: 0, y: -40 } : { opacity: 1, y: 0 }}
+        transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
         className="fixed top-0 w-full flex justify-between items-center px-6 pt-4 pb-0 md:px-12 z-50 mix-blend-difference text-[#f7f6f0] md:mix-blend-normal md:text-[#111]"
       >
         <div className="flex-none">
@@ -194,8 +194,8 @@ export default function Home() {
       {/* Side Navigator */}
       <motion.div
         initial={{ opacity: 0, x: 50 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 1.2, delay: showLanding ? 1.6 : 0.2, ease: [0.22, 1, 0.36, 1] }}
+        animate={showLanding ? { opacity: 0, x: 50 } : { opacity: 1, x: 0 }}
+        transition={{ duration: 1.2, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
         className="fixed right-4 md:right-8 lg:right-12 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-4 mix-blend-difference text-[#f7f6f0] md:mix-blend-normal md:text-[#111] pointer-events-none"
       >
         {/* Tracker text */}
@@ -219,8 +219,8 @@ export default function Home() {
         {/* Left Column (Sticky Info) - Desktop Only */}
         <motion.div
           initial={{ opacity: 0, filter: 'blur(8px)' }}
-          animate={{ opacity: 1, filter: 'blur(0px)' }}
-          transition={{ duration: 1.4, delay: showLanding ? 1.6 : 0.2, ease: [0.22, 1, 0.36, 1] }}
+          animate={showLanding ? { opacity: 0, filter: 'blur(8px)' } : { opacity: 1, filter: 'blur(0px)' }}
+          transition={{ duration: 1.4, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
           className="w-full md:w-[48%] lg:w-[45%] h-screen sticky top-0 flex flex-col pl-6 pr-8 py-8 md:pl-12 md:pr-16 md:py-16 lg:pl-12 lg:pr-24 lg:py-16 z-10 hidden md:flex"
         >
           {/* Logo — upper area (approx 15% from top) */}
@@ -282,8 +282,8 @@ export default function Home() {
         {/* Right Column (Scrollable Images) */}
         <motion.div
           initial={{ opacity: 0, y: 150 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1.5, delay: showLanding ? 1.5 : 0.1, ease: [0.22, 1, 0.36, 1] }}
+          animate={showLanding ? { opacity: 0, y: 150 } : { opacity: 1, y: 0 }}
+          transition={{ duration: 1.5, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
           className="w-full md:w-[52%] lg:w-[55%] flex flex-col items-center z-0 pt-[12vh] pb-[20vh] gap-[6vh]"
         >
           {projects.map((project, idx) => {
