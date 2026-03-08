@@ -296,7 +296,7 @@ export default function Home() {
                 key={`${project.category}-${project.id}`}
                 data-id={`${project.category}-${project.id}`}
                 ref={(el) => { imageRefs.current[idx] = el; }}
-                className="w-full h-[100dvh] md:h-[82vh] flex flex-col justify-center items-center snap-center cursor-pointer group px-6 md:pl-[16%] md:pr-6 shrink-0 pointer-events-none relative"
+                className="w-full h-[100dvh] md:h-[82vh] flex flex-col justify-center items-center snap-center cursor-pointer group px-6 pt-[8vh] md:pt-0 md:pl-[16%] md:pr-6 shrink-0 pointer-events-none relative"
                 onClick={() => navigate(`/project/${project.category}/${project.id}`)}
               >
                 <div
