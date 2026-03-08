@@ -120,13 +120,13 @@ export default function Home() {
       if (landingWordIndex < words.length) {
         const timer = setTimeout(() => {
           setLandingWordIndex(prev => prev + 1);
-        }, 180); // Slower switch
+        }, 550); // 0.55s per word for a chic, measured pace
         return () => clearTimeout(timer);
       } else {
         const timer = setTimeout(() => {
           setShowLanding(false);
           document.body.style.overflow = 'auto';
-        }, 1200); // Longer hold on the final word
+        }, 1200); // Hold final frame
         return () => clearTimeout(timer);
       }
     }
@@ -147,12 +147,27 @@ export default function Home() {
             transition={{ duration: 0.8, ease: "easeInOut" }}
             className="fixed inset-0 z-[200] bg-[#f7f6f0] flex flex-col items-center justify-center text-[#111] px-6 select-none"
           >
-            <div className="text-[14px] md:text-[16px] tracking-[0.2em] flex items-center justify-center flex-wrap gap-x-3 gap-y-2 opacity-80" style={{ fontFamily: "'Champagne & Limousines', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
-              <span className="uppercase">I'm</span>
-              <span className="text-[#111] min-w-[120px] text-center lowercase opacity-60">
-                {words[Math.min(landingWordIndex, words.length - 1)]}
-              </span>
-              <span className="uppercase">designer</span>
+            <div className="text-[12px] md:text-[14px] tracking-[0.3em] flex items-center justify-center flex-wrap gap-x-4 gap-y-2 opacity-90" style={{ fontFamily: "'Champagne & Limousines', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
+              <span className="uppercase tracking-[0.4em] opacity-50">I'm</span>
+
+              <div className="relative h-[30px] flex items-center justify-center min-w-[140px] overflow-hidden">
+                <AnimatePresence mode="popLayout">
+                  {landingWordIndex < words.length && (
+                    <motion.span
+                      key={landingWordIndex}
+                      initial={{ y: 30, opacity: 0, filter: 'blur(5px)' }}
+                      animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
+                      exit={{ y: -30, opacity: 0, filter: 'blur(5px)' }}
+                      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                      className="absolute text-center lowercase font-bold text-[#111] tracking-[0.2em]"
+                    >
+                      {words[landingWordIndex]}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              <span className="uppercase tracking-[0.4em] opacity-50">designer</span>
             </div>
           </motion.div>
         )}
