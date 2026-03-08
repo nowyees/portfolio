@@ -15,7 +15,7 @@ export default function Home() {
   // Landing Animation State
   const [showLanding, setShowLanding] = useState(false);
   const [landingWordIndex, setLandingWordIndex] = useState(0);
-  const words = ["industrial", "fashion", "ai", "speculative", "product", "branding"];
+  const words = ["industrial", "fashion", "ai", "speculative", "product", "brand"];
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -117,20 +117,23 @@ export default function Home() {
   // Landing Animation Timer
   useEffect(() => {
     if (showLanding) {
-      if (landingWordIndex < words.length) {
+      if (projects.length === 0 || landingWordIndex < words.length - 1) {
+        // Keep cycling until projects are loaded AND we've shown at least all words once
+        // If we reach the end but projects aren't loaded, loop back to the start
         const timer = setTimeout(() => {
-          setLandingWordIndex(prev => prev + 1);
-        }, 550); // 0.55s per word for a chic, measured pace
+          setLandingWordIndex(prev => (prev + 1) % words.length);
+        }, 550);
         return () => clearTimeout(timer);
       } else {
+        // Projects are loaded AND we finished at least one cycle
         const timer = setTimeout(() => {
           setShowLanding(false);
           document.body.style.overflow = 'auto';
-        }, 1200); // Hold final frame
+        }, 1000); // Hold final frame before fading
         return () => clearTimeout(timer);
       }
     }
-  }, [showLanding, landingWordIndex, words.length]);
+  }, [showLanding, landingWordIndex, words.length, projects.length]);
 
   return (
     <div
@@ -152,18 +155,16 @@ export default function Home() {
 
               <div className="relative h-[30px] flex items-center justify-center min-w-[140px] overflow-hidden">
                 <AnimatePresence mode="popLayout">
-                  {landingWordIndex < words.length && (
-                    <motion.span
-                      key={landingWordIndex}
-                      initial={{ y: 30, opacity: 0, filter: 'blur(5px)' }}
-                      animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
-                      exit={{ y: -30, opacity: 0, filter: 'blur(5px)' }}
-                      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                      className="absolute text-center lowercase font-bold text-[#111] tracking-[0.2em]"
-                    >
-                      {words[landingWordIndex]}
-                    </motion.span>
-                  )}
+                  <motion.span
+                    key={landingWordIndex}
+                    initial={{ y: 30, opacity: 0, filter: 'blur(5px)' }}
+                    animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
+                    exit={{ y: -30, opacity: 0, filter: 'blur(5px)' }}
+                    transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                    className="absolute text-center lowercase font-bold text-[#111] tracking-[0.2em]"
+                  >
+                    {words[landingWordIndex]}
+                  </motion.span>
                 </AnimatePresence>
               </div>
 
@@ -177,9 +178,9 @@ export default function Home() {
 
       {/* Navigation */}
       <motion.nav
-        initial={{ opacity: 0, y: -20 }}
+        initial={{ opacity: 0, y: -40 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1, delay: showLanding ? 1.4 : 0, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 1.2, delay: showLanding ? 1.4 : 0, ease: [0.22, 1, 0.36, 1] }}
         className="fixed top-0 w-full flex justify-between items-center px-6 pt-4 pb-0 md:px-12 z-50 mix-blend-difference text-[#f7f6f0] md:mix-blend-normal md:text-[#111]"
       >
         <div className="flex-none">
@@ -192,9 +193,9 @@ export default function Home() {
 
       {/* Side Navigator */}
       <motion.div
-        initial={{ opacity: 0, x: 20 }}
+        initial={{ opacity: 0, x: 50 }}
         animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 1, delay: showLanding ? 1.6 : 0.2, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 1.2, delay: showLanding ? 1.6 : 0.2, ease: [0.22, 1, 0.36, 1] }}
         className="fixed right-4 md:right-8 lg:right-12 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-4 mix-blend-difference text-[#f7f6f0] md:mix-blend-normal md:text-[#111] pointer-events-none"
       >
         {/* Tracker text */}
@@ -217,9 +218,9 @@ export default function Home() {
       <div className="flex flex-col md:flex-row w-full relative min-h-max">
         {/* Left Column (Sticky Info) - Desktop Only */}
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1, delay: showLanding ? 1.6 : 0.2 }}
+          initial={{ opacity: 0, filter: 'blur(8px)' }}
+          animate={{ opacity: 1, filter: 'blur(0px)' }}
+          transition={{ duration: 1.4, delay: showLanding ? 1.6 : 0.2, ease: [0.22, 1, 0.36, 1] }}
           className="w-full md:w-[48%] lg:w-[45%] h-screen sticky top-0 flex flex-col pl-6 pr-8 py-8 md:pl-12 md:pr-16 md:py-16 lg:pl-12 lg:pr-24 lg:py-16 z-10 hidden md:flex"
         >
           {/* Logo — upper area (approx 15% from top) */}
@@ -280,9 +281,9 @@ export default function Home() {
 
         {/* Right Column (Scrollable Images) */}
         <motion.div
-          initial={{ opacity: 0, y: 40 }}
+          initial={{ opacity: 0, y: 150 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1.2, delay: showLanding ? 1.5 : 0.1, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 1.5, delay: showLanding ? 1.5 : 0.1, ease: [0.22, 1, 0.36, 1] }}
           className="w-full md:w-[52%] lg:w-[55%] flex flex-col items-center z-0 pt-[12vh] pb-[20vh] gap-[6vh]"
         >
           {projects.map((project, idx) => {
