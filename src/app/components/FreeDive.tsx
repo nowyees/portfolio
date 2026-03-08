@@ -163,7 +163,11 @@ export default function FreeDive() {
         if (e.button !== 0 && e.pointerType === 'mouse') return;
         isDragging.current = true;
         lastPan.current = { x: e.clientX, y: e.clientY };
-        e.currentTarget.setPointerCapture(e.pointerId);
+        try {
+            e.currentTarget.setPointerCapture(e.pointerId);
+        } catch (err) {
+            // Ignore capture errors on unsupported mobile devices
+        }
     };
 
     const handlePointerMove = (e: React.PointerEvent) => {
@@ -180,7 +184,36 @@ export default function FreeDive() {
     const handlePointerUp = (e: React.PointerEvent) => {
         markInteraction();
         isDragging.current = false;
-        e.currentTarget.releasePointerCapture(e.pointerId);
+        try {
+            e.currentTarget.releasePointerCapture(e.pointerId);
+        } catch (err) {
+            // Ignore capture release errors
+        }
+    };
+
+    // Touch pinch-to-zoom support
+    const pinchStartDist = useRef(0);
+    const pinchStartZoom = useRef(0);
+
+    const handleTouchStart = (e: React.TouchEvent) => {
+        markInteraction();
+        if (e.touches.length === 2) {
+            const dx = e.touches[0].clientX - e.touches[1].clientX;
+            const dy = e.touches[0].clientY - e.touches[1].clientY;
+            pinchStartDist.current = Math.hypot(dx, dy);
+            pinchStartZoom.current = tZ.current;
+        }
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (e.touches.length === 2 && pinchStartDist.current > 0) {
+            markInteraction();
+            const dx = e.touches[0].clientX - e.touches[1].clientX;
+            const dy = e.touches[0].clientY - e.touches[1].clientY;
+            const dist = Math.hypot(dx, dy);
+            const newZoom = pinchStartZoom.current * (dist / pinchStartDist.current);
+            tZ.current = Math.max(0.35, Math.min(newZoom, 5.0));
+        }
     };
 
     // Keyboard panning
@@ -289,6 +322,7 @@ export default function FreeDive() {
                 <video
                     ref={videoRef}
                     src={src}
+                    preload="none"
                     loop
                     muted
                     playsInline
@@ -375,6 +409,8 @@ export default function FreeDive() {
                 onPointerMove={handlePointerMove}
                 onPointerUp={handlePointerUp}
                 onPointerCancel={handlePointerUp}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
             />
 
             {/* Header / Nav */}
