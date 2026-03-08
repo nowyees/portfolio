@@ -198,12 +198,12 @@ export default function Home() {
         transition={{ duration: 1.2, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
         className="fixed right-4 md:right-8 lg:right-12 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-4 mix-blend-difference text-[#f7f6f0] md:mix-blend-normal md:text-[#111] pointer-events-none"
       >
-        {/* Tracker text */}
-        <div className="text-[9px] md:text-[10px] tracking-widest font-bold opacity-80" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
+        {/* Tracker text (hidden on mobile) */}
+        <div className="hidden md:block text-[9px] md:text-[10px] tracking-widest font-bold opacity-80" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
           {projects.length > 0 ? `${String(Math.max(0, projects.findIndex(p => `${p.category}-${p.id}` === activeProjectId)) + 1).padStart(2, '0')} / ${String(projects.length).padStart(2, '0')}` : ''}
         </div>
         {/* Dots */}
-        <div className="flex flex-col gap-3 mt-4 pointer-events-auto">
+        <div className="flex flex-col gap-3 md:mt-4 pointer-events-auto">
           {projects.map((p, i) => (
             <button
               key={`${p.category}-${p.id}`}
@@ -296,7 +296,7 @@ export default function Home() {
                 key={`${project.category}-${project.id}`}
                 data-id={`${project.category}-${project.id}`}
                 ref={(el) => { imageRefs.current[idx] = el; }}
-                className="w-full h-[85vh] md:h-[82vh] flex flex-col justify-center items-center snap-center cursor-pointer group px-6 md:pl-[16%] md:pr-6 shrink-0 pointer-events-none relative"
+                className="w-full h-[100dvh] md:h-[82vh] flex flex-col justify-center items-center snap-center cursor-pointer group px-6 md:pl-[16%] md:pr-6 shrink-0 pointer-events-none relative"
                 onClick={() => navigate(`/project/${project.category}/${project.id}`)}
               >
                 <div
