@@ -284,7 +284,7 @@ export default function Home() {
           initial={{ opacity: 0, y: 150 }}
           animate={showLanding ? { opacity: 0, y: 150 } : { opacity: 1, y: 0 }}
           transition={{ duration: 1.5, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-          className="w-full md:w-[52%] lg:w-[55%] flex flex-col items-center z-0 pt-[12vh] pb-[20vh] gap-[6vh]"
+          className="w-full md:w-[52%] lg:w-[55%] flex flex-col items-center z-0 pt-[22vh] md:pt-[12vh] pb-[20vh] gap-[6vh]"
         >
           {projects.map((project, idx) => {
             const isActive = `${project.category}-${project.id}` === activeProjectId;

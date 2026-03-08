@@ -256,6 +256,9 @@ export default function FreeDive() {
 
         const handleMouseMove = (e: React.MouseEvent) => {
             if (!containerRef.current) return;
+            // Disable tilt on touch devices to prevent lag
+            if (typeof window !== 'undefined' && 'ontouchstart' in window) return;
+
             const rect = containerRef.current.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
@@ -317,6 +320,8 @@ export default function FreeDive() {
             if (!containerRef.current) return;
             // Prevent interference from drag interaction state
             if (isDragging.current) return setTilt({ x: 0, y: 0 });
+            // Disable tilt on touch devices to prevent lag
+            if (typeof window !== 'undefined' && 'ontouchstart' in window) return;
 
             const rect = containerRef.current.getBoundingClientRect();
             const x = e.clientX - rect.left;
