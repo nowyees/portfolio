@@ -37,9 +37,8 @@ const MobileSwipeStack = ({ items }: { items: any[] }) => {
                     onDragEnd={handleDragEnd}
                     className="absolute pointer-events-auto cursor-grab active:cursor-grabbing bg-[#e5e4de] flex justify-center items-center overflow-hidden"
                     style={{
-                        width: '85%',
-                        maxWidth: '400px',
-                        maxHeight: '65%',
+                        height: '55vh',
+                        maxWidth: '85%',
                         aspectRatio: aspectStr,
                         boxShadow: '0 20px 50px rgba(0,0,0,0.15)'
                     }}
@@ -472,6 +471,16 @@ export default function FreeDive() {
                 animation: 'slideUpIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards',
             }}
         >
+            {/* Header / Nav (Global for both mobile and desktop) */}
+            <nav className="absolute top-0 w-full flex justify-between items-center px-6 pt-4 pb-0 md:px-12 z-50">
+                <div className="flex-none">
+                    <button onClick={() => navigate('/')} className="text-[9px] md:text-[11px] font-bold uppercase transition-opacity hover:opacity-50">LEE JAEWOONG</button>
+                </div>
+                <div className="flex-1 flex justify-end items-center gap-6 md:gap-16">
+                    <button className="text-[9px] md:text-[11px] font-bold uppercase transition-opacity hover:opacity-50 opacity-40">FREE DIVE</button>
+                </div>
+            </nav>
+
             {/* Mobile View: Swipe Stack */}
             <div className="md:hidden absolute inset-0 text-center flex flex-col items-center justify-center touch-none">
                 <MobileSwipeStack items={mediaItems} />

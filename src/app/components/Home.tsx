@@ -296,11 +296,11 @@ export default function Home() {
                 key={`${project.category}-${project.id}`}
                 data-id={`${project.category}-${project.id}`}
                 ref={(el) => { imageRefs.current[idx] = el; }}
-                className="w-full h-[85vh] md:h-[82vh] flex flex-col justify-center items-center snap-center cursor-pointer group px-6 md:pl-[8%] md:pr-12 shrink-0 pointer-events-none relative"
+                className="w-full h-[85vh] md:h-[82vh] flex flex-col justify-center items-center snap-center cursor-pointer group px-6 md:pl-[16%] md:pr-6 shrink-0 pointer-events-none relative"
                 onClick={() => navigate(`/project/${project.category}/${project.id}`)}
               >
                 <div
-                  className={`relative shadow-md transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] ${isActive ? 'scale-100 opacity-100' : 'scale-[0.88] opacity-50'} pointer-events-auto bg-[#e5e4de] flex justify-center items-center h-[60%] md:h-full`}
+                  className={`relative shadow-md transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] ${isActive ? 'scale-100 opacity-100' : 'scale-[0.88] opacity-50'} pointer-events-auto bg-[#e5e4de] flex justify-center items-center h-[55vh] md:h-full`}
                   style={{
                     maxHeight: '100%',
                     maxWidth: '100%',
