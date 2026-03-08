@@ -1,9 +1,51 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router';
+import { motion, AnimatePresence } from 'framer-motion';
 import { getPortfolioByCategory } from '../../lib/portfolioService';
 
 const CELL_W = 1120;
 const CELL_H = 1300;
+
+const MobileSwipeStack = ({ items }: { items: any[] }) => {
+    const [currentIndex, setCurrentIndex] = useState(0);
+
+    const handleDragEnd = (e: any, info: any) => {
+        if (Math.abs(info.offset.x) > 80 || Math.abs(info.offset.y) > 100) {
+            setCurrentIndex((prev) => (prev + 1) % items.length);
+        }
+    };
+
+    if (items.length === 0) return null;
+    const item = items[currentIndex];
+
+    return (
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-20">
+            <AnimatePresence mode="popLayout">
+                <motion.div
+                    key={currentIndex}
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ x: 300, opacity: 0, rotate: 15 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                    drag
+                    dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+                    dragElastic={0.8}
+                    onDragEnd={handleDragEnd}
+                    className="w-[85%] max-w-[400px] h-[65%] mt-8 absolute pointer-events-auto cursor-grab active:cursor-grabbing bg-[#e5e4de] rounded-md shadow-[0_20px_50px_rgba(0,0,0,0.15)] flex justify-center items-center overflow-hidden"
+                >
+                    {item.type === 'video' ? (
+                        <video src={item.url} autoPlay loop muted playsInline className="w-full h-full object-cover pointer-events-none" />
+                    ) : (
+                        <img src={item.url} alt="" className="w-full h-full object-cover pointer-events-none" />
+                    )}
+                </motion.div>
+            </AnimatePresence>
+            <div className="absolute bottom-16 w-full text-center text-[10px] opacity-50 font-bold uppercase tracking-[0.2em] text-[#111]">
+                Swipe to explore
+            </div>
+        </div>
+    );
+};
 
 export default function FreeDive() {
     const navigate = useNavigate();
@@ -401,70 +443,68 @@ export default function FreeDive() {
                 animation: 'slideUpIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards',
             }}
         >
-            {/* Canvas drag surface */}
-            <div
-                className="absolute inset-0 touch-none z-0"
-                onWheel={handleWheel}
-                onPointerDown={handlePointerDown}
-                onPointerMove={handlePointerMove}
-                onPointerUp={handlePointerUp}
-                onPointerCancel={handlePointerUp}
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-            />
-
-            {/* Header / Nav */}
-            <nav className="absolute top-0 w-full flex justify-between items-center px-6 pt-4 pb-0 md:px-12 z-50">
-                <div className="flex-none">
-                    <button onClick={() => navigate('/')} className="text-[9px] md:text-[11px] font-bold uppercase transition-opacity hover:opacity-50">LEE JAEWOONG</button>
-                </div>
-                <div className="flex-1 flex justify-end items-center gap-6 md:gap-16">
-                    <button className="text-[9px] md:text-[11px] font-bold uppercase transition-opacity hover:opacity-50 opacity-40">FREE DIVE</button>
-                </div>
-            </nav>
-
-            {/* Helper overlay */}
-            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-40 text-center pointer-events-none opacity-40 mix-blend-multiply">
-                <span className="text-[9px] uppercase font-bold tracking-[0.2em] px-4 py-2">
-                    Drag, Scroll Wheel, or Arrow Keys
-                </span>
+            {/* Mobile View: Swipe Stack */}
+            <div className="md:hidden absolute inset-0 text-center flex flex-col items-center justify-center touch-none">
+                <MobileSwipeStack items={mediaItems} />
             </div>
 
-            {/* Virtual Canvas */}
-            <div
-                ref={canvasRef}
-                className="absolute top-1/2 left-1/2 origin-center z-10"
-                style={{
-                    transform: `translate(-50%, -50%) scale(${cZ.current}) translate(${cX.current}px, ${cY.current}px)`,
-                    willChange: 'transform'
-                }}
-            >
-                {visibleItems.map(renderData => (
-                    <div
-                        key={renderData.key}
-                        className="absolute bg-transparent shadow-[0_8px_30px_rgba(0,0,0,0.04)]"
-                        style={{
-                            width: renderData.width,
-                            height: 'auto',
-                            left: renderData.x,
-                            top: renderData.y,
-                            transform: 'translate(-50%, -50%)',
-                            willChange: 'transform'
-                        }}
-                    >
-                        {renderData.item.type === 'video' ? (
-                            <VideoItem
-                                src={renderData.item.url}
-                                onClick={() => handleItemClick(renderData.x, renderData.y)}
-                            />
-                        ) : (
-                            <ImageItem
-                                src={renderData.item.url}
-                                onClick={(e) => handleItemClick(renderData.x, renderData.y)}
-                            />
-                        )}
-                    </div>
-                ))}
+            {/* Desktop View: Infinite Canvas */}
+            <div className="hidden md:block absolute inset-0 overflow-hidden">
+                {/* Canvas drag surface */}
+                <div
+                    className="absolute inset-0 touch-none z-0"
+                    onWheel={handleWheel}
+                    onPointerDown={handlePointerDown}
+                    onPointerMove={handlePointerMove}
+                    onPointerUp={handlePointerUp}
+                    onPointerCancel={handlePointerUp}
+                    onTouchStart={handleTouchStart}
+                    onTouchMove={handleTouchMove}
+                />
+
+                {/* Helper overlay */}
+                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-40 text-center pointer-events-none opacity-40 mix-blend-multiply">
+                    <span className="text-[9px] uppercase font-bold tracking-[0.2em] px-4 py-2">
+                        Drag, Scroll Wheel, or Arrow Keys
+                    </span>
+                </div>
+
+                {/* Virtual Canvas */}
+                <div
+                    ref={canvasRef}
+                    className="absolute top-1/2 left-1/2 origin-center z-10"
+                    style={{
+                        transform: `translate(-50%, -50%) scale(${cZ.current}) translate(${cX.current}px, ${cY.current}px)`,
+                        willChange: 'transform'
+                    }}
+                >
+                    {visibleItems.map(renderData => (
+                        <div
+                            key={renderData.key}
+                            className="absolute bg-transparent shadow-[0_8px_30px_rgba(0,0,0,0.04)]"
+                            style={{
+                                width: renderData.width,
+                                height: 'auto',
+                                left: renderData.x,
+                                top: renderData.y,
+                                transform: 'translate(-50%, -50%)',
+                                willChange: 'transform'
+                            }}
+                        >
+                            {renderData.item.type === 'video' ? (
+                                <VideoItem
+                                    src={renderData.item.url}
+                                    onClick={() => handleItemClick(renderData.x, renderData.y)}
+                                />
+                            ) : (
+                                <ImageItem
+                                    src={renderData.item.url}
+                                    onClick={(e) => handleItemClick(renderData.x, renderData.y)}
+                                />
+                            )}
+                        </div>
+                    ))}
+                </div>
             </div>
 
             <style>{`
