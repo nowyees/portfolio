@@ -8,40 +8,69 @@ const CELL_H = 1300;
 
 const MobileSwipeStack = ({ items }: { items: any[] }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [direction, setDirection] = useState(1);
 
     const handleDragEnd = (e: any, info: any) => {
         if (Math.abs(info.offset.x) > 80 || Math.abs(info.offset.y) > 100) {
+            setDirection(info.offset.x > 0 ? 1 : -1);
             setCurrentIndex((prev) => (prev + 1) % items.length);
         }
     };
 
     if (items.length === 0) return null;
     const item = items[currentIndex];
+    let aspectStr = item.aspect ? item.aspect.replace('aspect-[', '').replace(']', '') : '3/4';
+    if (!aspectStr || aspectStr === 'undefined') aspectStr = '3/4';
 
     return (
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-20">
-            <AnimatePresence mode="popLayout">
+            <AnimatePresence mode="popLayout" initial={false}>
                 <motion.div
                     key={currentIndex}
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ x: 300, opacity: 0, rotate: 15 }}
+                    initial={{ scale: 0.8, opacity: 0, rotate: -direction * 15 }}
+                    animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                    exit={{ x: direction * 300, opacity: 0, rotate: direction * 15 }}
                     transition={{ type: 'spring', stiffness: 300, damping: 25 }}
                     drag
                     dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
                     dragElastic={0.8}
                     onDragEnd={handleDragEnd}
-                    className="w-[85%] max-w-[400px] h-[65%] mt-8 absolute pointer-events-auto cursor-grab active:cursor-grabbing bg-[#e5e4de] rounded-md shadow-[0_20px_50px_rgba(0,0,0,0.15)] flex justify-center items-center overflow-hidden"
+                    className="absolute pointer-events-auto cursor-grab active:cursor-grabbing bg-[#e5e4de] flex justify-center items-center overflow-hidden"
+                    style={{
+                        width: '85%',
+                        maxWidth: '400px',
+                        maxHeight: '65%',
+                        aspectRatio: aspectStr,
+                        boxShadow: '0 20px 50px rgba(0,0,0,0.15)'
+                    }}
                 >
                     {item.type === 'video' ? (
                         <video src={item.url} autoPlay loop muted playsInline className="w-full h-full object-cover pointer-events-none" />
                     ) : (
-                        <img src={item.url} alt="" className="w-full h-full object-cover pointer-events-none" />
+                        <img src={item.url} alt="" loading="eager" className="w-full h-full object-cover pointer-events-none" />
                     )}
                 </motion.div>
             </AnimatePresence>
-            <div className="absolute bottom-16 w-full text-center text-[10px] opacity-50 font-bold uppercase tracking-[0.2em] text-[#111]">
-                Swipe to explore
+            <div className="absolute bottom-12 w-full text-center flex flex-col items-center gap-3 pointer-events-none">
+                <div className="flex items-center gap-10 opacity-40">
+                    <motion.div
+                        animate={{ x: [-4, 4, -4] }}
+                        transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+                        className="text-lg font-bold"
+                    >
+                        &larr;
+                    </motion.div>
+                    <motion.div
+                        animate={{ x: [4, -4, 4] }}
+                        transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+                        className="text-lg font-bold"
+                    >
+                        &rarr;
+                    </motion.div>
+                </div>
+                <div className="text-[10px] opacity-60 font-bold uppercase tracking-[0.2em] text-[#111]">
+                    Swipe or Toss
+                </div>
             </div>
         </div>
     );
