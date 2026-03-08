@@ -176,17 +176,27 @@ export default function Home() {
       <GridTrail dark={false} overlay={false} />
 
       {/* Navigation */}
-      <nav className="fixed top-0 w-full flex justify-between items-center px-6 pt-4 pb-0 md:px-12 z-50 mix-blend-difference text-[#f7f6f0] md:mix-blend-normal md:text-[#111]">
+      <motion.nav
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 1, delay: showLanding ? 1.4 : 0, ease: [0.22, 1, 0.36, 1] }}
+        className="fixed top-0 w-full flex justify-between items-center px-6 pt-4 pb-0 md:px-12 z-50 mix-blend-difference text-[#f7f6f0] md:mix-blend-normal md:text-[#111]"
+      >
         <div className="flex-none">
           <button onClick={() => { scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' }) }} className="text-[9px] md:text-[11px] font-bold uppercase transition-opacity hover:opacity-70">LEE JAEWOONG</button>
         </div>
         <div className="flex-1 flex justify-end items-center gap-6 md:gap-16">
           <button onClick={() => navigate('/freedive')} className="text-[9px] md:text-[11px] font-bold uppercase transition-opacity hover:opacity-100 opacity-60">FREE DIVE</button>
         </div>
-      </nav>
+      </motion.nav>
 
       {/* Side Navigator */}
-      <div className="fixed right-4 md:right-8 lg:right-12 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-4 mix-blend-difference text-[#f7f6f0] md:mix-blend-normal md:text-[#111] pointer-events-none">
+      <motion.div
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 1, delay: showLanding ? 1.6 : 0.2, ease: [0.22, 1, 0.36, 1] }}
+        className="fixed right-4 md:right-8 lg:right-12 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-4 mix-blend-difference text-[#f7f6f0] md:mix-blend-normal md:text-[#111] pointer-events-none"
+      >
         {/* Tracker text */}
         <div className="text-[9px] md:text-[10px] tracking-widest font-bold opacity-80" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
           {projects.length > 0 ? `${String(Math.max(0, projects.findIndex(p => `${p.category}-${p.id}` === activeProjectId)) + 1).padStart(2, '0')} / ${String(projects.length).padStart(2, '0')}` : ''}
@@ -202,11 +212,16 @@ export default function Home() {
             />
           ))}
         </div>
-      </div>
+      </motion.div>
 
       <div className="flex flex-col md:flex-row w-full relative min-h-max">
         {/* Left Column (Sticky Info) - Desktop Only */}
-        <div className="w-full md:w-[48%] lg:w-[45%] h-screen sticky top-0 flex flex-col pl-6 pr-8 py-8 md:pl-12 md:pr-16 md:py-16 lg:pl-12 lg:pr-24 lg:py-16 z-10 hidden md:flex">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1, delay: showLanding ? 1.6 : 0.2 }}
+          className="w-full md:w-[48%] lg:w-[45%] h-screen sticky top-0 flex flex-col pl-6 pr-8 py-8 md:pl-12 md:pr-16 md:py-16 lg:pl-12 lg:pr-24 lg:py-16 z-10 hidden md:flex"
+        >
           {/* Logo — upper area (approx 15% from top) */}
           <div className="pt-[10vh] w-[110%] -ml-2">
             <img
@@ -261,10 +276,15 @@ export default function Home() {
               Contact me
             </button>
           </div>
-        </div>
+        </motion.div>
 
         {/* Right Column (Scrollable Images) */}
-        <div className="w-full md:w-[52%] lg:w-[55%] flex flex-col items-center z-0 pt-[12vh] pb-[20vh] gap-[6vh]">
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1.2, delay: showLanding ? 1.5 : 0.1, ease: [0.22, 1, 0.36, 1] }}
+          className="w-full md:w-[52%] lg:w-[55%] flex flex-col items-center z-0 pt-[12vh] pb-[20vh] gap-[6vh]"
+        >
           {projects.map((project, idx) => {
             const isActive = `${project.category}-${project.id}` === activeProjectId;
             // Get aspect ratio safely, default to 3/4 if missing or malformed
@@ -332,10 +352,10 @@ export default function Home() {
               Contact me
             </button>
           </div>
-        </div>
+        </motion.div>
       </div>
 
       <ContactDialog open={contactOpen} onClose={() => setContactOpen(false)} dark={false} />
-    </div>
+    </div >
   );
 }
