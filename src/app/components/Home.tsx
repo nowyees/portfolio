@@ -187,7 +187,16 @@ export default function Home() {
           <button onClick={() => { scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' }) }} className="text-[9px] md:text-[11px] font-bold uppercase transition-opacity hover:opacity-70">LEE JAEWOONG</button>
         </div>
         <div className="flex-1 flex justify-end items-center gap-6 md:gap-16">
-          <button onClick={() => navigate('/freedive')} className="text-[9px] md:text-[11px] font-bold uppercase transition-opacity hover:opacity-100 opacity-60">FREE DIVE</button>
+          <div
+            onClick={() => navigate('/freedive')}
+            className="flex items-center gap-2 cursor-pointer opacity-60 transition-opacity hover:opacity-100"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M2 12c.6 0 1.2-.2 1.8-.5l.8-.5c1.4-.9 3-.9 4.4 0l.8.5c1 .6 2.2.6 3.2 0l.8-.5c1.4-.9 3-.9 4.4 0l.8.5c.6.3 1.2.5 1.8.5" />
+              <path d="M2 18c.6 0 1.2-.2 1.8-.5l.8-.5c1.4-.9 3-.9 4.4 0l.8.5c1 .6 2.2.6 3.2 0l.8-.5c1.4-.9 3-.9 4.4 0l.8.5c.6.3 1.2.5 1.8.5" />
+            </svg>
+            <button className="text-[9px] md:text-[11px] font-bold uppercase pointer-events-none">FREE DIVE</button>
+          </div>
         </div>
       </motion.nav>
 
