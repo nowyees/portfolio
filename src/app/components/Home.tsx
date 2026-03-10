@@ -244,12 +244,12 @@ export default function Home() {
                 </div>
 
                 <div className="mb-2">
-                  <p className="text-sm md:text-base leading-normal opacity-60 text-justify font-['Pretendard',sans-serif]">
+                  <p className="text-sm md:text-base leading-normal opacity-85 text-justify font-['Pretendard',sans-serif]">
                     {activeProject.desc}
                   </p>
                 </div>
 
-                <div className="mb-3 text-xs md:text-sm font-['Pretendard',sans-serif] tracking-wider font-normal mt-4">
+                <div className="mb-3 text-[10px] md:text-xs font-['Pretendard',sans-serif] tracking-tighter font-normal mt-4">
                   <span className="opacity-70">{activeProject.year}</span>
                 </div>
 
@@ -322,9 +322,9 @@ export default function Home() {
                 <div className="md:hidden mt-6 flex flex-col items-center text-center w-full max-w-[85%] pointer-events-none">
                   <div className={`flex justify-between w-full font-bold text-sm mb-4 transition-opacity duration-700 ${isActive ? 'opacity-100' : 'opacity-0'}`}>
                     <span>{project.title}</span>
-                    <span>{project.year}</span>
+                    <span className="text-[11px] font-normal tracking-tighter opacity-80">{project.year}</span>
                   </div>
-                  <p className={`text-xs leading-relaxed opacity-80 text-left w-full mb-6 max-h-24 overflow-hidden text-ellipsis line-clamp-3 transition-opacity duration-700 ${isActive ? 'opacity-100' : 'opacity-0'}`}>
+                  <p className={`text-xs leading-relaxed opacity-100 text-left w-full mb-6 max-h-24 overflow-hidden text-ellipsis line-clamp-3 transition-opacity duration-700 ${isActive ? 'opacity-100' : 'opacity-0'}`}>
                     {project.desc}
                   </p>
                   {project.showExternalLink && project.externalLink && (
