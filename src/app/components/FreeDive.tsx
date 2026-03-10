@@ -310,21 +310,23 @@ export default function FreeDive() {
                 const blockOffsetX = bc * blockW;
                 const blockOffsetY = br * blockH;
 
-                mediaItems.forEach((item, index) => {
-                    const localCol = index % cols;
-                    const localRow = Math.floor(index / cols);
+                const capacity = cols * rows;
+                for (let i = 0; i < capacity; i++) {
+                    const item = mediaItems[i % mediaItems.length];
+                    const localCol = i % cols;
+                    const localRow = Math.floor(i / cols);
 
                     const itemX = blockOffsetX + localCol * CELL_W + CELL_W / 2;
                     const itemY = blockOffsetY + localRow * CELL_H + CELL_H / 2;
 
                     visibleItems.push({
-                        key: `${bc}-${br}-${item.id}`,
+                        key: `${bc}-${br}-${i}-${item.id}`,
                         item,
                         x: itemX,
                         y: itemY,
                         width: 520
                     });
-                });
+                }
             }
         }
     }
@@ -477,7 +479,13 @@ export default function FreeDive() {
                     <button onClick={() => navigate('/')} className="text-[9px] md:text-[11px] font-bold uppercase transition-opacity hover:opacity-50">LEE JAEWOONG</button>
                 </div>
                 <div className="flex-1 flex justify-end items-center gap-6 md:gap-16">
-                    <button className="text-[9px] md:text-[11px] font-bold uppercase transition-opacity hover:opacity-50 opacity-40">FREE DIVE</button>
+                    <div className="flex items-center gap-2 opacity-50 transition-opacity hover:opacity-100">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M2 12c.6 0 1.2-.2 1.8-.5l.8-.5c1.4-.9 3-.9 4.4 0l.8.5c1 .6 2.2.6 3.2 0l.8-.5c1.4-.9 3-.9 4.4 0l.8.5c.6.3 1.2.5 1.8.5" />
+                            <path d="M2 18c.6 0 1.2-.2 1.8-.5l.8-.5c1.4-.9 3-.9 4.4 0l.8.5c1 .6 2.2.6 3.2 0l.8-.5c1.4-.9 3-.9 4.4 0l.8.5c.6.3 1.2.5 1.8.5" />
+                        </svg>
+                        <button className="text-[9px] md:text-[11px] font-bold uppercase">FREE DIVE</button>
+                    </div>
                 </div>
             </nav>
 
