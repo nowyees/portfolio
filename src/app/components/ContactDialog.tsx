@@ -120,7 +120,7 @@ export default function ContactDialog({ open, onClose, dark = false }: ContactDi
                     >
                         <button
                             onClick={handleClose}
-                            className="absolute top-8 right-8 md:top-10 md:right-10 text-[10px] uppercase tracking-widest font-bold opacity-70 hover:opacity-100 transition-opacity cursor-pointer"
+                            className="absolute z-10 top-4 right-4 md:top-6 md:right-6 p-4 text-[10px] uppercase tracking-widest font-bold opacity-70 hover:opacity-100 transition-opacity cursor-pointer"
                         >
                             Close
                         </button>
