@@ -134,9 +134,9 @@ export default function ProjectDetail() {
                 </div>
 
                 {/* Right: Navigation links */}
-                <nav className="flex-1 flex flex-col items-end gap-[4px] text-[9px] md:text-[10px] font-bold tracking-[0.05em] pointer-events-auto uppercase text-white/70 md:text-[#111]/70">
-                    <button onClick={() => navigate('/freedive')} className="hover:text-white md:hover:text-[#111] transition-colors">Free Dive</button>
-                    <button onClick={() => setContactOpen(true)} className="hover:text-white md:hover:text-[#111] transition-colors">Contact</button>
+                <nav className="flex-1 flex flex-col items-end gap-[2px] text-[10px] lg:text-[11px] font-medium opacity-60 pointer-events-auto text-white md:text-[#111]">
+                    <button onClick={() => navigate('/freedive')} className="hover:opacity-100 transition-opacity">Free Dive</button>
+                    <button onClick={() => setContactOpen(true)} className="hover:opacity-100 transition-opacity">Contact</button>
                 </nav>
             </header>
 
