@@ -25,6 +25,9 @@ export default function Home() {
     const container = scrollContainerRef.current;
     const el = imageRefs.current[index];
     if (container && el) {
+      if (!immediate) {
+        container.style.scrollSnapType = 'none';
+      }
       const containerWidth = container.offsetWidth;
       const elLeft = el.offsetLeft;
       const elWidth = el.offsetWidth;
@@ -32,6 +35,15 @@ export default function Home() {
         left: elLeft - containerWidth / 2 + elWidth / 2,
         behavior: immediate ? 'instant' : 'smooth'
       });
+
+      if (!immediate) {
+        // Re-enable snapping after smooth scroll completes
+        setTimeout(() => {
+          if (scrollContainerRef.current) {
+            scrollContainerRef.current.style.scrollSnapType = 'x mandatory';
+          }
+        }, 600);
+      }
     }
   };
 

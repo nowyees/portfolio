@@ -16,7 +16,6 @@ export default function ProjectDetail() {
     const [landscapeItems, setLandscapeItems] = useState<Record<number, boolean>>({});
     const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
 
-    // We'll keep the scroll refs for Hero vs Gallery navigation
     const [activeIndex, setActiveIndex] = useState(0);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const sectionRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -33,7 +32,6 @@ export default function ProjectDetail() {
         });
     }, [category, id]);
 
-    // Intersection Observer for detecting active slide
     useEffect(() => {
         const currentContainer = scrollContainerRef.current;
         if (!currentContainer) return;
@@ -57,21 +55,18 @@ export default function ProjectDetail() {
         return () => observer.disconnect();
     }, [project]);
 
-    // Build full media list
     const allMedia: MediaItem[] = [];
     if (project && project.media && project.media.length > 0) {
         allMedia.push(...project.media);
     }
 
-    // Keyboard navigation
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            // Only handle if not in an input field
             if (['TEXTAREA', 'INPUT'].includes((e.target as HTMLElement).tagName)) return;
 
             if (e.key === 'ArrowDown') {
                 e.preventDefault();
-                const next = Math.min(activeIndex + 1, allMedia.length); // 0 is hero, 1..N are images
+                const next = Math.min(activeIndex + 1, allMedia.length);
                 sectionRefs.current[next]?.scrollIntoView({ behavior: 'smooth' });
             } else if (e.key === 'ArrowUp') {
                 e.preventDefault();
@@ -84,7 +79,6 @@ export default function ProjectDetail() {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [activeIndex, allMedia.length, selectedMedia]);
 
-    // Close modal on Escape
     useEffect(() => {
         const handleEscape = (e: KeyboardEvent) => {
             if (e.key === 'Escape' && selectedMedia) {
@@ -99,8 +93,7 @@ export default function ProjectDetail() {
     // Loading
     if (loading) {
         return (
-            <div className="w-screen h-screen bg-[#f7f6f0] flex items-center justify-center"
-                style={{ fontFamily: "'Champagne & Limousines', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
+            <div className="w-screen h-screen bg-[#f3f3f3] flex items-center justify-center font-['Pretendard',sans-serif]">
                 <motion.div
                     animate={{ opacity: [0.3, 1, 0.3] }}
                     transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
@@ -115,8 +108,7 @@ export default function ProjectDetail() {
     // Not found
     if (!project) {
         return (
-            <div className="w-screen h-screen bg-[#f7f6f0] flex flex-col items-center justify-center gap-4"
-                style={{ fontFamily: "'Champagne & Limousines', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
+            <div className="w-screen h-screen bg-[#f3f3f3] flex flex-col items-center justify-center gap-4 font-['Pretendard',sans-serif]">
                 <p className="text-sm opacity-60">Project not found.</p>
                 <button onClick={() => navigate('/')} className="text-[10px] uppercase tracking-widest underline opacity-40 hover:opacity-100 transition-opacity">
                     Go back
@@ -128,33 +120,30 @@ export default function ProjectDetail() {
     return (
         <div
             ref={scrollContainerRef}
-            className={`w-full h-screen overflow-y-auto overflow-x-hidden bg-[#f7f6f0] text-[#111] selection:bg-[#111] selection:text-[#f7f6f0] ${cols === 1 ? 'snap-y snap-mandatory' : ''}`}
-            style={{ fontFamily: "'Champagne & Limousines', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}
+            className={`w-full h-screen overflow-y-auto overflow-x-hidden bg-[#f3f3f3] text-[#111] selection:bg-[#111] selection:text-[#f3f3f3] font-['Pretendard',sans-serif] ${cols === 1 ? 'snap-y snap-mandatory' : ''}`}
         >
             <GridTrail dark={false} />
 
-            {/* Fixed Navigation */}
-            <nav className="fixed top-0 w-full flex justify-between items-center px-6 pt-4 pb-0 md:px-12 z-50 mix-blend-difference text-[#f7f6f0] md:mix-blend-normal md:text-[#111] pointer-events-none">
-                <div className="flex-none pointer-events-auto">
-                    <button
-                        onClick={() => navigate('/')}
-                        className="text-[9px] md:text-[11px] font-bold uppercase transition-opacity hover:opacity-70"
-                    >
-                        LEE JAEWOONG
-                    </button>
+            {/* TOP HEADER (Same as Home) */}
+            <header className="fixed top-0 w-full flex justify-between items-start px-6 pt-6 pb-4 md:px-10 md:pt-8 z-50 pointer-events-none mix-blend-difference md:mix-blend-normal">
+                {/* Left: Logo Area */}
+                <div className="flex-1 min-w-0">
+                    <h1 className="text-xl md:text-2xl lg:text-[28px] font-bold tracking-[-0.03em] whitespace-nowrap leading-none text-white md:text-[#111] pointer-events-auto cursor-pointer font-['Helvetica',sans-serif]" onClick={() => navigate('/')}>
+                        LEE JAEWOONG<sup className="text-[10px] md:text-sm font-normal ml-[2px]">®</sup>
+                    </h1>
                 </div>
-                <div className="flex-1 flex justify-end items-center gap-6 md:gap-16 pointer-events-auto">
-                    <button
-                        onClick={() => navigate('/freedive')}
-                        className="text-[9px] md:text-[11px] font-bold uppercase transition-opacity hover:opacity-100 opacity-60"
-                    >
-                        FREE DIVE
-                    </button>
-                </div>
-            </nav>
+
+                {/* Right: Navigation links */}
+                <nav className="flex-1 flex flex-col items-end gap-[4px] text-[9px] md:text-[10px] font-bold tracking-[0.05em] pointer-events-auto uppercase text-white/70 md:text-[#111]/70">
+                    <button onClick={() => navigate('/')} className="hover:text-white md:hover:text-[#111] transition-colors">Work +</button>
+                    <button onClick={() => navigate('/freedive')} className="hover:text-white md:hover:text-[#111] transition-colors">Free Dive</button>
+                    <button onClick={() => navigate('/about')} className="hover:text-white md:hover:text-[#111] transition-colors">About</button>
+                    <button onClick={() => setContactOpen(true)} className="hover:text-white md:hover:text-[#111] transition-colors">Contact</button>
+                </nav>
+            </header>
 
             {/* Side Navigator */}
-            <div className="fixed right-6 md:right-12 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-4 mix-blend-difference text-[#f7f6f0] md:mix-blend-normal md:text-[#111] pointer-events-none">
+            <div className="fixed right-6 md:right-10 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-4 mix-blend-difference text-white md:mix-blend-normal md:text-[#111] pointer-events-none">
                 {/* Tracker text */}
                 <div className="text-[9px] md:text-[10px] tracking-widest font-bold opacity-80" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
                     {activeIndex === 0 ? 'INFO' : `${String(activeIndex).padStart(2, '0')} / ${String(allMedia.length).padStart(2, '0')}`}
@@ -183,27 +172,27 @@ export default function ProjectDetail() {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.8 }}
-                    className="max-w-4xl px-4 md:px-12 w-full flex flex-col items-center"
+                    className="max-w-4xl px-4 md:px-12 w-full flex flex-col items-center text-[#111]"
                 >
-                    <div className="text-xs md:text-sm uppercase tracking-widest opacity-70 mb-6 font-['Pretendard',sans-serif] tracking-wider text-center font-normal">
+                    <div className="text-xs md:text-sm tracking-widest opacity-60 mb-6 font-semibold uppercase">
                         {project.year}
                     </div>
                     <h1
-                        className="text-[14vw] md:text-[9vw] leading-[0.9] tracking-tighter mb-16 text-center"
+                        className="text-[14vw] md:text-[10vw] leading-[0.9] tracking-[-0.05em] mb-14 text-center font-['Helvetica',sans-serif]"
                         style={{ fontWeight: 700 }}
                     >
                         {project.title}
                     </h1>
 
-                    <div className="w-full max-w-3xl mx-auto flex flex-col items-start text-left">
-                        <p className="text-base md:text-lg leading-normal opacity-60 font-['Pretendard',sans-serif]">
+                    <div className="w-full max-w-2xl mx-auto flex flex-col items-center text-center">
+                        <p className="text-sm md:text-base leading-relaxed opacity-70 font-medium">
                             {project.desc}
                         </p>
 
                         {project.hashtags && project.hashtags.length > 0 && (
-                            <div className="flex flex-wrap gap-2 mt-8">
+                            <div className="flex flex-wrap justify-center gap-2 mt-8">
                                 {project.hashtags.map((tag, i) => (
-                                    <span key={i} className="text-xs opacity-60 font-['Pretendard',sans-serif] font-normal">
+                                    <span key={i} className="text-[10px] md:text-xs opacity-50 font-semibold tracking-wider uppercase">
                                         #{tag}
                                     </span>
                                 ))}
@@ -216,9 +205,9 @@ export default function ProjectDetail() {
                                     href={project.externalLink}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-xs font-bold border-b border-[#111] pb-1 hover:opacity-70 transition-opacity"
+                                    className="text-xs font-bold border-b border-[#111] pb-1 hover:opacity-50 transition-opacity"
                                 >
-                                    {'>'} Link
+                                    ↗ Visit Project
                                 </a>
                             </div>
                         )}
@@ -226,12 +215,12 @@ export default function ProjectDetail() {
                 </motion.div>
 
                 {/* Scroll indicator */}
-                <div className="absolute bottom-8 flex flex-col items-center gap-3">
+                <div className="absolute bottom-8 flex flex-col items-center gap-3 mix-blend-difference text-white md:mix-blend-normal md:text-[#111]">
                     <motion.svg
                         width="16" height="16" viewBox="0 0 16 16" fill="none"
                         animate={{ y: [0, 8, 0] }}
                         transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
-                        className="opacity-50"
+                        className="opacity-40"
                     >
                         <path d="M8 2v12M8 14l-4-4M8 14l4-4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
                     </motion.svg>
@@ -239,14 +228,14 @@ export default function ProjectDetail() {
             </div>
 
             {/* Layout Navigator */}
-            <div className="fixed bottom-8 right-8 z-50 flex items-center gap-2 bg-[#f7f6f0]/80 backdrop-blur-md rounded-full px-3 py-2 shadow-[0_4px_20px_rgba(0,0,0,0.05)] border border-[#111]/10">
+            <div className="fixed bottom-8 right-8 z-50 flex items-center gap-2 bg-[#f3f3f3]/80 backdrop-blur-md rounded-full px-3 py-2 shadow-sm border border-[#111]/5">
                 {([1, 4] as const).map(n => (
                     <button
                         key={n}
                         onClick={() => setCols(n)}
                         className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 ${cols === n
-                            ? 'bg-[#111] text-[#f7f6f0]'
-                            : 'hover:bg-[#111]/20 text-[#111]/70'
+                            ? 'bg-[#111] text-[#f3f3f3]'
+                            : 'hover:bg-[#111]/10 text-[#111]/60'
                             }`}
                         title={`${n} column${n > 1 ? 's' : ''}`}
                     >
@@ -280,10 +269,7 @@ export default function ProjectDetail() {
             >
                 {allMedia.map((media, i) => {
                     const isLandscape = landscapeItems[i];
-                    // If image is landscape and columns configured >= 2, span 2 columns
                     const spanClass = (cols >= 2 && isLandscape) ? 'md:col-span-2' : '';
-
-                    // If cols === 1, act like the full-screen snap slides
                     const viewClass = cols === 1
                         ? 'w-full h-[90vh] md:h-screen snap-center flex items-center justify-center'
                         : `w-full ${spanClass}`;
@@ -317,7 +303,7 @@ export default function ProjectDetail() {
                                             setLandscapeItems(prev => ({ ...prev, [i]: true }));
                                         }
                                     }}
-                                    className={cols === 1 ? 'max-w-full max-h-[85vh] object-contain drop-shadow-sm' : 'w-full h-auto object-contain'}
+                                    className={cols === 1 ? 'max-w-full max-h-[85vh] object-contain drop-shadow-sm rounded-[4px]' : 'w-full h-auto object-contain rounded-[4px]'}
                                     style={cols !== 1 ? { maxHeight: '85vh' } : undefined}
                                 />
                             ) : (
@@ -331,7 +317,7 @@ export default function ProjectDetail() {
                                             setLandscapeItems(prev => ({ ...prev, [i]: true }));
                                         }
                                     }}
-                                    className={cols === 1 ? 'max-w-full max-h-[85vh] object-contain drop-shadow-sm' : 'w-full h-auto drop-shadow-sm object-contain'}
+                                    className={cols === 1 ? 'max-w-full max-h-[85vh] object-contain drop-shadow-sm rounded-[4px]' : 'w-full h-auto drop-shadow-sm object-contain rounded-[4px]'}
                                     style={cols !== 1 ? { maxHeight: '85vh' } : undefined}
                                 />
                             )}
@@ -346,22 +332,22 @@ export default function ProjectDetail() {
                 whileInView={{ opacity: 1 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.8 }}
-                className={`border-t border-[#111]/20 px-6 md:px-16 py-12 flex justify-between items-center relative z-10 ${cols === 1 ? 'snap-center' : ''}`}
+                className={`border-t border-[#111]/10 px-6 md:px-16 py-12 flex justify-between items-center relative z-10 ${cols === 1 ? 'snap-center' : ''}`}
             >
                 <button
                     onClick={() => navigate('/')}
-                    className="text-[10px] uppercase tracking-widest font-bold opacity-70 hover:opacity-100 transition-opacity"
+                    className="text-[10px] uppercase tracking-widest font-bold opacity-60 hover:opacity-100 transition-opacity"
                 >
                     Back to Home
                 </button>
                 <button
                     onClick={() => setContactOpen(true)}
-                    className="text-[10px] uppercase tracking-widest font-bold opacity-70 hover:opacity-100 transition-opacity"
+                    className="text-[10px] uppercase tracking-widest font-bold opacity-60 hover:opacity-100 transition-opacity"
                 >
                     Contact
                 </button>
             </motion.div>
-            <ContactDialog open={contactOpen} onClose={() => setContactOpen(false)} />
+            <ContactDialog open={contactOpen} onClose={() => setContactOpen(false)} dark={false} />
 
             {/* Fullscreen Media Modal */}
             <AnimatePresence>
@@ -371,12 +357,12 @@ export default function ProjectDetail() {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.3 }}
-                        className="fixed inset-0 z-[100] bg-[#f7f6f0]/95 backdrop-blur-md flex items-center justify-center p-4 md:p-12 cursor-zoom-out"
+                        className="fixed inset-0 z-[100] bg-[#f3f3f3]/95 backdrop-blur-md flex items-center justify-center p-4 md:p-12 cursor-zoom-out"
                         onClick={() => setSelectedMedia(null)}
                     >
                         <button
                             onClick={() => setSelectedMedia(null)}
-                            className="absolute top-6 right-6 md:top-10 md:right-10 text-[10px] uppercase tracking-widest font-bold opacity-60 hover:opacity-100 transition-opacity z-10 mix-blend-difference text-[#f7f6f0]"
+                            className="absolute top-6 right-6 md:top-10 md:right-10 text-[10px] uppercase tracking-widest font-bold opacity-60 hover:opacity-100 transition-opacity z-10 text-[#111]"
                         >
                             CLOSE
                         </button>
@@ -393,14 +379,14 @@ export default function ProjectDetail() {
                                     src={selectedMedia.url}
                                     controls
                                     autoPlay
-                                    className="max-w-full max-h-full object-contain drop-shadow-2xl pointer-events-auto rounded-sm"
+                                    className="max-w-full max-h-full object-contain drop-shadow-2xl pointer-events-auto rounded-[8px]"
                                     onClick={(e) => e.stopPropagation()}
                                 />
                             ) : (
                                 <img
                                     src={selectedMedia.url}
                                     alt="Enlarged view"
-                                    className="max-w-full max-h-full object-contain drop-shadow-2xl pointer-events-auto rounded-sm"
+                                    className="max-w-full max-h-full object-contain drop-shadow-2xl pointer-events-auto rounded-[8px]"
                                     onClick={(e) => e.stopPropagation()}
                                 />
                             )}
