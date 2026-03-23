@@ -21,6 +21,20 @@ export default function Home() {
   const observerRef = useRef<IntersectionObserver | null>(null);
   const imageRefs = useRef<(HTMLDivElement | null)[]>([]);
 
+  const scrollToCenter = (index: number, immediate = false) => {
+    const container = scrollContainerRef.current;
+    const el = imageRefs.current[index];
+    if (container && el) {
+      const containerWidth = container.offsetWidth;
+      const elLeft = el.offsetLeft;
+      const elWidth = el.offsetWidth;
+      container.scrollTo({
+        left: elLeft - containerWidth / 2 + elWidth / 2,
+        behavior: immediate ? 'instant' : 'smooth'
+      });
+    }
+  };
+
   useEffect(() => {
     // Show landing animation once per session
     if (!sessionStorage.getItem('hasSeenLanding')) {
@@ -44,9 +58,8 @@ export default function Home() {
         if (targetId) {
           setTimeout(() => {
             const idx = res.findIndex(p => `${p.category}-${p.id}` === targetId);
-            if (idx !== -1 && imageRefs.current[idx]) {
-              if (scrollContainerRef.current) scrollContainerRef.current.style.scrollBehavior = 'auto';
-              imageRefs.current[idx]?.scrollIntoView({ behavior: 'auto', block: 'end', inline: 'center' });
+            if (idx !== -1) {
+              scrollToCenter(idx, true);
             }
           }, 50);
         }
@@ -95,12 +108,8 @@ export default function Home() {
         nextIndex = currentIndex - 1;
       }
 
-      if (nextIndex !== currentIndex && imageRefs.current[nextIndex]) {
-        imageRefs.current[nextIndex]?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'nearest',
-          inline: 'center'
-        });
+      if (nextIndex !== currentIndex) {
+        scrollToCenter(nextIndex);
       }
     };
 
@@ -126,6 +135,8 @@ export default function Home() {
     }
   }, [showLanding, landingWordIndex, words.length, projects.length]);
 
+  const activeProject = projects.find(p => `${p.category}-${p.id}` === activeProjectId) || projects[0];
+
   return (
     <div className="relative w-full h-[100dvh] overflow-hidden bg-[#f3f3f3] text-[#111] selection:bg-[#111] selection:text-[#f3f3f3] flex flex-col justify-between font-['Pretendard',sans-serif]">
 
@@ -138,7 +149,6 @@ export default function Home() {
             transition={{ duration: 0.8, ease: "easeInOut" }}
             className="fixed inset-0 z-[200] bg-[#f3f3f3] flex flex-col items-center justify-center text-[#111] px-6 select-none"
           >
-            {/* ... (Animation block kept simple as original but adapted colors) ... */}
             <div className="text-[12px] md:text-[14px] tracking-[0.3em] flex items-center justify-center flex-wrap gap-x-4 gap-y-2 opacity-90">
               <span className="uppercase tracking-[0.4em] opacity-50">I'm</span>
               <div className="relative h-[30px] flex items-center justify-center min-w-[140px] overflow-hidden">
@@ -177,10 +187,35 @@ export default function Home() {
           </h1>
         </div>
 
-        {/* Center: Blurb */}
-        <div className="hidden md:block flex-[2] lg:flex-1 max-w-[320px] text-[10px] lg:text-[11px] opacity-60 leading-[1.65] text-justify pointer-events-auto font-medium">
-          <span className="font-bold block mb-[6px] text-[#111] opacity-100 tracking-tight text-[11px] lg:text-[12px]">L'appel du vide</span>
-          Incididunt occaecat et commodo dolor do minim. Anim ut anim minim commodo aliqua Lorem occaecat sint id non ullamco consectetur incididunt officia. Culpa nisi dolore pariatur labore anim fugiat proident velit sit quis.
+        {/* Center: Blurb - Dynamic Active Project Info */}
+        <div className="hidden md:block flex-[2] lg:flex-1 max-w-[320px] text-[10px] lg:text-[11px] opacity-60 leading-[1.65] text-left pointer-events-auto font-medium transition-opacity duration-500">
+          {activeProject ? (
+            <>
+              <span className="font-bold block mb-[6px] text-[#111] opacity-100 tracking-tight text-[11px] lg:text-[12px] uppercase">
+                {activeProject.title}
+              </span>
+              <p className="line-clamp-3 mb-2">{activeProject.desc}</p>
+
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-[#111] opacity-80 text-[9px] lg:text-[10px]">
+                <span className="font-semibold">{activeProject.year}</span>
+                {activeProject.hashtags && activeProject.hashtags.map((tag, i) => (
+                  <span key={i}>#{tag}</span>
+                ))}
+                {activeProject.showExternalLink && activeProject.externalLink && (
+                  <a
+                    href={activeProject.externalLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline hover:opacity-50 transition-opacity font-bold ml-1"
+                  >
+                    Link ↗
+                  </a>
+                )}
+              </div>
+            </>
+          ) : (
+            <span className="opacity-0">Loading...</span>
+          )}
         </div>
 
         {/* Right: Navigation links */}
@@ -220,7 +255,7 @@ export default function Home() {
               className={`snap-center shrink-0 flex flex-col items-start gap-2 md:gap-3 cursor-pointer group transition-all duration-[800ms] ease-[cubic-bezier(0.25,1,0.5,1)] ${isActive ? 'translate-y-0' : 'translate-y-0 hover:-translate-y-2'}`}
               onClick={() => {
                 if (!isActive) {
-                  imageRefs.current[idx]?.scrollIntoView({ behavior: 'smooth', block: 'end', inline: 'center' });
+                  scrollToCenter(idx);
                 } else {
                   navigate(`/project/${project.category}/${project.id}`);
                 }
