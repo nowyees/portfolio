@@ -127,10 +127,8 @@ export default function ProjectDetail() {
             {/* TOP HEADER (Same as Home) */}
             <header className="fixed top-0 w-full flex justify-between items-start px-6 pt-6 pb-4 md:px-10 md:pt-8 z-50 pointer-events-none mix-blend-difference md:mix-blend-normal">
                 {/* Left: Logo Area */}
-                <div className="flex-1 min-w-0">
-                    <h1 className="text-xl md:text-2xl lg:text-[28px] font-bold tracking-[-0.03em] whitespace-nowrap leading-none text-white md:text-[#111] pointer-events-auto cursor-pointer font-['Helvetica',sans-serif]" onClick={() => navigate('/')}>
-                        JAYDEN.L<sup className="text-[10px] md:text-sm font-normal ml-[2px]">®</sup>
-                    </h1>
+                <div className="flex-1 min-w-0 flex items-center pointer-events-auto cursor-pointer" onClick={() => navigate('/')}>
+                    <img src="/logo.png" alt="JAYDEN.L" className="h-[20px] md:h-[24px] lg:h-[28px] w-auto object-contain" />
                 </div>
 
                 {/* Right: Navigation links */}
@@ -324,27 +322,15 @@ export default function ProjectDetail() {
                 })}
             </div>
 
-            {/* Footer */}
-            <motion.div
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.8 }}
-                className={`border-t border-[#111]/10 px-6 md:px-16 py-12 flex justify-between items-center relative z-10 ${cols === 1 ? 'snap-center' : ''}`}
-            >
+            {/* Minimalist Back to Home */}
+            <div className="fixed bottom-8 left-8 z-50 text-[#111] pointer-events-auto mix-blend-difference md:mix-blend-normal text-white md:text-[#111]">
                 <button
                     onClick={() => navigate('/')}
                     className="text-[10px] uppercase tracking-widest font-bold opacity-60 hover:opacity-100 transition-opacity"
                 >
-                    Back to Home
+                    BACK TO HOME
                 </button>
-                <button
-                    onClick={() => setContactOpen(true)}
-                    className="text-[10px] uppercase tracking-widest font-bold opacity-60 hover:opacity-100 transition-opacity"
-                >
-                    Contact
-                </button>
-            </motion.div>
+            </div>
             <ContactDialog open={contactOpen} onClose={() => setContactOpen(false)} dark={false} />
 
             {/* Fullscreen Media Modal */}

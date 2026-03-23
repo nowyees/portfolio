@@ -179,10 +179,8 @@ export default function Home() {
         className="fixed top-0 w-full flex justify-between items-start px-6 pt-6 pb-4 md:px-10 md:pt-8 z-50 pointer-events-none"
       >
         {/* Left: Logo Area */}
-        <div className="flex-[1.5] lg:flex-1 min-w-0">
-          <h1 className="text-xl md:text-2xl lg:text-[28px] font-bold tracking-[-0.03em] whitespace-nowrap leading-none text-[#111] pointer-events-auto cursor-pointer font-['Helvetica',sans-serif]" onClick={() => navigate('/')}>
-            JAYDEN.L<sup className="text-[10px] md:text-sm font-normal ml-[2px]">®</sup>
-          </h1>
+        <div className="flex-[1.5] lg:flex-1 min-w-0 flex items-center pointer-events-auto cursor-pointer" onClick={() => navigate('/')}>
+          <img src="/logo.png" alt="JAYDEN.L" className="h-[20px] md:h-[24px] lg:h-[28px] w-auto object-contain" />
         </div>
 
         {/* Center: Blurb - Dynamic Active Project Info */}
