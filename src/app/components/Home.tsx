@@ -29,7 +29,6 @@ export default function Home() {
       sessionStorage.setItem('hasSeenLanding', 'true');
     }
 
-    // When mounting, prioritize the saved active project ID if available
     const savedProjectId = sessionStorage.getItem('lastActiveProject');
     let targetId: string | null = null;
 
@@ -42,16 +41,12 @@ export default function Home() {
 
         setActiveProjectId(targetId);
 
-        // Scroll to the restored position after rendering
         if (targetId) {
           setTimeout(() => {
             const idx = res.findIndex(p => `${p.category}-${p.id}` === targetId);
             if (idx !== -1 && imageRefs.current[idx]) {
-              // Ensure instant scroll by manipulating the ref if needed, or just auto
               if (scrollContainerRef.current) scrollContainerRef.current.style.scrollBehavior = 'auto';
-              imageRefs.current[idx]?.scrollIntoView({ behavior: 'auto', block: 'start' });
-            } else if (scrollContainerRef.current) {
-              scrollContainerRef.current.scrollTo(0, 0);
+              imageRefs.current[idx]?.scrollIntoView({ behavior: 'auto', block: 'end', inline: 'center' });
             }
           }, 50);
         }
@@ -72,7 +67,7 @@ export default function Home() {
       });
     }, {
       root: scrollContainerRef.current,
-      rootMargin: '-30% 0px -30% 0px',
+      rootMargin: '0px -40% 0px -40%',
       threshold: 0
     });
 
@@ -86,24 +81,25 @@ export default function Home() {
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
 
       const currentIndex = projects.findIndex(p => `${p.category}-${p.id}` === activeProjectId);
       if (currentIndex === -1) return;
 
-      e.preventDefault(); // Prevent default scroll
+      e.preventDefault();
 
       let nextIndex = currentIndex;
-      if (e.key === 'ArrowDown' && currentIndex < projects.length - 1) {
+      if (e.key === 'ArrowRight' && currentIndex < projects.length - 1) {
         nextIndex = currentIndex + 1;
-      } else if (e.key === 'ArrowUp' && currentIndex > 0) {
+      } else if (e.key === 'ArrowLeft' && currentIndex > 0) {
         nextIndex = currentIndex - 1;
       }
 
       if (nextIndex !== currentIndex && imageRefs.current[nextIndex]) {
         imageRefs.current[nextIndex]?.scrollIntoView({
           behavior: 'smooth',
-          block: 'center'
+          block: 'nearest',
+          inline: 'center'
         });
       }
     };
@@ -112,35 +108,27 @@ export default function Home() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [projects, activeProjectId]);
 
-  const activeProject = projects.find(p => `${p.category}-${p.id}` === activeProjectId) || projects[0];
-
   // Landing Animation Timer
   useEffect(() => {
     if (showLanding) {
       if (projects.length === 0 || landingWordIndex < words.length - 1) {
-        // Keep cycling until projects are loaded AND we've shown at least all words once
-        // If we reach the end but projects aren't loaded, loop back to the start
         const timer = setTimeout(() => {
           setLandingWordIndex(prev => (prev + 1) % words.length);
         }, 550);
         return () => clearTimeout(timer);
       } else {
-        // Projects are loaded AND we finished at least one cycle
         const timer = setTimeout(() => {
           setShowLanding(false);
           document.body.style.overflow = 'auto';
-        }, 1000); // Hold final frame before fading
+        }, 1000);
         return () => clearTimeout(timer);
       }
     }
   }, [showLanding, landingWordIndex, words.length, projects.length]);
 
   return (
-    <div
-      ref={scrollContainerRef}
-      className="relative w-full h-screen overflow-y-auto overflow-x-hidden snap-y snap-mandatory bg-[#f7f6f0] text-[#111] selection:bg-[#111] selection:text-[#f7f6f0]"
-      style={{ fontFamily: "'Champagne & Limousines', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}
-    >
+    <div className="relative w-full h-[100dvh] overflow-hidden bg-[#f3f3f3] text-[#111] selection:bg-[#111] selection:text-[#f3f3f3] flex flex-col justify-between font-['Pretendard',sans-serif]">
+
       {/* Landing Animation Overlay */}
       <AnimatePresence>
         {showLanding && (
@@ -148,11 +136,11 @@ export default function Home() {
             initial={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.8, ease: "easeInOut" }}
-            className="fixed inset-0 z-[200] bg-[#f7f6f0] flex flex-col items-center justify-center text-[#111] px-6 select-none"
+            className="fixed inset-0 z-[200] bg-[#f3f3f3] flex flex-col items-center justify-center text-[#111] px-6 select-none"
           >
-            <div className="text-[12px] md:text-[14px] tracking-[0.3em] flex items-center justify-center flex-wrap gap-x-4 gap-y-2 opacity-90" style={{ fontFamily: "'Champagne & Limousines', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
+            {/* ... (Animation block kept simple as original but adapted colors) ... */}
+            <div className="text-[12px] md:text-[14px] tracking-[0.3em] flex items-center justify-center flex-wrap gap-x-4 gap-y-2 opacity-90">
               <span className="uppercase tracking-[0.4em] opacity-50">I'm</span>
-
               <div className="relative h-[30px] flex items-center justify-center min-w-[140px] overflow-hidden">
                 <AnimatePresence mode="popLayout">
                   <motion.span
@@ -167,7 +155,6 @@ export default function Home() {
                   </motion.span>
                 </AnimatePresence>
               </div>
-
               <span className="uppercase tracking-[0.4em] opacity-50">designer</span>
             </div>
           </motion.div>
@@ -176,195 +163,103 @@ export default function Home() {
 
       <GridTrail dark={false} overlay={false} />
 
-      {/* Navigation */}
-      <motion.nav
-        initial={{ opacity: 0, y: -40 }}
-        animate={showLanding ? { opacity: 0, y: -40 } : { opacity: 1, y: 0 }}
+      {/* TOP HEADER */}
+      <motion.header
+        initial={{ opacity: 0, y: -20 }}
+        animate={showLanding ? { opacity: 0, y: -20 } : { opacity: 1, y: 0 }}
         transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-        className="fixed top-0 w-full flex justify-between items-center px-6 pt-4 pb-0 md:px-12 z-50 mix-blend-difference text-[#f7f6f0] md:mix-blend-normal md:text-[#111]"
+        className="fixed top-0 w-full flex justify-between items-start px-6 pt-6 pb-4 md:px-10 md:pt-8 z-50 pointer-events-none"
       >
-        <div className="flex-none">
-          <button onClick={() => { scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' }) }} className="text-[9px] md:text-[11px] font-bold uppercase transition-opacity hover:opacity-70">LEE JAEWOONG</button>
+        {/* Left: Logo Area */}
+        <div className="flex-[1.5] lg:flex-1 min-w-0">
+          <h1 className="text-xl md:text-2xl lg:text-[28px] font-bold tracking-[-0.03em] whitespace-nowrap leading-none text-[#111] pointer-events-auto cursor-pointer font-['Helvetica',sans-serif]" onClick={() => navigate('/')}>
+            LEE JAEWOONG<sup className="text-[10px] md:text-sm font-normal ml-[2px]">®</sup>
+          </h1>
         </div>
-        <div className="flex-1 flex justify-end items-center gap-6 md:gap-16">
-          <div
-            onClick={() => navigate('/freedive')}
-            className="flex items-center gap-2 cursor-pointer opacity-60 transition-opacity hover:opacity-100"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M2 12c.6 0 1.2-.2 1.8-.5l.8-.5c1.4-.9 3-.9 4.4 0l.8.5c1 .6 2.2.6 3.2 0l.8-.5c1.4-.9 3-.9 4.4 0l.8.5c.6.3 1.2.5 1.8.5" />
-              <path d="M2 18c.6 0 1.2-.2 1.8-.5l.8-.5c1.4-.9 3-.9 4.4 0l.8.5c1 .6 2.2.6 3.2 0l.8-.5c1.4-.9 3-.9 4.4 0l.8.5c.6.3 1.2.5 1.8.5" />
-            </svg>
-            <button className="text-[9px] md:text-[11px] font-bold uppercase pointer-events-none">FREE DIVE</button>
-          </div>
-        </div>
-      </motion.nav>
 
-      {/* Side Navigator */}
-      <motion.div
-        initial={{ opacity: 0, x: 50 }}
-        animate={showLanding ? { opacity: 0, x: 50 } : { opacity: 1, x: 0 }}
-        transition={{ duration: 1.2, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-        className="fixed right-4 md:right-8 lg:right-12 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-4 mix-blend-difference text-[#f7f6f0] md:mix-blend-normal md:text-[#111] pointer-events-none"
+        {/* Center: Blurb */}
+        <div className="hidden md:block flex-[2] lg:flex-1 max-w-[320px] text-[10px] lg:text-[11px] opacity-60 leading-[1.65] text-justify pointer-events-auto font-medium">
+          <span className="font-bold block mb-[6px] text-[#111] opacity-100 tracking-tight text-[11px] lg:text-[12px]">L'appel du vide</span>
+          Incididunt occaecat et commodo dolor do minim. Anim ut anim minim commodo aliqua Lorem occaecat sint id non ullamco consectetur incididunt officia. Culpa nisi dolore pariatur labore anim fugiat proident velit sit quis.
+        </div>
+
+        {/* Right: Navigation links */}
+        <nav className="flex-1 flex flex-col items-end gap-[4px] text-[9px] md:text-[10px] font-bold tracking-[0.05em] pointer-events-auto uppercase text-[#111]/70">
+          <button onClick={() => navigate('/')} className="hover:text-[#111] transition-colors">Work +</button>
+          <button onClick={() => navigate('/freedive')} className="hover:text-[#111] transition-colors">Free Dive</button>
+          <button onClick={() => navigate('/about')} className="hover:text-[#111] transition-colors">About</button>
+          <button onClick={() => setContactOpen(true)} className="hover:text-[#111] transition-colors">Contact</button>
+        </nav>
+      </motion.header>
+
+      {/* BOTTOM GALLERY */}
+      <motion.main
+        initial={{ opacity: 0 }}
+        animate={showLanding ? { opacity: 0 } : { opacity: 1 }}
+        transition={{ duration: 1.5, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+        ref={scrollContainerRef}
+        className="absolute bottom-0 w-full h-[85vh] overflow-x-auto overflow-y-hidden flex items-end pb-[4vh] md:pb-[6vh] gap-3 md:gap-5 snap-x snap-mandatory z-40"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
-        {/* Tracker text (hidden on mobile) */}
-        <div className="hidden md:block text-[9px] md:text-[10px] tracking-widest font-bold opacity-80" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
-          {projects.length > 0 ? `${String(Math.max(0, projects.findIndex(p => `${p.category}-${p.id}` === activeProjectId)) + 1).padStart(2, '0')} / ${String(projects.length).padStart(2, '0')}` : ''}
-        </div>
-        {/* Dots */}
-        <div className="flex flex-col gap-3 md:mt-4 pointer-events-auto">
-          {projects.map((p, i) => (
-            <button
-              key={`${p.category}-${p.id}`}
-              onClick={() => imageRefs.current[i]?.scrollIntoView({ behavior: 'smooth' })}
-              className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${projects.findIndex(p => `${p.category}-${p.id}` === activeProjectId) === i ? 'bg-current scale-150' : 'bg-current opacity-40 hover:opacity-80'}`}
-              aria-label={`Go to project ${i + 1}`}
-            />
-          ))}
-        </div>
-      </motion.div>
+        <style>{`
+          main::-webkit-scrollbar { display: none; }
+        `}</style>
 
-      <div className="flex flex-col md:flex-row w-full relative min-h-max">
-        {/* Left Column (Sticky Info) - Desktop Only */}
-        <motion.div
-          initial={{ opacity: 0, filter: 'blur(8px)' }}
-          animate={showLanding ? { opacity: 0, filter: 'blur(8px)' } : { opacity: 1, filter: 'blur(0px)' }}
-          transition={{ duration: 1.4, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-          className="w-full md:w-[48%] lg:w-[45%] h-screen sticky top-0 flex flex-col pl-6 pr-8 py-8 md:pl-12 md:pr-16 md:py-16 lg:pl-12 lg:pr-24 lg:py-16 z-10 hidden md:flex"
-        >
-          {/* Logo — upper area (approx 15% from top) */}
-          <div className="pt-[10vh] w-[110%] -ml-2">
-            <img
-              src="/images/logo.png"
-              alt="Jaydne. L(ee)"
-              className="w-full max-w-full h-auto select-none pointer-events-none"
-              draggable={false}
-            />
-          </div>
+        {/* Start Spacer */}
+        <div className="shrink-0 w-[50vw] md:w-[40vw]" />
 
-          <div className="flex-1"></div>
+        {projects.map((project, idx) => {
+          const isActive = `${project.category}-${project.id}` === activeProjectId;
+          const aspectStr = project.aspect ? project.aspect.replace('aspect-[', '').replace(']', '') : '3/4';
 
-          {/* Project Info — lower area (approx 70% from top) */}
-          <div className="pb-12 w-[95%]">
-            {activeProject && (
-              <div className="w-full transition-opacity duration-500">
-                <div className="mb-8 font-bold text-base md:text-lg uppercase tracking-tighter font-['Pretendard',sans-serif]">
-                  <span>{activeProject.title}</span>
-                </div>
+          return (
+            <div
+              key={`${project.category}-${project.id}`}
+              data-id={`${project.category}-${project.id}`}
+              ref={(el) => { imageRefs.current[idx] = el; }}
+              className={`snap-center shrink-0 flex flex-col items-start gap-2 md:gap-3 cursor-pointer group transition-all duration-[800ms] ease-[cubic-bezier(0.25,1,0.5,1)] ${isActive ? 'translate-y-0' : 'translate-y-0 hover:-translate-y-2'}`}
+              onClick={() => {
+                if (!isActive) {
+                  imageRefs.current[idx]?.scrollIntoView({ behavior: 'smooth', block: 'end', inline: 'center' });
+                } else {
+                  navigate(`/project/${project.category}/${project.id}`);
+                }
+              }}
+            >
+              <div className={`flex items-center gap-[6px] text-[9.5px] md:text-[11px] font-bold tracking-tight transition-opacity duration-500 ${isActive ? 'opacity-80' : 'opacity-40 hover:opacity-80'} ml-[2px]`}>
+                <span className="text-[7px] opacity-60">○</span> {project.title}
+              </div>
 
-                <div className="mb-2">
-                  <p className="text-sm md:text-base leading-normal opacity-85 text-justify font-['Pretendard',sans-serif]">
-                    {activeProject.desc}
-                  </p>
-                </div>
-
-                <div className="mb-3 text-[10px] md:text-xs font-['Pretendard',sans-serif] tracking-tighter font-normal mt-4">
-                  <span className="opacity-70">{activeProject.year}</span>
-                </div>
-
-                {activeProject.hashtags && activeProject.hashtags.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-6">
-                    {activeProject.hashtags.map((tag, i) => (
-                      <span key={i} className="text-xs opacity-60 font-['Pretendard',sans-serif] font-normal">
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
+              <div
+                className={`relative bg-[#eae9e4] rounded-[10px] md:rounded-[12px] overflow-hidden transition-all duration-[800ms] ease-[cubic-bezier(0.25,1,0.5,1)] ${isActive ? 'h-[50vh] md:h-[62vh] shadow-xl shadow-black-[0.03]' : 'h-[38vh] md:h-[48vh] shadow-md opacity-70 filter saturate-[0.85]'}`}
+                style={{ aspectRatio: aspectStr }}
+              >
+                <img
+                  src={project.image}
+                  alt={project.title}
+                  loading="lazy"
+                  className="w-full h-full object-cover transition-transform duration-[1.5s] ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:scale-[1.03]"
+                />
+                {!isActive && (
+                  <div className="absolute inset-0 bg-[#f3f3f3]/10 mix-blend-overlay z-10 transition-opacity duration-700 group-hover:opacity-0 pointer-events-none"></div>
                 )}
 
-                {/* Hide external link on the Home page per user request */}
-              </div>
-            )}
-          </div>
-
-          {/* Contact — bottom */}
-          <div>
-            <button
-              onClick={() => setContactOpen(true)}
-              className="text-[10px] md:text-xs font-bold transition-opacity hover:opacity-70"
-            >
-              Contact me
-            </button>
-          </div>
-        </motion.div>
-
-        {/* Right Column (Scrollable Images) */}
-        <motion.div
-          initial={{ opacity: 0, y: 150 }}
-          animate={showLanding ? { opacity: 0, y: 150 } : { opacity: 1, y: 0 }}
-          transition={{ duration: 1.5, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-          className="w-full md:w-[52%] lg:w-[55%] flex flex-col items-center z-0 pt-[22vh] md:pt-[12vh] pb-[20vh] gap-[6vh]"
-        >
-          {projects.map((project, idx) => {
-            const isActive = `${project.category}-${project.id}` === activeProjectId;
-            // Get aspect ratio safely, default to 3/4 if missing or malformed
-            const aspectStr = project.aspect ? project.aspect.replace('aspect-[', '').replace(']', '') : '3/4';
-
-            return (
-              <div
-                key={`${project.category}-${project.id}`}
-                data-id={`${project.category}-${project.id}`}
-                ref={(el) => { imageRefs.current[idx] = el; }}
-                className="w-full h-[100dvh] md:h-[82vh] flex flex-col justify-center items-center snap-center cursor-pointer group px-6 pt-[8vh] md:pt-0 md:pl-[16%] md:pr-6 shrink-0 pointer-events-none relative"
-                onClick={() => navigate(`/project/${project.category}/${project.id}`)}
-              >
-                <div
-                  className={`relative shadow-md transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] ${isActive ? 'scale-100 opacity-100' : 'scale-[0.88] opacity-50'} pointer-events-auto bg-[#e5e4de] flex justify-center items-center h-[55vh] md:h-full`}
-                  style={{
-                    maxHeight: '100%',
-                    maxWidth: '100%',
-                    aspectRatio: aspectStr
-                  }}
-                >
-                  <img
-                    src={project.image}
-                    alt={project.title}
-                    loading="lazy"
-                    className="w-full h-full object-cover transition-transform duration-[1.5s] ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:scale-[1.03]"
-                  />
-                  {!isActive && (
-                    <div className="absolute inset-0 bg-black/10 mix-blend-overlay z-10"></div>
-                  )}
-                </div>
-
-                {/* Mobile Info Overlay */}
-                <div className="md:hidden mt-6 flex flex-col items-center text-center w-full max-w-[85%] pointer-events-none">
-                  <div className={`flex justify-between w-full font-bold text-sm mb-4 transition-opacity duration-700 ${isActive ? 'opacity-100' : 'opacity-0'}`}>
-                    <span>{project.title}</span>
-                    <span className="text-[11px] font-normal tracking-tighter opacity-80">{project.year}</span>
-                  </div>
-                  <p className={`text-xs leading-relaxed opacity-100 text-left w-full mb-6 max-h-24 overflow-hidden text-ellipsis line-clamp-3 transition-opacity duration-700 ${isActive ? 'opacity-100' : 'opacity-0'}`}>
-                    {project.desc}
-                  </p>
-                  {project.showExternalLink && project.externalLink && (
-                    <a
-                      href={project.externalLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`text-xs font-bold border-b border-[#111] pb-0.5 pointer-events-auto hover:opacity-50 transition-opacity duration-700 self-start ${isActive ? 'opacity-100' : 'opacity-0'}`}
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {'>'} Link
-                    </a>
-                  )}
+                {/* Expand / View Icon */}
+                <div className="absolute top-[10px] right-[10px] md:top-[12px] md:right-[12px] w-[26px] h-[26px] md:w-[32px] md:h-[32px] bg-[#f3f3f3]/95 backdrop-blur-md rounded-[6px] md:rounded-[8px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20 shadow-sm text-[#111]">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" strokeLinejoin="miter" className="scale-75 md:scale-90">
+                    <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+                  </svg>
                 </div>
               </div>
-            );
-          })}
+            </div>
+          );
+        })}
 
-          {/* Mobile Contact button area (snaps to end) */}
-          <div className="md:hidden w-full h-[30vh] flex justify-center items-start snap-center pt-16 pb-32">
-            <button
-              onClick={() => setContactOpen(true)}
-              className="text-sm font-bold border border-[#111] px-8 py-3 rounded-full hover:bg-[#111] hover:text-[#f7f6f0] transition-colors"
-            >
-              Contact me
-            </button>
-          </div>
-        </motion.div>
-      </div>
+        {/* End Spacer */}
+        <div className="shrink-0 w-[50vw] md:w-[40vw]" />
+      </motion.main>
 
       <ContactDialog open={contactOpen} onClose={() => setContactOpen(false)} dark={false} />
-    </div >
+    </div>
   );
 }
