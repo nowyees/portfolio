@@ -129,15 +129,13 @@ export default function ProjectDetail() {
                 {/* Left: Logo Area */}
                 <div className="flex-1 min-w-0">
                     <h1 className="text-xl md:text-2xl lg:text-[28px] font-bold tracking-[-0.03em] whitespace-nowrap leading-none text-white md:text-[#111] pointer-events-auto cursor-pointer font-['Helvetica',sans-serif]" onClick={() => navigate('/')}>
-                        LEE JAEWOONG<sup className="text-[10px] md:text-sm font-normal ml-[2px]">®</sup>
+                        jaydne.L<sup className="text-[10px] md:text-sm font-normal ml-[2px]">®</sup>
                     </h1>
                 </div>
 
                 {/* Right: Navigation links */}
                 <nav className="flex-1 flex flex-col items-end gap-[4px] text-[9px] md:text-[10px] font-bold tracking-[0.05em] pointer-events-auto uppercase text-white/70 md:text-[#111]/70">
-                    <button onClick={() => navigate('/')} className="hover:text-white md:hover:text-[#111] transition-colors">Work +</button>
                     <button onClick={() => navigate('/freedive')} className="hover:text-white md:hover:text-[#111] transition-colors">Free Dive</button>
-                    <button onClick={() => navigate('/about')} className="hover:text-white md:hover:text-[#111] transition-colors">About</button>
                     <button onClick={() => setContactOpen(true)} className="hover:text-white md:hover:text-[#111] transition-colors">Contact</button>
                 </nav>
             </header>
@@ -303,8 +301,8 @@ export default function ProjectDetail() {
                                             setLandscapeItems(prev => ({ ...prev, [i]: true }));
                                         }
                                     }}
-                                    className={cols === 1 ? 'max-w-full max-h-[85vh] object-contain drop-shadow-sm rounded-[4px]' : 'w-full h-auto object-contain rounded-[4px]'}
-                                    style={cols !== 1 ? { maxHeight: '85vh' } : undefined}
+                                    className={cols === 1 ? 'max-w-[90%] md:max-w-[75%] max-h-[65vh] md:max-h-[75vh] mx-auto object-contain drop-shadow-sm rounded-[4px]' : 'w-full h-auto object-contain rounded-[4px]'}
+                                    style={cols !== 1 ? { maxHeight: '60vh' } : undefined}
                                 />
                             ) : (
                                 <img
@@ -317,8 +315,8 @@ export default function ProjectDetail() {
                                             setLandscapeItems(prev => ({ ...prev, [i]: true }));
                                         }
                                     }}
-                                    className={cols === 1 ? 'max-w-full max-h-[85vh] object-contain drop-shadow-sm rounded-[4px]' : 'w-full h-auto drop-shadow-sm object-contain rounded-[4px]'}
-                                    style={cols !== 1 ? { maxHeight: '85vh' } : undefined}
+                                    className={cols === 1 ? 'max-w-[90%] md:max-w-[75%] max-h-[65vh] md:max-h-[75vh] mx-auto object-contain drop-shadow-sm rounded-[4px]' : 'w-full h-auto drop-shadow-sm object-contain rounded-[4px]'}
+                                    style={cols !== 1 ? { maxHeight: '60vh' } : undefined}
                                 />
                             )}
                         </motion.div>

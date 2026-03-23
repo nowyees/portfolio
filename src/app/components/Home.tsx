@@ -181,7 +181,7 @@ export default function Home() {
         {/* Left: Logo Area */}
         <div className="flex-[1.5] lg:flex-1 min-w-0">
           <h1 className="text-xl md:text-2xl lg:text-[28px] font-bold tracking-[-0.03em] whitespace-nowrap leading-none text-[#111] pointer-events-auto cursor-pointer font-['Helvetica',sans-serif]" onClick={() => navigate('/')}>
-            LEE JAEWOONG<sup className="text-[10px] md:text-sm font-normal ml-[2px]">®</sup>
+            jaydne.L<sup className="text-[10px] md:text-sm font-normal ml-[2px]">®</sup>
           </h1>
         </div>
 
@@ -218,9 +218,7 @@ export default function Home() {
 
         {/* Right: Navigation links */}
         <nav className="flex-1 flex flex-col items-end gap-[4px] text-[9px] md:text-[10px] font-bold tracking-[0.05em] pointer-events-auto uppercase text-[#111]/70">
-          <button onClick={() => navigate('/')} className="hover:text-[#111] transition-colors">Work +</button>
           <button onClick={() => navigate('/freedive')} className="hover:text-[#111] transition-colors">Free Dive</button>
-          <button onClick={() => navigate('/about')} className="hover:text-[#111] transition-colors">About</button>
           <button onClick={() => setContactOpen(true)} className="hover:text-[#111] transition-colors">Contact</button>
         </nav>
       </motion.header>
