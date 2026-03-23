@@ -21,29 +21,15 @@ export default function Home() {
   const observerRef = useRef<IntersectionObserver | null>(null);
   const imageRefs = useRef<(HTMLDivElement | null)[]>([]);
 
+  // Smooth native scroll to center without hacky layout shifts
   const scrollToCenter = (index: number, immediate = false) => {
-    const container = scrollContainerRef.current;
     const el = imageRefs.current[index];
-    if (container && el) {
-      if (!immediate) {
-        container.style.scrollSnapType = 'none';
-      }
-      const containerWidth = container.offsetWidth;
-      const elLeft = el.offsetLeft;
-      const elWidth = el.offsetWidth;
-      container.scrollTo({
-        left: elLeft - containerWidth / 2 + elWidth / 2,
-        behavior: immediate ? 'instant' : 'smooth'
+    if (el) {
+      el.scrollIntoView({
+        behavior: immediate ? 'instant' : 'smooth',
+        inline: 'center',
+        block: 'nearest'
       });
-
-      if (!immediate) {
-        // Re-enable snapping after smooth scroll completes
-        setTimeout(() => {
-          if (scrollContainerRef.current) {
-            scrollContainerRef.current.style.scrollSnapType = 'x mandatory';
-          }
-        }, 600);
-      }
     }
   };
 
@@ -264,7 +250,8 @@ export default function Home() {
               key={`${project.category}-${project.id}`}
               data-id={`${project.category}-${project.id}`}
               ref={(el) => { imageRefs.current[idx] = el; }}
-              className={`snap-center shrink-0 flex flex-col items-start gap-2 md:gap-3 cursor-pointer group transition-all duration-[800ms] ease-[cubic-bezier(0.25,1,0.5,1)] ${isActive ? 'translate-y-0' : 'translate-y-0 hover:-translate-y-2'}`}
+              className={`snap-center shrink-0 flex flex-col items-start cursor-pointer group`}
+              style={{ transformOrigin: 'bottom center' }}
               onClick={() => {
                 if (!isActive) {
                   scrollToCenter(idx);
@@ -273,29 +260,34 @@ export default function Home() {
                 }
               }}
             >
-              <div className={`flex items-center gap-[6px] text-[9.5px] md:text-[11px] font-bold tracking-tight transition-opacity duration-500 ${isActive ? 'opacity-80' : 'opacity-40 hover:opacity-80'} ml-[2px]`}>
-                <span className="text-[7px] opacity-60">○</span> {project.title}
-              </div>
-
               <div
-                className={`relative bg-[#eae9e4] rounded-[10px] md:rounded-[12px] overflow-hidden transition-all duration-[800ms] ease-[cubic-bezier(0.25,1,0.5,1)] ${isActive ? 'h-[50vh] md:h-[62vh] shadow-xl shadow-black-[0.03]' : 'h-[38vh] md:h-[48vh] shadow-md opacity-70 filter saturate-[0.85]'}`}
-                style={{ aspectRatio: aspectStr }}
+                className={`transition-transform duration-[800ms] ease-[cubic-bezier(0.25,1,0.5,1)] flex flex-col items-start gap-2 md:gap-3 ${isActive ? 'scale-100 opacity-100' : 'scale-[0.80] opacity-50 hover:opacity-90'} origin-bottom`}
               >
-                <img
-                  src={project.image}
-                  alt={project.title}
-                  loading="lazy"
-                  className="w-full h-full object-cover transition-transform duration-[1.5s] ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:scale-[1.03]"
-                />
-                {!isActive && (
-                  <div className="absolute inset-0 bg-[#f3f3f3]/10 mix-blend-overlay z-10 transition-opacity duration-700 group-hover:opacity-0 pointer-events-none"></div>
-                )}
+                <div className={`flex items-center gap-[6px] text-[9.5px] md:text-[11px] font-bold tracking-tight ml-[2px]`}>
+                  <span className="text-[7px] w-[10px] h-[10px] flex items-center justify-center">○</span> {project.title}
+                </div>
 
-                {/* Expand / View Icon */}
-                <div className="absolute top-[10px] right-[10px] md:top-[12px] md:right-[12px] w-[26px] h-[26px] md:w-[32px] md:h-[32px] bg-[#f3f3f3]/95 backdrop-blur-md rounded-[6px] md:rounded-[8px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20 shadow-sm text-[#111]">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" strokeLinejoin="miter" className="scale-75 md:scale-90">
-                    <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
-                  </svg>
+                {/* The card size perfectly matches standard DOM width avoiding layout shift. Only the container scales visually with CSS Transforms. */}
+                <div
+                  className={`relative bg-[#eae9e4] rounded-[10px] md:rounded-[12px] overflow-hidden transition-all duration-500 h-[50vh] md:h-[62vh] ${isActive ? 'shadow-xl shadow-black-[0.03]' : 'shadow-md filter saturate-[0.85]'}`}
+                  style={{ aspectRatio: aspectStr }}
+                >
+                  <img
+                    src={project.image}
+                    alt={project.title}
+                    loading="lazy"
+                    className="w-full h-full object-cover transition-transform duration-[1.5s] ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:scale-[1.03]"
+                  />
+                  {!isActive && (
+                    <div className="absolute inset-0 bg-[#f3f3f3]/10 mix-blend-overlay z-10 transition-opacity duration-700 group-hover:opacity-0 pointer-events-none"></div>
+                  )}
+
+                  {/* Expand / View Icon */}
+                  <div className="absolute top-[10px] right-[10px] md:top-[12px] md:right-[12px] w-[26px] h-[26px] md:w-[32px] md:h-[32px] bg-[#f3f3f3]/95 backdrop-blur-md rounded-[6px] md:rounded-[8px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20 shadow-sm text-[#111]">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" strokeLinejoin="miter" className="scale-75 md:scale-90">
+                      <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+                    </svg>
+                  </div>
                 </div>
               </div>
             </div>
