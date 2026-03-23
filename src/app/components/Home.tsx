@@ -181,7 +181,7 @@ export default function Home() {
         {/* Left: Logo Area */}
         <div className="flex-[1.5] lg:flex-1 min-w-0">
           <h1 className="text-xl md:text-2xl lg:text-[28px] font-bold tracking-[-0.03em] whitespace-nowrap leading-none text-[#111] pointer-events-auto cursor-pointer font-['Helvetica',sans-serif]" onClick={() => navigate('/')}>
-            jaydne.L<sup className="text-[10px] md:text-sm font-normal ml-[2px]">®</sup>
+            JAYDEN.L<sup className="text-[10px] md:text-sm font-normal ml-[2px]">®</sup>
           </h1>
         </div>
 

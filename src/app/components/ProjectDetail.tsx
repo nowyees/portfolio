@@ -124,12 +124,12 @@ export default function ProjectDetail() {
         >
             <GridTrail dark={false} />
 
-            {/* TOP HEADER */}
+            {/* TOP HEADER (Same as Home) */}
             <header className="fixed top-0 w-full flex justify-between items-start px-6 pt-6 pb-4 md:px-10 md:pt-8 z-50 pointer-events-none mix-blend-difference md:mix-blend-normal">
                 {/* Left: Logo Area */}
                 <div className="flex-1 min-w-0">
                     <h1 className="text-xl md:text-2xl lg:text-[28px] font-bold tracking-[-0.03em] whitespace-nowrap leading-none text-white md:text-[#111] pointer-events-auto cursor-pointer font-['Helvetica',sans-serif]" onClick={() => navigate('/')}>
-                        jaydne.L<sup className="text-[10px] md:text-sm font-normal ml-[2px]">®</sup>
+                        JAYDEN.L<sup className="text-[10px] md:text-sm font-normal ml-[2px]">®</sup>
                     </h1>
                 </div>
 
@@ -159,41 +159,51 @@ export default function ProjectDetail() {
                 </div>
             </div>
 
-            {/* Slide 0: Minimalist Hero & Info */}
+            {/* Slide 0: Hero & Info */}
             <div
                 data-index={0}
                 ref={(el) => { sectionRefs.current[0] = el; }}
-                className={`w-full flex flex-col px-6 md:px-10 pt-[18vh] pb-[8vh] relative z-10 ${cols === 1 ? 'snap-start' : ''}`}
+                className={`w-full min-h-screen flex flex-col items-center justify-center px-6 py-20 relative z-10 ${cols === 1 ? 'snap-center' : ''}`}
             >
                 <motion.div
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0, y: 40 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.8 }}
-                    className="w-full flex flex-col md:flex-row items-start md:items-start gap-4 md:gap-32 text-[#111]"
+                    className="max-w-4xl px-4 md:px-12 w-full flex flex-col items-center text-[#111]"
                 >
-                    {/* Left: Title & Meta */}
-                    <div className="flex-none w-full md:w-[280px] uppercase font-bold tracking-tight text-[10px] md:text-[11px]">
-                        <h1 className="mb-2 leading-snug">{project.title}</h1>
-                        <div className="opacity-50 font-medium">
-                            <span className="mr-2">{project.year}</span>
-                            {project.hashtags && project.hashtags.map((tag, i) => (
-                                <span key={i} className="mr-1">#{tag}</span>
-                            ))}
-                        </div>
+                    <div className="text-xs md:text-sm tracking-widest opacity-60 mb-6 font-semibold uppercase">
+                        {project.year}
                     </div>
+                    <h1
+                        className="text-[14vw] md:text-[10vw] leading-[0.9] tracking-[-0.05em] mb-14 text-center font-['Helvetica',sans-serif]"
+                        style={{ fontWeight: 700 }}
+                    >
+                        {project.title}
+                    </h1>
 
-                    {/* Right: Description & Links */}
-                    <div className="flex-1 max-w-2xl font-medium text-[10px] md:text-[11px] leading-[1.65] opacity-80 text-left">
-                        <p>{project.desc}</p>
+                    <div className="w-full max-w-2xl mx-auto flex flex-col items-center text-center">
+                        <p className="text-sm md:text-base leading-relaxed opacity-70 font-medium">
+                            {project.desc}
+                        </p>
+
+                        {project.hashtags && project.hashtags.length > 0 && (
+                            <div className="flex flex-wrap justify-center gap-2 mt-8">
+                                {project.hashtags.map((tag, i) => (
+                                    <span key={i} className="text-[10px] md:text-xs opacity-50 font-semibold tracking-wider uppercase">
+                                        #{tag}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
 
                         {project.showExternalLink && project.externalLink && (
-                            <div className="mt-4">
+                            <div className="mt-12">
                                 <a
                                     href={project.externalLink}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="underline hover:opacity-50 transition-opacity font-bold uppercase tracking-widest"
+                                    className="text-xs font-bold border-b border-[#111] pb-1 hover:opacity-50 transition-opacity"
                                 >
                                     ↗ Visit Project
                                 </a>
@@ -201,6 +211,18 @@ export default function ProjectDetail() {
                         )}
                     </div>
                 </motion.div>
+
+                {/* Scroll indicator */}
+                <div className="absolute bottom-8 flex flex-col items-center gap-3 mix-blend-difference text-white md:mix-blend-normal md:text-[#111]">
+                    <motion.svg
+                        width="16" height="16" viewBox="0 0 16 16" fill="none"
+                        animate={{ y: [0, 8, 0] }}
+                        transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                        className="opacity-40"
+                    >
+                        <path d="M8 2v12M8 14l-4-4M8 14l4-4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                    </motion.svg>
+                </div>
             </div>
 
             {/* Layout Navigator */}
@@ -302,7 +324,27 @@ export default function ProjectDetail() {
                 })}
             </div>
 
-            {/* Contact Dialog */}
+            {/* Footer */}
+            <motion.div
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8 }}
+                className={`border-t border-[#111]/10 px-6 md:px-16 py-12 flex justify-between items-center relative z-10 ${cols === 1 ? 'snap-center' : ''}`}
+            >
+                <button
+                    onClick={() => navigate('/')}
+                    className="text-[10px] uppercase tracking-widest font-bold opacity-60 hover:opacity-100 transition-opacity"
+                >
+                    Back to Home
+                </button>
+                <button
+                    onClick={() => setContactOpen(true)}
+                    className="text-[10px] uppercase tracking-widest font-bold opacity-60 hover:opacity-100 transition-opacity"
+                >
+                    Contact
+                </button>
+            </motion.div>
             <ContactDialog open={contactOpen} onClose={() => setContactOpen(false)} dark={false} />
 
             {/* Fullscreen Media Modal */}
