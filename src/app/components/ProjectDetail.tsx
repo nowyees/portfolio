@@ -132,9 +132,9 @@ export default function ProjectDetail() {
                 </div>
 
                 {/* Right: Navigation links */}
-                <nav className="flex-1 flex flex-col items-end gap-[2px] text-[10px] lg:text-[11px] font-medium opacity-60 pointer-events-auto text-white md:text-[#111]">
-                    <button onClick={() => navigate('/freedive')} className="hover:opacity-100 transition-opacity">Free Dive</button>
-                    <button onClick={() => setContactOpen(true)} className="hover:opacity-100 transition-opacity">Contact</button>
+                <nav className="flex-1 flex flex-col items-end gap-[6px] text-[10px] lg:text-[11px] font-medium pointer-events-auto text-white md:text-[#111]">
+                    <button onClick={() => navigate('/freedive')} className="px-3 py-1.5 rounded-[6px] bg-white/10 md:bg-[#111]/[0.03] hover:bg-white/20 md:hover:bg-[#111]/[0.06] opacity-80 hover:opacity-100 transition-all border border-white/20 md:border-[#111]/10 shadow-sm backdrop-blur-sm">Free Dive</button>
+                    <button onClick={() => setContactOpen(true)} className="px-3 py-1.5 rounded-[6px] bg-white/10 md:bg-[#111]/[0.03] hover:bg-white/20 md:hover:bg-[#111]/[0.06] opacity-80 hover:opacity-100 transition-all border border-white/20 md:border-[#111]/10 shadow-sm backdrop-blur-sm">Contact</button>
                 </nav>
             </header>
 
