@@ -186,7 +186,7 @@ export default function Home() {
         </div>
 
         {/* Center: Blurb - Dynamic Active Project Info */}
-        <div className="hidden md:block flex-[2] lg:flex-1 max-w-[320px] text-[10px] lg:text-[11px] opacity-60 leading-[1.65] text-left pointer-events-auto font-medium transition-opacity duration-500 ml-auto mr-2 lg:mr-4">
+        <div className="hidden md:block max-w-[320px] text-[10px] lg:text-[11px] opacity-60 leading-[1.65] text-right pointer-events-auto font-medium transition-opacity duration-500 ml-auto mr-0">
           {activeProject ? (
             <>
               <span className="font-bold block mb-[6px] text-[#111] opacity-100 tracking-tight text-[11px] lg:text-[12px] uppercase">
