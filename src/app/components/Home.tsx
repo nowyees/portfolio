@@ -180,13 +180,13 @@ export default function Home() {
       >
         {/* Left: Logo Area */}
         <div className="flex-[1.5] lg:flex-1 min-w-0">
-          <h1 className="text-xl md:text-2xl lg:text-[28px] font-bold tracking-[-0.03em] whitespace-nowrap leading-none text-[#111] pointer-events-auto cursor-pointer font-['Helvetica',sans-serif]" onClick={() => navigate('/')}>
-            LEEJAEWOONG<sup className="text-[10px] md:text-sm font-normal ml-[2px]">®</sup>
+          <h1 className="text-sm md:text-base lg:text-lg font-bold tracking-[-0.02em] whitespace-nowrap leading-none text-[#111] pointer-events-auto cursor-pointer font-['Pretendard',sans-serif]" onClick={() => navigate('/')}>
+            LEEJAEWOONG
           </h1>
         </div>
 
         {/* Center: Blurb - Dynamic Active Project Info */}
-        <div className="hidden md:block flex-[2] lg:flex-1 max-w-[320px] text-[10px] lg:text-[11px] opacity-60 leading-[1.65] text-left pointer-events-auto font-medium transition-opacity duration-500 ml-auto mr-8 lg:mr-12">
+        <div className="hidden md:block flex-[2] lg:flex-1 max-w-[320px] text-[10px] lg:text-[11px] opacity-60 leading-[1.65] text-left pointer-events-auto font-medium transition-opacity duration-500 ml-auto mr-2 lg:mr-4">
           {activeProject ? (
             <>
               <span className="font-bold block mb-[6px] text-[#111] opacity-100 tracking-tight text-[11px] lg:text-[12px] uppercase">

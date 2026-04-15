@@ -128,8 +128,8 @@ export default function ProjectDetail() {
             <header className="fixed top-0 w-full flex justify-between items-start px-6 pt-6 pb-4 md:px-10 md:pt-8 z-50 pointer-events-none mix-blend-difference md:mix-blend-normal">
                 {/* Left: Logo Area */}
                 <div className="flex-1 min-w-0">
-                    <h1 className="text-xl md:text-2xl lg:text-[28px] font-bold tracking-[-0.03em] whitespace-nowrap leading-none text-white md:text-[#111] pointer-events-auto cursor-pointer font-['Helvetica',sans-serif]" onClick={() => navigate('/')}>
-                        LEEJAEWOONG<sup className="text-[10px] md:text-sm font-normal ml-[2px]">®</sup>
+                    <h1 className="text-sm md:text-base lg:text-lg font-bold tracking-[-0.02em] whitespace-nowrap leading-none text-white md:text-[#111] pointer-events-auto cursor-pointer font-['Pretendard',sans-serif]" onClick={() => navigate('/')}>
+                        LEEJAEWOONG
                     </h1>
                 </div>
 
