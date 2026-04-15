@@ -127,14 +127,16 @@ export default function ProjectDetail() {
             {/* TOP HEADER (Same as Home) */}
             <header className="fixed top-0 w-full flex justify-between items-start px-6 pt-6 pb-4 md:px-10 md:pt-8 z-50 pointer-events-none mix-blend-difference md:mix-blend-normal">
                 {/* Left: Logo Area */}
-                <div className="flex-1 min-w-0 flex items-center pointer-events-auto cursor-pointer" onClick={() => navigate('/')}>
-                    <img src="/logo.png" alt="JAYDEN.L" className="h-[20px] md:h-[24px] lg:h-[28px] w-auto object-contain" />
+                <div className="flex-1 min-w-0">
+                    <h1 className="text-xl md:text-2xl lg:text-[28px] font-bold tracking-[-0.03em] whitespace-nowrap leading-none text-white md:text-[#111] pointer-events-auto cursor-pointer font-['Helvetica',sans-serif]" onClick={() => navigate('/')}>
+                        LEEJAEWOONG<sup className="text-[10px] md:text-sm font-normal ml-[2px]">®</sup>
+                    </h1>
                 </div>
 
                 {/* Right: Navigation links */}
-                <nav className="flex-1 flex flex-col items-end gap-[2px] text-[8.5px] lg:text-[9px] font-medium opacity-90 pointer-events-auto text-[#111] md:text-[#111]">
-                    <button onClick={() => navigate('/freedive')} className="hover:opacity-100 transition-opacity tracking-wide">Free Dive</button>
-                    <button onClick={() => setContactOpen(true)} className="hover:opacity-100 transition-opacity tracking-wide">Contact</button>
+                <nav className="flex-1 flex flex-col items-end gap-[2px] text-[7.5px] lg:text-[8px] font-medium opacity-90 pointer-events-auto text-[#111] md:text-[#111]">
+                    <button onClick={() => navigate('/freedive')} className="hover:opacity-100 transition-opacity tracking-normal">Free Dive</button>
+                    <button onClick={() => setContactOpen(true)} className="hover:opacity-100 transition-opacity tracking-normal">Contact</button>
                 </nav>
             </header>
 
