@@ -25,6 +25,9 @@ export default function Home() {
     const container = scrollContainerRef.current;
     const el = imageRefs.current[index];
     if (el && container) {
+      // Disable scroll-snap so Safari doesn't fight the programmatic scroll
+      container.style.scrollSnapType = 'none';
+
       const elRect = el.getBoundingClientRect();
       const containerRect = container.getBoundingClientRect();
       const scrollLeft = container.scrollLeft + (elRect.left - containerRect.left) - (containerRect.width / 2) + (elRect.width / 2);
@@ -32,6 +35,11 @@ export default function Home() {
         left: scrollLeft,
         behavior: immediate ? 'instant' : 'smooth'
       });
+
+      // Re-enable snap after scroll completes
+      setTimeout(() => {
+        if (container) container.style.scrollSnapType = 'x mandatory';
+      }, immediate ? 50 : 800);
     }
   };
 
