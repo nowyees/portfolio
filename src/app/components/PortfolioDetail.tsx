@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import GridTrail from './GridTrail';
 import ContactDialog from './ContactDialog';
 import { getPortfolioByCategory, type CategoryData, type MediaItem } from '../../lib/portfolioService';
 import { isVideoUrl } from '../../lib/storageService';
@@ -100,10 +99,7 @@ export default function PortfolioDetail() {
     <div ref={containerRef} className={`min-h-screen ${bg} ${fg} font-sans ${selBg} ${selFg} transition-colors duration-500`}>
 
       {/* 트레일 효과 배경 */}
-      <GridTrail dark={darkMode} />
 
-      {/* 트레일 오버레이 (이미지 위에 표시) */}
-      <GridTrail dark={darkMode} overlay={true} />
 
       {/* Header */}
       <motion.nav

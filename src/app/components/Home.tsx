@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import ContactDialog from './ContactDialog';
-import GridTrail from './GridTrail';
 import { getAllProjects, type Project } from '../../lib/portfolioService';
 import '../../lib/seedData';
 
@@ -169,7 +168,7 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      <GridTrail dark={false} overlay={false} />
+
 
       {/* TOP HEADER */}
       <motion.header
@@ -217,9 +216,8 @@ export default function Home() {
         </div>
 
         {/* Right: Navigation links */}
-        <nav className="flex-1 flex flex-col items-end gap-[2px] text-[7.5px] lg:text-[8px] font-medium opacity-90 pointer-events-auto text-[#111]">
-          <button onClick={() => navigate('/freedive')} className="hover:opacity-100 transition-opacity tracking-normal">Free Dive</button>
-          <button onClick={() => setContactOpen(true)} className="hover:opacity-100 transition-opacity tracking-normal">Contact</button>
+        <nav className="flex-1 flex flex-col items-end">
+          <button onClick={() => setContactOpen(true)} className="text-sm md:text-base lg:text-lg font-bold tracking-[-0.02em] text-[#111] hover:opacity-60 transition-opacity pointer-events-auto font-['Pretendard',sans-serif]">CONTACT</button>
         </nav>
       </motion.header>
 
@@ -253,9 +251,8 @@ export default function Home() {
               onClick={() => {
                 if (!isActive) {
                   scrollToCenter(idx);
-                } else {
-                  navigate(`/project/${project.category}/${project.id}`);
                 }
+                navigate(`/project/${project.category}/${project.id}`);
               }}
             >
               <div

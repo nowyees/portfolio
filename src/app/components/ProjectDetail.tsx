@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import GridTrail from './GridTrail';
 import ContactDialog from './ContactDialog';
 import { getPortfolioByCategory, type Project, type MediaItem } from '../../lib/portfolioService';
 import { isVideoUrl } from '../../lib/storageService';
@@ -122,7 +121,7 @@ export default function ProjectDetail() {
             ref={scrollContainerRef}
             className={`w-full h-screen overflow-y-auto overflow-x-hidden bg-[#f3f3f3] text-[#111] selection:bg-[#111] selection:text-[#f3f3f3] font-['Pretendard',sans-serif] ${cols === 1 ? 'snap-y snap-mandatory' : ''}`}
         >
-            <GridTrail dark={false} />
+
 
             {/* TOP HEADER (Same as Home) */}
             <header className="fixed top-0 w-full flex justify-between items-start px-6 pt-6 pb-4 md:px-10 md:pt-8 z-50 pointer-events-none mix-blend-difference md:mix-blend-normal">
@@ -134,9 +133,8 @@ export default function ProjectDetail() {
                 </div>
 
                 {/* Right: Navigation links */}
-                <nav className="flex-1 flex flex-col items-end gap-[2px] text-[7.5px] lg:text-[8px] font-medium opacity-90 pointer-events-auto text-[#111] md:text-[#111]">
-                    <button onClick={() => navigate('/freedive')} className="hover:opacity-100 transition-opacity tracking-normal">Free Dive</button>
-                    <button onClick={() => setContactOpen(true)} className="hover:opacity-100 transition-opacity tracking-normal">Contact</button>
+                <nav className="flex-1 flex flex-col items-end">
+                    <button onClick={() => setContactOpen(true)} className="text-sm md:text-base lg:text-lg font-bold tracking-[-0.02em] text-[#111] md:text-[#111] hover:opacity-60 transition-opacity pointer-events-auto font-['Pretendard',sans-serif]">CONTACT</button>
                 </nav>
             </header>
 
