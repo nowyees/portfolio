@@ -127,14 +127,14 @@ export default function ProjectDetail() {
             <header className="fixed top-0 w-full flex justify-between items-start px-6 pt-6 pb-4 md:px-10 md:pt-8 z-50 pointer-events-none mix-blend-difference md:mix-blend-normal">
                 {/* Left: Logo Area */}
                 <div className="flex-1 min-w-0">
-                    <h1 className="text-sm md:text-base lg:text-lg font-bold tracking-[-0.02em] whitespace-nowrap leading-none text-white md:text-[#111] pointer-events-auto cursor-pointer font-['Pretendard',sans-serif]" onClick={() => navigate('/')}>
+                    <h1 className="text-xs md:text-sm lg:text-base font-bold tracking-[-0.02em] whitespace-nowrap leading-none text-white md:text-[#111] pointer-events-auto cursor-pointer font-['Pretendard',sans-serif]" onClick={() => navigate('/')}>
                         LEEJAEWOONG
                     </h1>
                 </div>
 
                 {/* Right: Navigation links */}
                 <nav className="flex-1 flex flex-col items-end">
-                    <button onClick={() => setContactOpen(true)} className="text-sm md:text-base lg:text-lg font-bold tracking-[-0.02em] text-[#111] md:text-[#111] hover:opacity-60 transition-opacity pointer-events-auto font-['Pretendard',sans-serif]">CONTACT</button>
+                    <button onClick={() => setContactOpen(true)} className="text-xs md:text-sm lg:text-base font-bold tracking-[-0.02em] text-[#111] md:text-[#111] hover:opacity-60 transition-opacity pointer-events-auto font-['Pretendard',sans-serif]">CONTACT</button>
                 </nav>
             </header>
 

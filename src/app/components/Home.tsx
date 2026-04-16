@@ -179,21 +179,21 @@ export default function Home() {
       >
         {/* Left: Logo Area */}
         <div className="flex-[1.5] lg:flex-1 min-w-0">
-          <h1 className="text-sm md:text-base lg:text-lg font-bold tracking-[-0.02em] whitespace-nowrap leading-none text-[#111] pointer-events-auto cursor-pointer font-['Pretendard',sans-serif]" onClick={() => navigate('/')}>
+          <h1 className="text-xs md:text-sm lg:text-base font-bold tracking-[-0.02em] whitespace-nowrap leading-none text-[#111] pointer-events-auto cursor-pointer font-['Pretendard',sans-serif]" onClick={() => navigate('/')}>
             LEEJAEWOONG
           </h1>
         </div>
 
         {/* Center: Blurb - Dynamic Active Project Info */}
-        <div className="hidden md:block absolute left-[28%] lg:left-[26%] top-6 md:top-8 max-w-[320px] text-[10px] lg:text-[11px] opacity-60 leading-[1.65] text-left pointer-events-auto font-medium transition-opacity duration-500">
+        <div className="hidden md:block absolute left-[28%] lg:left-[26%] top-6 md:top-8 max-w-[320px] text-[10px] lg:text-[11px] leading-[1.65] text-left pointer-events-auto font-medium transition-opacity duration-500 text-[#111]">
           {activeProject ? (
             <>
-              <span className="font-bold block mb-[6px] text-[#111] opacity-100 tracking-tight text-[11px] lg:text-[12px] uppercase">
+              <span className="font-bold block mb-[6px] text-[#111] tracking-tight text-[11px] lg:text-[12px] uppercase">
                 {activeProject.title}
               </span>
               <p className="line-clamp-3 mb-2">{activeProject.desc}</p>
 
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-[#111] opacity-80 text-[9px] lg:text-[10px]">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-[#111] text-[9px] lg:text-[10px]">
                 <span className="font-semibold">{activeProject.year}</span>
                 {activeProject.hashtags && activeProject.hashtags.map((tag, i) => (
                   <span key={i}>#{tag}</span>
@@ -217,7 +217,7 @@ export default function Home() {
 
         {/* Right: Navigation links */}
         <nav className="flex-1 flex flex-col items-end">
-          <button onClick={() => setContactOpen(true)} className="text-sm md:text-base lg:text-lg font-bold tracking-[-0.02em] text-[#111] hover:opacity-60 transition-opacity pointer-events-auto font-['Pretendard',sans-serif]">CONTACT</button>
+          <button onClick={() => setContactOpen(true)} className="text-xs md:text-sm lg:text-base font-bold tracking-[-0.02em] text-[#111] hover:opacity-60 transition-opacity pointer-events-auto font-['Pretendard',sans-serif]">CONTACT</button>
         </nav>
       </motion.header>
 
@@ -251,8 +251,9 @@ export default function Home() {
               onClick={() => {
                 if (!isActive) {
                   scrollToCenter(idx);
+                } else {
+                  navigate(`/project/${project.category}/${project.id}`);
                 }
-                navigate(`/project/${project.category}/${project.id}`);
               }}
             >
               <div
@@ -290,7 +291,7 @@ export default function Home() {
         })}
 
         {/* End Spacer - large enough for the last card to fully center */}
-        <div className="shrink-0 w-[80vw] md:w-[60vw]" />
+        <div className="shrink-0 w-[100vw] md:w-[80vw]" />
       </motion.main>
 
       <ContactDialog open={contactOpen} onClose={() => setContactOpen(false)} dark={false} />
