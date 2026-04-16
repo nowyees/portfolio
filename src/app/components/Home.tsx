@@ -19,12 +19,14 @@ export default function Home() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const imageRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const isScrollingRef = useRef(false);
 
   // Smooth native scroll to center without hacky layout shifts
   const scrollToCenter = (index: number, immediate = false) => {
     const container = scrollContainerRef.current;
     const el = imageRefs.current[index];
     if (el && container) {
+      isScrollingRef.current = true;
       // Disable scroll-snap so Safari doesn't fight the programmatic scroll
       container.style.scrollSnapType = 'none';
 
@@ -39,6 +41,7 @@ export default function Home() {
       // Re-enable snap after scroll completes
       setTimeout(() => {
         if (container) container.style.scrollSnapType = 'x mandatory';
+        isScrollingRef.current = false;
       }, immediate ? 50 : 800);
     }
   };
@@ -77,6 +80,7 @@ export default function Home() {
 
   useEffect(() => {
     observerRef.current = new IntersectionObserver((entries) => {
+      if (isScrollingRef.current) return;
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           const id = entry.target.getAttribute('data-id');
@@ -306,7 +310,7 @@ export default function Home() {
         })}
 
         {/* End Spacer - large enough for the last card to fully center */}
-        <div className="shrink-0 w-[100vw] md:w-[80vw]" />
+        <div className="shrink-0 w-[100vw] md:w-[80vw] h-[1px]" />
       </motion.main>
 
       <ContactDialog open={contactOpen} onClose={() => setContactOpen(false)} dark={false} />
