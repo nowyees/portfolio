@@ -186,7 +186,7 @@ export default function Home() {
         </div>
 
         {/* Center: Blurb - Dynamic Active Project Info */}
-        <div className="hidden md:block absolute left-[420px] lg:left-[500px] top-6 md:top-8 max-w-[320px] text-[10px] lg:text-[11px] opacity-60 leading-[1.65] text-left pointer-events-auto font-medium transition-opacity duration-500">
+        <div className="hidden md:block absolute left-[28%] lg:left-[26%] top-6 md:top-8 max-w-[320px] text-[10px] lg:text-[11px] opacity-60 leading-[1.65] text-left pointer-events-auto font-medium transition-opacity duration-500">
           {activeProject ? (
             <>
               <span className="font-bold block mb-[6px] text-[#111] opacity-100 tracking-tight text-[11px] lg:text-[12px] uppercase">
@@ -292,8 +292,8 @@ export default function Home() {
           );
         })}
 
-        {/* End Spacer */}
-        <div className="shrink-0 w-[50vw] md:w-[40vw]" />
+        {/* End Spacer - large enough for the last card to fully center */}
+        <div className="shrink-0 w-[80vw] md:w-[60vw]" />
       </motion.main>
 
       <ContactDialog open={contactOpen} onClose={() => setContactOpen(false)} dark={false} />
