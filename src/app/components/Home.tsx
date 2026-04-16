@@ -22,12 +22,15 @@ export default function Home() {
 
   // Smooth native scroll to center without hacky layout shifts
   const scrollToCenter = (index: number, immediate = false) => {
+    const container = scrollContainerRef.current;
     const el = imageRefs.current[index];
-    if (el) {
-      el.scrollIntoView({
-        behavior: immediate ? 'instant' : 'smooth',
-        inline: 'center',
-        block: 'nearest'
+    if (el && container) {
+      const elRect = el.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
+      const scrollLeft = container.scrollLeft + (elRect.left - containerRect.left) - (containerRect.width / 2) + (elRect.width / 2);
+      container.scrollTo({
+        left: scrollLeft,
+        behavior: immediate ? 'instant' : 'smooth'
       });
     }
   };
@@ -251,6 +254,10 @@ export default function Home() {
               onClick={() => {
                 if (!isActive) {
                   scrollToCenter(idx);
+                  // Force active state immediately so second click navigates
+                  const newId = `${project.category}-${project.id}`;
+                  setActiveProjectId(newId);
+                  sessionStorage.setItem('lastActiveProject', newId);
                 } else {
                   navigate(`/project/${project.category}/${project.id}`);
                 }
