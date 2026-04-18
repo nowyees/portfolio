@@ -120,7 +120,7 @@ export default function ProjectDetail() {
 
             {/* Right Content Area: Media Scroll */}
             <div id="right-media-col" className="flex-1 bg-transparent h-[60vh] md:h-screen overflow-y-auto relative z-10" style={{ scrollBehavior: 'smooth' }}>
-                <div className="w-full min-h-full grid grid-cols-1 md:grid-cols-2 gap-0 md:gap-0 pb-32">
+                <div className="w-full min-h-full grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 pb-32 pt-2 md:pt-4">
                     {allMedia.length > 0 ? (
                         allMedia.map((media, i) => (
                             <motion.div
