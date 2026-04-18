@@ -284,7 +284,7 @@ export default function Home() {
 
                 {/* The card size perfectly matches standard DOM width avoiding layout shift. Only the container scales visually with CSS Transforms. */}
                 <div
-                  className={`relative bg-[#eae9e4] rounded-[10px] md:rounded-[12px] overflow-hidden transition-all duration-500 h-[50vh] md:h-[62vh] ${isActive ? 'shadow-xl shadow-black-[0.03]' : 'shadow-md filter saturate-[0.85]'}`}
+                  className={`relative bg-[#eae9e4] overflow-hidden transition-all duration-500 h-[50vh] md:h-[62vh] ${isActive ? 'shadow-xl shadow-black-[0.03]' : 'shadow-md filter saturate-[0.85]'}`}
                   style={{ aspectRatio: aspectStr }}
                 >
                   <img
