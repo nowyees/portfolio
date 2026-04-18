@@ -4,6 +4,7 @@ import { db, isConfigured } from './firebase';
 export interface MediaItem {
     url: string;
     type: 'image' | 'video';
+    layout?: 'full' | 'half';
 }
 
 export interface Project {

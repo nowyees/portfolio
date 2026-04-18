@@ -120,14 +120,7 @@ export default function ProjectDetail() {
 
             {/* Right Content Area: Media Scroll */}
             <div id="right-media-col" className="flex-1 bg-transparent h-[60vh] md:h-screen overflow-y-auto relative z-10" style={{ scrollBehavior: 'smooth' }}>
-                {/* Contact Button */}
-                <div className="fixed md:absolute top-6 right-6 md:top-8 md:right-8 z-30 pointer-events-auto mix-blend-difference md:mix-blend-normal text-white md:text-[#111]">
-                    <button onClick={() => setContactOpen(true)} className="text-xs md:text-sm lg:text-base font-bold tracking-[-0.02em] leading-none text-[#111] md:text-[#111] hover:opacity-60 transition-opacity pointer-events-auto font-['Pretendard',sans-serif]">
-                        CONTACT
-                    </button>
-                </div>
-
-                <div className="w-full min-h-full flex flex-col items-center pt-24 pb-32 px-0 gap-4">
+                <div className="w-full min-h-full grid grid-cols-1 md:grid-cols-2 gap-0 md:gap-0 pb-32">
                     {allMedia.length > 0 ? (
                         allMedia.map((media, i) => (
                             <motion.div
@@ -136,7 +129,7 @@ export default function ProjectDetail() {
                                 whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true, margin: '-50px' }}
                                 transition={{ duration: 0.6, delay: i * 0.1 }}
-                                className="w-full cursor-zoom-in"
+                                className={`w-full cursor-zoom-in ${media.layout === 'half' ? 'col-span-1' : 'col-span-1 md:col-span-2'}`}
                                 onClick={() => setSelectedMedia(media)}
                             >
                                 {media.type === 'video' || isVideoUrl(media.url) ? (

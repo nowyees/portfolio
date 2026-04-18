@@ -595,20 +595,34 @@ export default function AdminPage() {
                                                     </label>
                                                     <div className="flex gap-2 flex-wrap">
                                                         {editingProject.media?.map((item, idx) => (
-                                                            <div key={idx} className="relative w-20 h-20 bg-[#e5e4de] group">
-                                                                {item.type === 'video' ? (
-                                                                    <div className="w-full h-full flex items-center justify-center text-[9px] uppercase opacity-40">
-                                                                        <span>▶ Video</span>
-                                                                    </div>
-                                                                ) : (
-                                                                    <img src={item.url} alt="" className="w-full h-full object-cover" />
-                                                                )}
-                                                                <button
-                                                                    onClick={() => removeMedia(idx)}
-                                                                    className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                                            <div key={idx} className="relative flex flex-col group">
+                                                                <div className="w-20 h-20 bg-[#e5e4de] relative">
+                                                                    {item.type === 'video' ? (
+                                                                        <div className="w-full h-full flex items-center justify-center text-[9px] uppercase opacity-40">
+                                                                            <span>▶ Video</span>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <img src={item.url} alt="" className="w-full h-full object-cover" />
+                                                                    )}
+                                                                    <button
+                                                                        onClick={() => removeMedia(idx)}
+                                                                        className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                                                    >
+                                                                        ×
+                                                                    </button>
+                                                                </div>
+                                                                <select
+                                                                    className="w-20 mt-1 text-[9px] bg-transparent border-b border-[#111]/20 outline-none pb-0.5 cursor-pointer"
+                                                                    value={item.layout || 'full'}
+                                                                    onChange={(e) => {
+                                                                        const newMedia = [...(editingProject.media || [])];
+                                                                        newMedia[idx] = { ...newMedia[idx], layout: e.target.value as 'full' | 'half' };
+                                                                        setEditingProject({ ...editingProject, media: newMedia });
+                                                                    }}
                                                                 >
-                                                                    ×
-                                                                </button>
+                                                                    <option value="full">1단 꽉차게</option>
+                                                                    <option value="half">2단 나란히</option>
+                                                                </select>
                                                             </div>
                                                         ))}
                                                         <button
