@@ -133,9 +133,9 @@ export default function Home() {
       if (currentIndex === -1) return;
 
       let nextIndex = currentIndex;
-      if (e.deltaY > 15 && currentIndex < projects.length - 1) {
+      if (e.deltaY > 5 && currentIndex < projects.length - 1) {
         nextIndex = currentIndex + 1;
-      } else if (e.deltaY < -15 && currentIndex > 0) {
+      } else if (e.deltaY < -5 && currentIndex > 0) {
         nextIndex = currentIndex - 1;
       }
 
@@ -145,7 +145,7 @@ export default function Home() {
 
         wheelTimeoutRef.current = window.setTimeout(() => {
           wheelTimeoutRef.current = null;
-        }, 350); // Block multi-jump from a single massive scroll
+        }, 150); // Aggressively reduced timeout to allow rapid scrolling
       }
     };
 
@@ -226,11 +226,11 @@ export default function Home() {
         `}</style>
 
         {/* Start Spacer with Scroll Prompt */}
-        <div className="shrink-0 w-[50vw] md:w-[40vw] h-full flex items-center justify-end pr-8 md:pr-16 pb-[10vh]">
+        <div className="shrink-0 w-[50vw] md:w-[40vw] h-full relative">
           <motion.div
             animate={{ x: [0, 10, 0] }}
             transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
-            className="flex items-center gap-2 text-[9px] md:text-[10px] uppercase tracking-widest font-bold opacity-30 whitespace-nowrap"
+            className="absolute left-6 md:left-10 bottom-[29vh] md:bottom-[37vh] translate-y-1/2 flex items-center gap-2 text-[9px] md:text-[10px] uppercase tracking-widest font-bold opacity-30 whitespace-nowrap"
           >
             <span>Scroll to discover</span>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
