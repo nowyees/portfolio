@@ -11,11 +11,6 @@ export default function Home() {
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
   const [contactOpen, setContactOpen] = useState(false);
 
-  // Landing Animation State
-  const [showLanding, setShowLanding] = useState(false);
-  const [landingWordIndex, setLandingWordIndex] = useState(0);
-  const words = ["industrial", "fashion", "ai", "speculative", "product", "brand"];
-
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const imageRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -48,12 +43,6 @@ export default function Home() {
   };
 
   useEffect(() => {
-    // Show landing animation once per session
-    if (!sessionStorage.getItem('hasSeenLanding')) {
-      setShowLanding(true);
-      document.body.style.overflow = 'hidden';
-      sessionStorage.setItem('hasSeenLanding', 'true');
-    }
 
     const savedProjectId = sessionStorage.getItem('lastActiveProject');
     let targetId: string | null = null;
@@ -130,35 +119,18 @@ export default function Home() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [projects, activeProjectId]);
 
-  // Mouse wheel vertical to horizontal mapping
+  // Mouse wheel vertical to horizontal mapping (Continuous native feel)
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
       // Trackpads native horizontal scroll should be ignored
       if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
 
       e.preventDefault();
-
-      if (wheelTimeoutRef.current) return;
-
-      const currentIndex = projects.findIndex(p => `${p.category}-${p.id}` === activeProjectId);
-      if (currentIndex === -1) return;
-
-      let nextIndex = currentIndex;
-      if (e.deltaY > 10 && currentIndex < projects.length - 1) {
-        nextIndex = currentIndex + 1;
-      } else if (e.deltaY < -10 && currentIndex > 0) {
-        nextIndex = currentIndex - 1;
-      }
-
-      if (nextIndex !== currentIndex) {
-        scrollToCenter(nextIndex);
-        wheelTimeoutRef.current = window.setTimeout(() => {
-          wheelTimeoutRef.current = null;
-        }, 600); // Debounce duration to match snap transition
-      } else {
-        wheelTimeoutRef.current = window.setTimeout(() => {
-          wheelTimeoutRef.current = null;
-        }, 100);
+      const container = scrollContainerRef.current;
+      if (container) {
+        // Scroll seamlessly using the native deltaY amount mapped to X axis.
+        // The CSS scroll-snap will handle the clean resting position automatically.
+        container.scrollBy({ left: e.deltaY, behavior: 'auto' });
       }
     };
 
@@ -167,68 +139,17 @@ export default function Home() {
       container.addEventListener('wheel', handleWheel, { passive: false });
       return () => container.removeEventListener('wheel', handleWheel);
     }
-  }, [projects, activeProjectId]);
-
-  // Landing Animation Timer
-  useEffect(() => {
-    if (showLanding) {
-      if (projects.length === 0 || landingWordIndex < words.length - 1) {
-        const timer = setTimeout(() => {
-          setLandingWordIndex(prev => (prev + 1) % words.length);
-        }, 550);
-        return () => clearTimeout(timer);
-      } else {
-        const timer = setTimeout(() => {
-          setShowLanding(false);
-          document.body.style.overflow = 'auto';
-        }, 1000);
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [showLanding, landingWordIndex, words.length, projects.length]);
+  }, []);
 
   const activeProject = projects.find(p => `${p.category}-${p.id}` === activeProjectId) || projects[0];
 
   return (
     <div className="relative w-full h-[100dvh] overflow-hidden bg-[#f3f3f3] text-[#111] selection:bg-[#111] selection:text-[#f3f3f3] flex flex-col justify-between font-['Pretendard',sans-serif]">
 
-      {/* Landing Animation Overlay */}
-      <AnimatePresence>
-        {showLanding && (
-          <motion.div
-            initial={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.8, ease: "easeInOut" }}
-            className="fixed inset-0 z-[200] bg-[#f3f3f3] flex flex-col items-center justify-center text-[#111] px-6 select-none"
-          >
-            <div className="text-[12px] md:text-[14px] tracking-[0.3em] flex items-center justify-center flex-wrap gap-x-4 gap-y-2 opacity-90">
-              <span className="uppercase tracking-[0.4em] opacity-50">I'm</span>
-              <div className="relative h-[30px] flex items-center justify-center min-w-[140px] overflow-hidden">
-                <AnimatePresence mode="popLayout">
-                  <motion.span
-                    key={landingWordIndex}
-                    initial={{ y: 30, opacity: 0, filter: 'blur(5px)' }}
-                    animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
-                    exit={{ y: -30, opacity: 0, filter: 'blur(5px)' }}
-                    transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                    className="absolute text-center lowercase font-bold text-[#111] tracking-[0.2em]"
-                  >
-                    {words[landingWordIndex]}
-                  </motion.span>
-                </AnimatePresence>
-              </div>
-              <span className="uppercase tracking-[0.4em] opacity-50">designer</span>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-
-
       {/* TOP HEADER */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
-        animate={showLanding ? { opacity: 0, y: -20 } : { opacity: 1, y: 0 }}
+        animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
         className="fixed top-0 w-full flex justify-between items-start px-6 pt-6 pb-4 md:px-10 md:pt-8 z-50 pointer-events-none"
       >
@@ -279,7 +200,7 @@ export default function Home() {
       {/* BOTTOM GALLERY */}
       <motion.main
         initial={{ opacity: 0 }}
-        animate={showLanding ? { opacity: 0 } : { opacity: 1 }}
+        animate={{ opacity: 1 }}
         transition={{ duration: 1.5, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
         ref={scrollContainerRef}
         className="absolute bottom-0 w-full h-[85vh] overflow-x-auto overflow-y-hidden flex items-end pb-[4vh] md:pb-[6vh] gap-3 md:gap-5 snap-x snap-mandatory z-40"
