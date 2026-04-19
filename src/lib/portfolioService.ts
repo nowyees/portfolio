@@ -60,6 +60,16 @@ const FALLBACK_DATA: Record<string, CategoryData> = {
     },
 };
 
+// --- In-Memory Cache (Reduces network lag drastically on site navigation) ---
+let cachedAllProjects: Array<Project & { category: string }> | null = null;
+let lastCacheTime = 0;
+const CACHE_TTL = 1000 * 60 * 60; // 1 hr
+
+export function invalidatePortfolioCache() {
+    cachedAllProjects = null;
+    lastCacheTime = 0;
+}
+
 /**
  * 카테고리별 포트폴리오 데이터 가져오기
  * Firestore가 설정되어 있으면 Firestore에서, 아니면 폴백 데이터 사용
@@ -125,7 +135,11 @@ export async function getAllCategories(): Promise<string[]> {
 /**
  * 모든 카테고리의 프로젝트를 배열로 가져오기 (시간 역순이나 지정된 순서)
  */
-export async function getAllProjects(): Promise<Array<Project & { category: string }>> {
+export async function getAllProjects(forceRefresh = false): Promise<Array<Project & { category: string }>> {
+    if (!forceRefresh && cachedAllProjects && Date.now() - lastCacheTime < CACHE_TTL) {
+        return cachedAllProjects;
+    }
+
     const allProjects: Array<Project & { category: string }> = [];
 
     // Firestore 연동 상태 확인
@@ -139,11 +153,14 @@ export async function getAllProjects(): Promise<Array<Project & { category: stri
                 allProjects.push({ ...(pDoc.data() as Project), category });
             });
             // Client-side sort by order (ascending) then id (descending fallback)
-            return allProjects.sort((a, b) => {
+            allProjects.sort((a, b) => {
                 const orderA = typeof a.order === 'number' ? a.order : 999999 - a.id;
                 const orderB = typeof b.order === 'number' ? b.order : 999999 - b.id;
                 return orderA - orderB;
             });
+            cachedAllProjects = allProjects;
+            lastCacheTime = Date.now();
+            return allProjects;
         } catch (error) {
             console.warn('Firestore fetch failed for getAllProjects, using fallback data:', error);
         }
@@ -157,7 +174,10 @@ export async function getAllProjects(): Promise<Array<Project & { category: stri
         });
     }
 
-    return allProjects.sort((a, b) => b.id - a.id);
+    allProjects.sort((a, b) => b.id - a.id);
+    cachedAllProjects = allProjects;
+    lastCacheTime = Date.now();
+    return allProjects;
 }
 
 /**
@@ -166,7 +186,8 @@ export async function getAllProjects(): Promise<Array<Project & { category: stri
 export async function updateProject(category: string, projectId: string, data: Partial<Project>): Promise<void> {
     if (!isConfigured || !db) throw new Error('Firebase not configured');
     const key = category.toLowerCase();
-    await setDoc(doc(db, 'portfolios', key, 'projects', projectId), data, { merge: true });
+    await setDoc(doc(db as any, 'portfolios', key, 'projects', projectId), data, { merge: true });
+    invalidatePortfolioCache();
 }
 
 /**
@@ -174,15 +195,16 @@ export async function updateProject(category: string, projectId: string, data: P
  */
 export async function updateProjectsOrder(category: string, updates: { id: number; order: number }[]): Promise<void> {
     if (!isConfigured || !db) throw new Error('Firebase not configured');
-    const batch = writeBatch(db);
+    const batch = writeBatch(db as any);
     const key = category.toLowerCase();
 
     updates.forEach(update => {
-        const docRef = doc(db, 'portfolios', key, 'projects', `project-${update.id}`);
+        const docRef = doc(db as any, 'portfolios', key, 'projects', `project-${update.id}`);
         batch.set(docRef, { order: update.order }, { merge: true });
     });
 
     await batch.commit();
+    invalidatePortfolioCache();
 }
 
 /**
@@ -190,10 +212,11 @@ export async function updateProjectsOrder(category: string, updates: { id: numbe
  */
 export async function addProject(category: string, project: Project): Promise<string> {
     if (!isConfigured || !db) throw new Error('Firebase not configured');
+    const currentDb = db;
     const key = category.toLowerCase();
 
     // 카테고리 문서가 없으면 생성 (폴백 데이터 기반)
-    const categoryDocRef = doc(db, 'portfolios', key);
+    const categoryDocRef = doc(currentDb as any, 'portfolios', key);
     const categoryDoc = await getDoc(categoryDocRef);
     if (!categoryDoc.exists()) {
         const fallback = FALLBACK_DATA[key] || { title: key.toUpperCase(), subtitle: '', description: '', projects: [] };
@@ -205,7 +228,8 @@ export async function addProject(category: string, project: Project): Promise<st
     }
 
     const docId = `project-${project.id}`;
-    await setDoc(doc(db, 'portfolios', key, 'projects', docId), project);
+    await setDoc(doc(currentDb as any, 'portfolios', key, 'projects', docId), project);
+    invalidatePortfolioCache();
     return docId;
 }
 
@@ -215,7 +239,8 @@ export async function addProject(category: string, project: Project): Promise<st
 export async function deleteProject(category: string, projectId: string): Promise<void> {
     if (!isConfigured || !db) throw new Error('Firebase not configured');
     const key = category.toLowerCase();
-    await deleteDoc(doc(db, 'portfolios', key, 'projects', projectId));
+    await deleteDoc(doc(db as any, 'portfolios', key, 'projects', projectId));
+    invalidatePortfolioCache();
 }
 
 /**
