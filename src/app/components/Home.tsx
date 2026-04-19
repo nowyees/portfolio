@@ -225,8 +225,17 @@ export default function Home() {
           main::-webkit-scrollbar { display: none; }
         `}</style>
 
-        {/* Start Spacer */}
-        <div className="shrink-0 w-[50vw] md:w-[40vw]" />
+        {/* Start Spacer with Scroll Prompt */}
+        <div className="shrink-0 w-[50vw] md:w-[40vw] h-full flex items-center justify-end pr-8 md:pr-16 pb-[10vh]">
+          <motion.div
+            animate={{ x: [0, 10, 0] }}
+            transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+            className="flex items-center gap-2 text-[9px] md:text-[10px] uppercase tracking-widest font-bold opacity-30 whitespace-nowrap"
+          >
+            <span>Scroll to discover</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+          </motion.div>
+        </div>
 
         {projects.map((project, idx) => {
           const isActive = `${project.category}-${project.id}` === activeProjectId;
@@ -288,6 +297,19 @@ export default function Home() {
         {/* End Spacer - large enough for the last card to fully center */}
         <div className="shrink-0 w-[100vw] md:w-[80vw] h-[1px]" />
       </motion.main>
+
+      {/* Bottom Progress Navigator */}
+      <div className="fixed bottom-4 left-6 md:left-10 md:bottom-6 z-50 text-[#111] text-[10px] md:text-[11px] font-bold font-mono tracking-widest flex items-center gap-4 pointer-events-none">
+        <span>{String(projects.findIndex(p => `${p.category}-${p.id}` === activeProjectId) + 1 || 1).padStart(2, '0')}</span>
+        <div className="w-[40px] md:w-[60px] h-[1px] bg-[#111]/20 relative overflow-hidden">
+          <motion.div
+            className="absolute top-0 left-0 h-full bg-[#111]"
+            animate={{ width: `${((projects.findIndex(p => `${p.category}-${p.id}` === activeProjectId) + 1 || 1) / (projects.length || 1)) * 100}%` }}
+            transition={{ duration: 0.3 }}
+          />
+        </div>
+        <span className="opacity-40">{String(projects.length || 1).padStart(2, '0')}</span>
+      </div>
 
       <ContactDialog open={contactOpen} onClose={() => setContactOpen(false)} dark={false} />
     </div>
