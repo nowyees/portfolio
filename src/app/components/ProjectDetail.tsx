@@ -60,7 +60,7 @@ export default function ProjectDetail() {
     return (
         <div className="flex flex-col md:flex-row h-[100dvh] w-full bg-[#f3f3f3] text-[#111] font-['Pretendard',sans-serif] overflow-hidden selection:bg-[#111] selection:text-[#f3f3f3]">
             {/* Left Sidebar */}
-            <div className="w-full md:w-[280px] lg:w-[320px] xl:w-[400px] 2xl:w-[480px] shrink-0 bg-[#f3f3f3] border-b md:border-b-0 md:border-r border-[#111]/10 flex flex-col h-auto max-h-[45vh] md:max-h-none md:h-screen z-20">
+            <div className="w-full md:w-[240px] lg:w-[280px] xl:w-[320px] 2xl:w-[380px] shrink-0 bg-[#f3f3f3] border-b md:border-b-0 md:border-r border-[#111]/10 flex flex-col h-auto max-h-[45vh] md:max-h-none md:h-screen z-20">
 
                 {/* 1. Header Area: Identity */}
                 <div className="px-6 py-6 md:px-8 md:py-8 shrink-0">

@@ -128,8 +128,8 @@ export default function FreeDive() {
     const cY = useRef(0);
     const cZ = useRef(3.0);
     const canvasRef = useRef<HTMLDivElement>(null);
-    const lastBounds = useRef({ startCol: -2, endCol: 2, startRow: -2, endRow: 2 });
-    const [visibleBounds, setVisibleBounds] = useState({ startCol: -1, endCol: 1, startRow: -1, endRow: 1 });
+    const lastKeys = useRef<string>('');
+    const [renderItems, setRenderItems] = useState<any[]>([]);
     const isDragging = useRef(false);
     const lastPan = useRef({ x: 0, y: 0 });
     const lastInteractionTime = useRef(performance.now());
@@ -185,31 +185,67 @@ export default function FreeDive() {
                 changed = true;
             }
 
-            // Always check bounds in case screen resized or jump occurred
+            // Viewport Frustum Culling (Memory Optimization)
+            // Padding by 1.2x of screen guarantees smooth scrolling without seeing pops
             const sW = window.innerWidth;
             const sH = window.innerHeight;
-            const vL = -cX.current - (sW / 2) / cZ.current;
-            const vR = -cX.current + (sW / 2) / cZ.current;
-            const vT = -cY.current - (sH / 2) / cZ.current;
-            const vB = -cY.current + (sH / 2) / cZ.current;
+            const frustumPaddingW = (sW * 1.2) / cZ.current;
+            const frustumPaddingH = (sH * 1.2) / cZ.current;
+
+            const vL = -cX.current - frustumPaddingW;
+            const vR = -cX.current + frustumPaddingW;
+            const vT = -cY.current - frustumPaddingH;
+            const vB = -cY.current + frustumPaddingH;
 
             const sc = Math.floor(vL / blockW) - 1;
             const ec = Math.floor(vR / blockW) + 1;
             const sr = Math.floor(vT / blockH) - 1;
             const er = Math.floor(vB / blockH) + 1;
 
-            const prev = lastBounds.current;
-            if (sc !== prev.startCol || ec !== prev.endCol || sr !== prev.startRow || er !== prev.endRow) {
-                const nb = { startCol: sc, endCol: ec, startRow: sr, endRow: er };
-                lastBounds.current = nb;
-                setVisibleBounds(nb);
+            const culledList: any[] = [];
+            const capacity = cols * rows;
+
+            if (mediaItems.length > 0) {
+                for (let bc = sc; bc <= ec; bc++) {
+                    for (let br = sr; br <= er; br++) {
+                        const blockOffsetX = bc * blockW;
+                        const blockOffsetY = br * blockH;
+
+                        for (let i = 0; i < capacity; i++) {
+                            const item = mediaItems[i % mediaItems.length];
+                            const localCol = i % cols;
+                            const localRow = Math.floor(i / cols);
+
+                            const itemX = blockOffsetX + localCol * CELL_W + CELL_W / 2;
+                            const itemY = blockOffsetY + localRow * CELL_H + CELL_H / 2;
+
+                            // Include only if intersecting expanded frustum
+                            if (itemX > vL && itemX < vR && itemY > vT && itemY < vB) {
+                                culledList.push({
+                                    key: `${bc}-${br}-${i}-${item.id}`,
+                                    item,
+                                    x: itemX,
+                                    y: itemY,
+                                    width: 520
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Sync with React only when the visible array signatures change (zero overhead stable renders)
+            const signature = culledList.map(c => c.key).join(',');
+            if (signature !== lastKeys.current) {
+                lastKeys.current = signature;
+                setRenderItems(culledList);
             }
 
             frame = requestAnimationFrame(tick);
         };
         tick();
         return () => cancelAnimationFrame(frame);
-    }, [blockW, blockH]);
+    }, [blockW, blockH, mediaItems]);
 
     // Interaction handlers
     const markInteraction = () => { lastInteractionTime.current = performance.now(); };
@@ -302,34 +338,7 @@ export default function FreeDive() {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, []);
 
-    // Visible blocks calculation
-    const visibleItems: any[] = [];
-    if (mediaItems.length > 0) {
-        for (let bc = visibleBounds.startCol; bc <= visibleBounds.endCol; bc++) {
-            for (let br = visibleBounds.startRow; br <= visibleBounds.endRow; br++) {
-                const blockOffsetX = bc * blockW;
-                const blockOffsetY = br * blockH;
 
-                const capacity = cols * rows;
-                for (let i = 0; i < capacity; i++) {
-                    const item = mediaItems[i % mediaItems.length];
-                    const localCol = i % cols;
-                    const localRow = Math.floor(i / cols);
-
-                    const itemX = blockOffsetX + localCol * CELL_W + CELL_W / 2;
-                    const itemY = blockOffsetY + localRow * CELL_H + CELL_H / 2;
-
-                    visibleItems.push({
-                        key: `${bc}-${br}-${i}-${item.id}`,
-                        item,
-                        x: itemX,
-                        y: itemY,
-                        width: 520
-                    });
-                }
-            }
-        }
-    }
 
     const handleItemClick = (x: number, y: number) => {
         markInteraction();
@@ -524,7 +533,7 @@ export default function FreeDive() {
                         willChange: 'transform'
                     }}
                 >
-                    {visibleItems.map(renderData => (
+                    {renderItems.map(renderData => (
                         <div
                             key={renderData.key}
                             className="absolute bg-transparent shadow-[0_8px_30px_rgba(0,0,0,0.04)]"
