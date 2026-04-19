@@ -119,18 +119,33 @@ export default function Home() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [projects, activeProjectId]);
 
-  // Mouse wheel vertical to horizontal mapping (Continuous native feel)
+  // Mouse wheel vertical to horizontal mapping (Step-by-step smooth feel)
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
       // Trackpads native horizontal scroll should be ignored
       if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
 
       e.preventDefault();
-      const container = scrollContainerRef.current;
-      if (container) {
-        // Scroll seamlessly using the native deltaY amount mapped to X axis.
-        // The CSS scroll-snap will handle the clean resting position automatically.
-        container.scrollBy({ left: e.deltaY, behavior: 'auto' });
+
+      if (wheelTimeoutRef.current) return;
+
+      const currentIndex = projects.findIndex(p => `${p.category}-${p.id}` === activeProjectId);
+      if (currentIndex === -1) return;
+
+      let nextIndex = currentIndex;
+      if (e.deltaY > 15 && currentIndex < projects.length - 1) {
+        nextIndex = currentIndex + 1;
+      } else if (e.deltaY < -15 && currentIndex > 0) {
+        nextIndex = currentIndex - 1;
+      }
+
+      if (nextIndex !== currentIndex) {
+        setActiveProjectId(`${projects[nextIndex].category}-${projects[nextIndex].id}`);
+        scrollToCenter(nextIndex);
+
+        wheelTimeoutRef.current = window.setTimeout(() => {
+          wheelTimeoutRef.current = null;
+        }, 350); // Block multi-jump from a single massive scroll
       }
     };
 
@@ -139,7 +154,7 @@ export default function Home() {
       container.addEventListener('wheel', handleWheel, { passive: false });
       return () => container.removeEventListener('wheel', handleWheel);
     }
-  }, []);
+  }, [projects, activeProjectId]);
 
   const activeProject = projects.find(p => `${p.category}-${p.id}` === activeProjectId) || projects[0];
 
