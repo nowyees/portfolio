@@ -74,7 +74,7 @@ export default function ProjectDetail() {
                     <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight mb-4">
                         {project.title}
                     </h2>
-                    <p className="text-[10px] md:text-[11px] leading-[1.65] opacity-80 whitespace-pre-wrap font-medium">
+                    <p className="text-[11px] md:text-[13px] leading-[1.7] opacity-80 whitespace-pre-wrap font-medium">
                         {project.desc}
                     </p>
 
@@ -111,7 +111,7 @@ export default function ProjectDetail() {
 
             {/* Right Content Area: Media Scroll */}
             <div id="right-media-col" className="flex-1 bg-transparent h-[60vh] md:h-screen overflow-y-auto relative z-10" style={{ scrollBehavior: 'smooth' }}>
-                <div className="w-full min-h-full grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 pb-32 pt-2 md:pt-4">
+                <div className="w-full max-w-[1400px] mx-auto min-h-full grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 pb-32 pt-2 md:pt-4">
                     {allMedia.length > 0 ? (
                         allMedia.map((media, i) => (
                             <motion.div
