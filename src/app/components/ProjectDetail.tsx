@@ -13,7 +13,6 @@ export default function ProjectDetail() {
     const [allProjects, setAllProjects] = useState<Array<Project & { category: string }>>([]);
     const [loading, setLoading] = useState(true);
     const [contactOpen, setContactOpen] = useState(false);
-    const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
 
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -33,15 +32,7 @@ export default function ProjectDetail() {
         }
     }, [project]);
 
-    useEffect(() => {
-        const handleEscape = (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && selectedMedia) {
-                setSelectedMedia(null);
-            }
-        };
-        window.addEventListener('keydown', handleEscape);
-        return () => window.removeEventListener('keydown', handleEscape);
-    }, [selectedMedia]);
+
 
     if (loading) {
         return (
@@ -129,8 +120,7 @@ export default function ProjectDetail() {
                                 whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true, margin: '-50px' }}
                                 transition={{ duration: 0.6, delay: i * 0.1 }}
-                                className={`w-full cursor-zoom-in ${media.layout === 'half' ? 'col-span-1' : 'col-span-1 md:col-span-2'}`}
-                                onClick={() => setSelectedMedia(media)}
+                                className={`w-full ${media.layout === 'half' ? 'col-span-1' : 'col-span-1 md:col-span-2'}`}
                             >
                                 {media.type === 'video' || isVideoUrl(media.url) ? (
                                     <video src={media.url} controls muted playsInline className="w-full h-auto" />
@@ -148,52 +138,6 @@ export default function ProjectDetail() {
             </div>
 
             <ContactDialog open={contactOpen} onClose={() => setContactOpen(false)} dark={false} />
-
-            {/* Fullscreen Media Modal */}
-            <AnimatePresence>
-                {selectedMedia && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className="fixed inset-0 z-[100] bg-[#e6e6e6]/95 backdrop-blur-md flex items-center justify-center p-4 md:p-12 cursor-zoom-out"
-                        onClick={() => setSelectedMedia(null)}
-                    >
-                        <button
-                            onClick={() => setSelectedMedia(null)}
-                            className="absolute top-6 right-6 md:top-10 md:right-10 text-[10px] uppercase tracking-widest font-bold opacity-60 hover:opacity-100 transition-opacity z-10 text-[#111]"
-                        >
-                            CLOSE
-                        </button>
-
-                        <motion.div
-                            initial={{ scale: 0.95, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.95, opacity: 0 }}
-                            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                            className="relative w-full h-full flex items-center justify-center pointer-events-none"
-                        >
-                            {selectedMedia.type === 'video' || isVideoUrl(selectedMedia.url) ? (
-                                <video
-                                    src={selectedMedia.url}
-                                    controls
-                                    autoPlay
-                                    className="max-w-full max-h-full object-contain drop-shadow-2xl pointer-events-auto rounded-[8px]"
-                                    onClick={(e) => e.stopPropagation()}
-                                />
-                            ) : (
-                                <img
-                                    src={selectedMedia.url}
-                                    alt="Enlarged view"
-                                    className="max-w-full max-h-full object-contain drop-shadow-2xl pointer-events-auto rounded-[8px]"
-                                    onClick={(e) => e.stopPropagation()}
-                                />
-                            )}
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
         </div>
     );
 }

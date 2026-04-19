@@ -141,6 +141,17 @@ export default function AdminPage() {
         setEditingProject({ ...editingProject, media: newMedia });
     };
 
+    const moveMedia = (index: number, direction: -1 | 1) => {
+        if (!editingProject) return;
+        const newMedia = [...(editingProject.media || [])];
+        const targetIdx = index + direction;
+        if (targetIdx < 0 || targetIdx >= newMedia.length) return;
+        const temp = newMedia[index];
+        newMedia[index] = newMedia[targetIdx];
+        newMedia[targetIdx] = temp;
+        setEditingProject({ ...editingProject, media: newMedia });
+    };
+
     const handleSaveProject = async () => {
         if (!editingProject || !data) return;
         setSaving(true);
@@ -666,8 +677,24 @@ export default function AdminPage() {
                                                                         ×
                                                                     </button>
                                                                 </div>
+                                                                {/* Reorder + Layout controls */}
+                                                                <div className="flex items-center justify-between w-20 mt-1">
+                                                                    <button
+                                                                        onClick={() => moveMedia(idx, -1)}
+                                                                        disabled={idx === 0}
+                                                                        className="text-[10px] px-1 opacity-30 hover:opacity-100 disabled:opacity-10 transition-opacity"
+                                                                        title="Move left"
+                                                                    >←</button>
+                                                                    <span className="text-[8px] opacity-20 font-mono">{idx + 1}</span>
+                                                                    <button
+                                                                        onClick={() => moveMedia(idx, 1)}
+                                                                        disabled={idx === (editingProject.media?.length || 1) - 1}
+                                                                        className="text-[10px] px-1 opacity-30 hover:opacity-100 disabled:opacity-10 transition-opacity"
+                                                                        title="Move right"
+                                                                    >→</button>
+                                                                </div>
                                                                 <select
-                                                                    className="w-20 mt-1 text-[9px] bg-transparent border-b border-[#111]/20 outline-none pb-0.5 cursor-pointer"
+                                                                    className="w-20 mt-0.5 text-[9px] bg-transparent border-b border-[#111]/20 outline-none pb-0.5 cursor-pointer"
                                                                     value={item.layout || 'full'}
                                                                     onChange={(e) => {
                                                                         const newMedia = [...(editingProject.media || [])];
