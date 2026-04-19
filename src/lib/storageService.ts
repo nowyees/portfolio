@@ -7,7 +7,9 @@ const UPLOAD_PRESET = 'picture';
  */
 export async function uploadImage(file: File): Promise<string> {
     const isVideo = file.type.startsWith('video/');
-    const resourceType = isVideo ? 'video' : 'image';
+    const isGif = file.type === 'image/gif';
+    // GIF uses 'video' resource type to bypass Cloudinary's 10MB image limit
+    const resourceType = (isVideo || isGif) ? 'video' : 'image';
 
     const formData = new FormData();
     formData.append('file', file);
