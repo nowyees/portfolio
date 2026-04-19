@@ -218,7 +218,7 @@ export default function Home() {
         animate={{ opacity: 1 }}
         transition={{ duration: 1.5, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
         ref={scrollContainerRef}
-        className="absolute bottom-0 w-full h-[85vh] overflow-x-auto overflow-y-hidden flex items-end pb-[4vh] md:pb-[6vh] gap-3 md:gap-5 snap-x snap-mandatory z-40"
+        className="absolute bottom-0 w-full h-[85vh] overflow-x-auto overflow-y-hidden flex items-center md:items-end pb-[6vh] md:pb-[8vh] gap-3 md:gap-5 snap-x snap-mandatory z-40"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         <style>{`

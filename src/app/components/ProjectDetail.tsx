@@ -58,9 +58,9 @@ export default function ProjectDetail() {
     const allMedia = project.media || [];
 
     return (
-        <div className="flex flex-col md:flex-row h-screen w-full bg-[#f3f3f3] text-[#111] font-['Pretendard',sans-serif] overflow-hidden selection:bg-[#111] selection:text-[#f3f3f3]">
+        <div className="flex flex-col md:flex-row h-[100dvh] w-full bg-[#f3f3f3] text-[#111] font-['Pretendard',sans-serif] overflow-hidden selection:bg-[#111] selection:text-[#f3f3f3]">
             {/* Left Sidebar */}
-            <div className="w-full md:w-[280px] lg:w-[320px] xl:w-[400px] 2xl:w-[480px] shrink-0 bg-[#f3f3f3] border-b md:border-b-0 md:border-r border-[#111]/10 flex flex-col h-[40vh] md:h-screen z-20">
+            <div className="w-full md:w-[280px] lg:w-[320px] xl:w-[400px] 2xl:w-[480px] shrink-0 bg-[#f3f3f3] border-b md:border-b-0 md:border-r border-[#111]/10 flex flex-col h-auto max-h-[45vh] md:max-h-none md:h-screen z-20">
 
                 {/* 1. Header Area: Identity */}
                 <div className="px-6 py-6 md:px-8 md:py-8 shrink-0">
@@ -70,7 +70,7 @@ export default function ProjectDetail() {
                 </div>
 
                 {/* 2. Active Project Info */}
-                <div className="px-6 md:px-8 mt-2 md:mt-4 shrink-0 flex flex-col h-[140px] md:h-[200px] overflow-y-auto">
+                <div className="px-6 md:px-8 mt-2 md:mt-4 shrink-0 flex flex-col flex-1 overflow-y-auto mb-4 md:mb-0 md:h-[200px]">
                     <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight mb-4">
                         {project.title}
                     </h2>
@@ -87,8 +87,8 @@ export default function ProjectDetail() {
                     )}
                 </div>
 
-                {/* 3. Project Navigator List */}
-                <div className="px-6 md:px-8 mt-4 md:mt-6 flex-1 overflow-y-auto pb-10 flex flex-col gap-[14px]">
+                {/* 3. Project Navigator List (Hidden on Mobile to save valuable scrolling space) */}
+                <div className="hidden md:flex px-6 md:px-8 mt-4 md:mt-6 flex-1 overflow-y-auto pb-10 flex-col gap-[14px]">
                     {allProjects.map((p) => {
                         const isActive = p.id === project.id && p.category === project.category;
                         return (
@@ -110,8 +110,8 @@ export default function ProjectDetail() {
             </div>
 
             {/* Right Content Area: Media Scroll */}
-            <div id="right-media-col" className="flex-1 bg-transparent h-[60vh] md:h-screen overflow-y-auto relative z-10" style={{ scrollBehavior: 'smooth' }}>
-                <div className="w-full max-w-[1400px] mx-auto min-h-full grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 pb-32 pt-2 md:pt-4">
+            <div id="right-media-col" className="flex-1 bg-transparent h-auto md:h-screen overflow-y-auto relative z-10" style={{ scrollBehavior: 'smooth' }}>
+                <div className="w-full max-w-[1400px] mx-auto min-h-full grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 pb-32 pt-2 md:pt-4 px-4 md:px-0">
                     {allMedia.length > 0 ? (
                         allMedia.map((media, i) => (
                             <motion.div
