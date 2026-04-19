@@ -20,6 +20,7 @@ export default function Home() {
   const observerRef = useRef<IntersectionObserver | null>(null);
   const imageRefs = useRef<(HTMLDivElement | null)[]>([]);
   const isScrollingRef = useRef(false);
+  const wheelTimeoutRef = useRef<number | null>(null);
 
   // Smooth native scroll to center without hacky layout shifts
   const scrollToCenter = (index: number, immediate = false) => {
@@ -127,6 +128,45 @@ export default function Home() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [projects, activeProjectId]);
+
+  // Mouse wheel vertical to horizontal mapping
+  useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      // Trackpads native horizontal scroll should be ignored
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+
+      e.preventDefault();
+
+      if (wheelTimeoutRef.current) return;
+
+      const currentIndex = projects.findIndex(p => `${p.category}-${p.id}` === activeProjectId);
+      if (currentIndex === -1) return;
+
+      let nextIndex = currentIndex;
+      if (e.deltaY > 10 && currentIndex < projects.length - 1) {
+        nextIndex = currentIndex + 1;
+      } else if (e.deltaY < -10 && currentIndex > 0) {
+        nextIndex = currentIndex - 1;
+      }
+
+      if (nextIndex !== currentIndex) {
+        scrollToCenter(nextIndex);
+        wheelTimeoutRef.current = window.setTimeout(() => {
+          wheelTimeoutRef.current = null;
+        }, 600); // Debounce duration to match snap transition
+      } else {
+        wheelTimeoutRef.current = window.setTimeout(() => {
+          wheelTimeoutRef.current = null;
+        }, 100);
+      }
+    };
+
+    const container = scrollContainerRef.current;
+    if (container) {
+      container.addEventListener('wheel', handleWheel, { passive: false });
+      return () => container.removeEventListener('wheel', handleWheel);
+    }
   }, [projects, activeProjectId]);
 
   // Landing Animation Timer
