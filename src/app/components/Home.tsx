@@ -230,7 +230,7 @@ export default function Home() {
           <motion.div
             animate={{ x: [0, 10, 0] }}
             transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
-            className="absolute left-1/2 -translate-x-1/2 bottom-[29vh] md:bottom-[37vh] translate-y-1/2 flex items-center gap-2 text-[9px] md:text-[10px] uppercase tracking-widest font-bold opacity-30 whitespace-nowrap"
+            className="absolute left-1/2 -translate-x-1/2 bottom-[29vh] md:bottom-[37vh] translate-y-1/2 hidden md:flex items-center gap-2 text-[9px] md:text-[10px] uppercase tracking-widest font-bold opacity-30 whitespace-nowrap"
           >
             <span>Scroll to discover</span>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7" /></svg>

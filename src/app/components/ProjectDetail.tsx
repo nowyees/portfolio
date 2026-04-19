@@ -78,13 +78,6 @@ export default function ProjectDetail() {
                         {project.desc}
                     </p>
 
-                    {project.showExternalLink && project.externalLink && (
-                        <div className="mt-6">
-                            <a href={project.externalLink} target="_blank" rel="noopener noreferrer" className="text-[10px] uppercase tracking-widest font-bold border-b border-[#111] pb-1 hover:opacity-50 transition-opacity">
-                                ↗ Visit Project
-                            </a>
-                        </div>
-                    )}
                 </div>
 
                 {/* 3. Project Navigator List (Hidden on Mobile to save valuable scrolling space) */}
