@@ -1,4 +1,4 @@
-import { collection, getDocs, query, where, orderBy, doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy, doc, getDoc, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { db, isConfigured } from './firebase';
 
 export interface MediaItem {
@@ -18,6 +18,7 @@ export interface Project {
     hashtags?: string[];
     externalLink?: string;
     showExternalLink?: boolean;
+    order?: number;
 }
 
 export interface CategoryData {
@@ -80,9 +81,16 @@ export async function getPortfolioByCategory(category: string): Promise<Category
 
             if (catData) {
                 const projectsSnapshot = await getDocs(
-                    query(collection(db, 'portfolios', key, 'projects'), orderBy('id'))
+                    query(collection(db, 'portfolios', key, 'projects'))
                 );
                 const projects: Project[] = projectsSnapshot.docs.map(d => d.data() as Project);
+
+                // Sort client-side by order if available, else by id (descending fallback)
+                projects.sort((a, b) => {
+                    const orderA = typeof a.order === 'number' ? a.order : 999999 - a.id;
+                    const orderB = typeof b.order === 'number' ? b.order : 999999 - b.id;
+                    return orderA - orderB;
+                });
                 return {
                     title: catData.title || '',
                     subtitle: catData.subtitle || '',
@@ -126,12 +134,16 @@ export async function getAllProjects(): Promise<Array<Project & { category: stri
             // Fetch only from the consolidated 'portfolio' category
             // This prevents fetching legacy categories (fashion, product, etc) that contain outdated/broken data
             const category = 'portfolio';
-            const projectsSnapshot = await getDocs(query(collection(db, 'portfolios', category, 'projects'), orderBy('id')));
+            const projectsSnapshot = await getDocs(query(collection(db, 'portfolios', category, 'projects')));
             projectsSnapshot.forEach(pDoc => {
                 allProjects.push({ ...(pDoc.data() as Project), category });
             });
-            // 임의 정렬: id 역순(최신순 등)
-            return allProjects.sort((a, b) => b.id - a.id);
+            // Client-side sort by order (ascending) then id (descending fallback)
+            return allProjects.sort((a, b) => {
+                const orderA = typeof a.order === 'number' ? a.order : 999999 - a.id;
+                const orderB = typeof b.order === 'number' ? b.order : 999999 - b.id;
+                return orderA - orderB;
+            });
         } catch (error) {
             console.warn('Firestore fetch failed for getAllProjects, using fallback data:', error);
         }
@@ -155,6 +167,22 @@ export async function updateProject(category: string, projectId: string, data: P
     if (!isConfigured || !db) throw new Error('Firebase not configured');
     const key = category.toLowerCase();
     await setDoc(doc(db, 'portfolios', key, 'projects', projectId), data, { merge: true });
+}
+
+/**
+ * 일괄 순서 수정
+ */
+export async function updateProjectsOrder(category: string, updates: { id: number; order: number }[]): Promise<void> {
+    if (!isConfigured || !db) throw new Error('Firebase not configured');
+    const batch = writeBatch(db);
+    const key = category.toLowerCase();
+
+    updates.forEach(update => {
+        const docRef = doc(db, 'portfolios', key, 'projects', `project-${update.id}`);
+        batch.set(docRef, { order: update.order }, { merge: true });
+    });
+
+    await batch.commit();
 }
 
 /**

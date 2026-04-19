@@ -9,6 +9,7 @@ import {
     updateProject,
     addProject,
     deleteProject,
+    updateProjectsOrder,
     type Project,
     type CategoryData,
     type MediaItem,
@@ -28,6 +29,7 @@ export default function AdminPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [editingProject, setEditingProject] = useState<Project | null>(null);
+    const [isReordering, setIsReordering] = useState(false);
     const [notification, setNotification] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const mediaFileInputRef = useRef<HTMLInputElement>(null);
@@ -161,6 +163,33 @@ export default function AdminPage() {
         } catch (err: any) {
             showNotification(`저장 실패: ${err.message || err}`);
             console.error('Save error:', err);
+        }
+        setSaving(false);
+    };
+
+    const handleMoveProject = (index: number, direction: -1 | 1) => {
+        if (!data) return;
+        const newProjects = [...data.projects];
+        if (index + direction < 0 || index + direction >= newProjects.length) return;
+
+        const temp = newProjects[index];
+        newProjects[index] = newProjects[index + direction];
+        newProjects[index + direction] = temp;
+
+        setData({ ...data, projects: newProjects });
+    };
+
+    const handleSaveOrder = async () => {
+        if (!data) return;
+        setSaving(true);
+        try {
+            const updates = data.projects.map((p, i) => ({ id: p.id, order: i }));
+            await updateProjectsOrder(activeCategory, updates);
+            showNotification('순서 저장 완료 ✓');
+            setIsReordering(false);
+            await loadData();
+        } catch (err: any) {
+            showNotification(`순서 저장 실패: ${err.message || err}`);
         }
         setSaving(false);
     };
@@ -329,19 +358,34 @@ export default function AdminPage() {
 
             <div className="max-w-6xl mx-auto px-6 md:px-12 py-8">
                 {/* Category Tabs */}
-                <div className="flex gap-1 mb-8 border-b border-[#111]/10 flex-wrap">
-                    {CATEGORIES.map(cat => (
-                        <button
-                            key={cat}
-                            onClick={() => { setActiveCategory(cat); setEditingProject(null); }}
-                            className={`px-5 py-3 text-[10px] uppercase tracking-widest transition-all border-b-2 -mb-[1px] ${activeCategory === cat
-                                ? 'border-[#111] opacity-100'
-                                : 'border-transparent opacity-30 hover:opacity-60'
-                                }`}
-                        >
-                            {cat}
-                        </button>
-                    ))}
+                <div className="flex justify-between items-end mb-8 border-b border-[#111]/10 pb-4 flex-wrap gap-4">
+                    <div className="flex gap-1 flex-wrap">
+                        {CATEGORIES.map(cat => (
+                            <button
+                                key={cat}
+                                onClick={() => { setActiveCategory(cat); setEditingProject(null); setIsReordering(false); }}
+                                className={`px-5 py-3 text-[10px] uppercase tracking-widest transition-all ${activeCategory === cat
+                                    ? 'border-b-2 border-[#111] opacity-100'
+                                    : 'opacity-30 hover:opacity-60'
+                                    }`}
+                            >
+                                {cat}
+                            </button>
+                        ))}
+                    </div>
+                    {activeCategory !== 'freedive' && data?.projects && data.projects.length > 0 && (
+                        <div className="flex gap-2">
+                            {isReordering ? (
+                                <button onClick={handleSaveOrder} disabled={saving} className="px-6 py-2 bg-[#111] text-[#f7f6f0] text-[10px] uppercase tracking-widest hover:opacity-80 transition-opacity">
+                                    {saving ? 'Saving...' : 'Save Order'}
+                                </button>
+                            ) : (
+                                <button onClick={() => setIsReordering(true)} className="px-4 py-2 border border-[#111]/20 text-[10px] uppercase tracking-widest hover:border-[#111] transition-colors">
+                                    Reorder
+                                </button>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {loading ? (
@@ -360,7 +404,7 @@ export default function AdminPage() {
 
                         {/* Project / Media Grid */}
                         <div className={`grid gap-6 mb-8 ${activeCategory === 'freedive' ? 'grid-cols-2 md:grid-cols-4 lg:grid-cols-5' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
-                            {data?.projects.map(project => {
+                            {data?.projects.map((project, index) => {
                                 if (activeCategory === 'freedive') {
                                     // FREEDIVE: Simple media tile
                                     return (
@@ -397,8 +441,12 @@ export default function AdminPage() {
                                     <motion.div
                                         key={project.id}
                                         layout
-                                        className={`group border border-[#111]/10 cursor-pointer transition-all hover:border-[#111]/30 ${editingProject?.id === project.id ? 'ring-2 ring-[#111]' : ''}`}
-                                        onClick={() => setEditingProject({ ...project, media: project.media || [] })}
+                                        className={`group border border-[#111]/10 transition-all ${editingProject?.id === project.id ? 'ring-2 ring-[#111]' : ''} ${isReordering ? '' : 'cursor-pointer hover:border-[#111]/30'}`}
+                                        onClick={() => {
+                                            if (!isReordering) {
+                                                setEditingProject({ ...project, media: project.media || [] });
+                                            }
+                                        }}
                                     >
                                         <div className="aspect-[4/3] overflow-hidden bg-[#e5e4de] relative">
                                             {project.image ? (
@@ -414,11 +462,18 @@ export default function AdminPage() {
                                                     {project.media.length} media
                                                 </div>
                                             )}
-                                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                                                <span className="text-[#f7f6f0] text-[10px] uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    Edit
-                                                </span>
-                                            </div>
+                                            {isReordering ? (
+                                                <div className="absolute inset-0 bg-white/70 backdrop-blur-[2px] flex items-center justify-center gap-4 z-20" onClick={(e) => e.stopPropagation()}>
+                                                    <button onClick={() => handleMoveProject(index, -1)} disabled={index === 0} className="w-10 h-10 bg-[#111] text-white flex items-center justify-center rounded-full disabled:opacity-20 hover:scale-105 transition-transform">←</button>
+                                                    <button onClick={() => handleMoveProject(index, 1)} disabled={index === data.projects.length - 1} className="w-10 h-10 bg-[#111] text-white flex items-center justify-center rounded-full disabled:opacity-20 hover:scale-105 transition-transform">→</button>
+                                                </div>
+                                            ) : (
+                                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                                                    <span className="text-[#f7f6f0] text-[10px] uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        Edit
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="p-4">
                                             <div className="flex justify-between items-baseline">
