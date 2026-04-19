@@ -6,10 +6,9 @@ const UPLOAD_PRESET = 'picture';
  * @returns 업로드된 이미지의 URL
  */
 export async function uploadImage(file: File): Promise<string> {
-    const isVideo = file.type.startsWith('video/');
-    const isGif = file.type === 'image/gif';
-    // GIF uses 'video' resource type to bypass Cloudinary's 10MB image limit
-    const resourceType = (isVideo || isGif) ? 'video' : 'image';
+    // Use 'auto' resource type — Cloudinary auto-detects the best type
+    // This also bypasses the 10MB image limit for large GIFs
+    const resourceType = 'auto';
 
     const formData = new FormData();
     formData.append('file', file);
