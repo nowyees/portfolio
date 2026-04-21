@@ -78,6 +78,13 @@ export default function ProjectDetail() {
                         {project.desc}
                     </p>
 
+                    {/* Metadata: Year & Hashtags */}
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-4 text-[#111] text-[10px] md:text-[11px] font-mono tracking-widest opacity-60">
+                        <span className="font-bold">{project.year}</span>
+                        {project.hashtags && project.hashtags.map((tag, i) => (
+                            <span key={i}>#{tag}</span>
+                        ))}
+                    </div>
                 </div>
 
                 {/* 3. Project Navigator List (Hidden on Mobile to save valuable scrolling space) */}
