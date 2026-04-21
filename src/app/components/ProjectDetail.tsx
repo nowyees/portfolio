@@ -79,7 +79,7 @@ export default function ProjectDetail() {
                     </p>
 
                     {/* Metadata: Year */}
-                    <div className="flex flex-wrap items-center mt-4 text-[#111] text-[11px] md:text-[12.5px] font-mono tracking-[0.05em] opacity-60">
+                    <div className="flex flex-wrap items-center mt-4 text-[#111] text-[11px] md:text-[12.5px] tracking-tight opacity-60">
                         <span className="font-bold">{project.year}</span>
                     </div>
                 </div>
