@@ -34,6 +34,8 @@ export default function AdminPage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const mediaFileInputRef = useRef<HTMLInputElement>(null);
     const freediveFileInputRef = useRef<HTMLInputElement>(null);
+    const videoThumbnailInputRef = useRef<HTMLInputElement>(null);
+    const activeVideoThumbnailIdxRef = useRef<number | null>(null);
     const [uploadingImage, setUploadingImage] = useState(false);
 
     // Auth 체크 — Firebase 세션 복원 대기
@@ -321,6 +323,33 @@ export default function AdminPage() {
                 onChange={e => {
                     const files = e.target.files;
                     if (files && files.length > 0) handleFreediveUpload(files);
+                    e.target.value = '';
+                }}
+            />
+            <input
+                ref={videoThumbnailInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={async e => {
+                    const file = e.target.files?.[0];
+                    const idx = activeVideoThumbnailIdxRef.current;
+                    if (file && idx !== null) {
+                        setUploadingImage(true);
+                        try {
+                            const url = await uploadImage(file);
+                            setEditingProject(prev => {
+                                if (!prev || !prev.media) return prev;
+                                const newMedia = [...prev.media];
+                                newMedia[idx] = { ...newMedia[idx], thumbnailUrl: url };
+                                return { ...prev, media: newMedia };
+                            });
+                            showNotification('비디오 썸네일 업로드 완료');
+                        } catch (err) {
+                            showNotification('비디오 썸네일 업로드 실패');
+                        }
+                        setUploadingImage(false);
+                    }
                     e.target.value = '';
                 }}
             />
@@ -664,8 +693,21 @@ export default function AdminPage() {
                                                             <div key={idx} className="relative flex flex-col group">
                                                                 <div className="w-20 h-20 bg-[#e5e4de] relative">
                                                                     {item.type === 'video' ? (
-                                                                        <div className="w-full h-full flex items-center justify-center text-[9px] uppercase opacity-40">
-                                                                            <span>▶ Video</span>
+                                                                        <div className="w-full h-full flex flex-col items-center justify-center relative bg-[#111]/5">
+                                                                            {item.thumbnailUrl ? (
+                                                                                <img src={item.thumbnailUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                                                                            ) : (
+                                                                                <div className="text-[9px] uppercase opacity-40">▶ Video</div>
+                                                                            )}
+                                                                            <button
+                                                                                className="absolute bottom-0 left-0 w-full bg-white/90 text-[7px] py-[2px] uppercase text-[#111] opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                                onClick={() => {
+                                                                                    activeVideoThumbnailIdxRef.current = idx;
+                                                                                    videoThumbnailInputRef.current?.click();
+                                                                                }}
+                                                                            >
+                                                                                {item.thumbnailUrl ? '+ Change Thumb' : '+ Add Thumb'}
+                                                                            </button>
                                                                         </div>
                                                                     ) : (
                                                                         <img src={item.url} alt="" className="w-full h-full object-cover" />

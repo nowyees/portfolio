@@ -5,6 +5,7 @@ export interface MediaItem {
     url: string;
     type: 'image' | 'video';
     layout?: 'full' | 'half';
+    thumbnailUrl?: string;
 }
 
 export interface Project {

@@ -351,7 +351,7 @@ export default function FreeDive() {
     };
 
     // Video Player Component to handle individual play states without rerendering the whole canvas
-    const VideoItem = ({ src, onClick }: { src: string, onClick: () => void }) => {
+    const VideoItem = ({ src, thumbnailUrl, onClick }: { src: string, thumbnailUrl?: string, onClick: () => void }) => {
         const [isPlaying, setIsPlaying] = useState(false);
         const [tilt, setTilt] = useState({ x: 0, y: 0 });
         const videoRef = useRef<HTMLVideoElement>(null);
@@ -403,6 +403,7 @@ export default function FreeDive() {
                 <video
                     ref={videoRef}
                     src={src}
+                    poster={thumbnailUrl}
                     preload="none"
                     loop
                     muted
@@ -549,6 +550,7 @@ export default function FreeDive() {
                             {renderData.item.type === 'video' ? (
                                 <VideoItem
                                     src={renderData.item.url}
+                                    thumbnailUrl={renderData.item.thumbnailUrl}
                                     onClick={() => handleItemClick(renderData.x, renderData.y)}
                                 />
                             ) : (

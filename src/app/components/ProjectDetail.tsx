@@ -120,7 +120,7 @@ export default function ProjectDetail() {
                                 className={`w-full ${media.layout === 'half' ? 'col-span-1' : 'col-span-1 md:col-span-2'}`}
                             >
                                 {media.type === 'video' || isVideoUrl(media.url) ? (
-                                    <video src={media.url} controls muted playsInline className="w-full h-auto" />
+                                    <video src={media.url} poster={media.thumbnailUrl} controls muted playsInline className="w-full h-auto" />
                                 ) : (
                                     <img src={media.url} alt={`${project.title} media ${i + 1}`} loading="lazy" className="w-full h-auto" />
                                 )}
