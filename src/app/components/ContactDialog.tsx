@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { submitContactForm } from '../../lib/contactService';
 import { adminLogin, getCurrentUser, onAuthChange } from '../../lib/authService';
 import { isConfigured } from '../../lib/firebase';
 import type { User } from 'firebase/auth';
@@ -15,10 +14,6 @@ interface ContactDialogProps {
 export default function ContactDialog({ open, onClose, dark = false }: ContactDialogProps) {
     const navigate = useNavigate();
     const [mode, setMode] = useState<'contact' | 'admin'>('contact');
-    const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
-    const [message, setMessage] = useState('');
-    const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
     const [errorMsg, setErrorMsg] = useState('');
 
     // Admin login fields
@@ -32,34 +27,7 @@ export default function ContactDialog({ open, onClose, dark = false }: ContactDi
         return unsubscribe;
     }, []);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
 
-        if (!name.trim() || !email.trim() || !message.trim()) {
-            setErrorMsg('모든 필드를 입력해주세요.');
-            setStatus('error');
-            return;
-        }
-
-        setStatus('sending');
-
-        if (!isConfigured) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            setStatus('success');
-            setTimeout(() => handleClose(), 2000);
-            return;
-        }
-
-        const result = await submitContactForm({ name, email, message });
-
-        if (result.success) {
-            setStatus('success');
-            setTimeout(() => handleClose(), 2000);
-        } else {
-            setErrorMsg(result.error || '전송 실패');
-            setStatus('error');
-        }
-    };
 
     const handleAdminLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -80,10 +48,6 @@ export default function ContactDialog({ open, onClose, dark = false }: ContactDi
     };
 
     const handleClose = () => {
-        setName('');
-        setEmail('');
-        setMessage('');
-        setStatus('idle');
         setErrorMsg('');
         setMode('contact');
         setAdminId('');
@@ -132,81 +96,33 @@ export default function ContactDialog({ open, onClose, dark = false }: ContactDi
                                         Get in Touch
                                     </h2>
 
-                                    {status === 'success' ? (
-                                        <motion.div
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            className="py-12 text-center"
-                                        >
-                                            <p className="text-[11px] uppercase tracking-widest font-bold">메시지가 전송되었습니다</p>
-                                            <p className="text-[10px] mt-2 opacity-70">Thank you for reaching out</p>
-                                        </motion.div>
-                                    ) : (
-                                        <form onSubmit={handleSubmit} className="space-y-5">
-                                            <div>
-                                                <label className="block text-[9px] uppercase tracking-widest mb-2 opacity-70 font-bold">Name</label>
-                                                <input
-                                                    type="text"
-                                                    value={name}
-                                                    onChange={e => setName(e.target.value)}
-                                                    className="w-full px-0 py-2 text-[13px] border-b outline-none transition-colors cursor-text font-['Pretendard',sans-serif] font-medium placeholder:text-current placeholder:opacity-50"
-                                                    style={{ backgroundColor: 'transparent', borderColor: borderCol, color: fg }}
-                                                    placeholder="Your name"
-                                                    disabled={status === 'sending'}
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-[9px] uppercase tracking-widest mb-2 opacity-70 font-bold">Email</label>
-                                                <input
-                                                    type="email"
-                                                    value={email}
-                                                    onChange={e => setEmail(e.target.value)}
-                                                    className="w-full px-0 py-2 text-[13px] border-b outline-none transition-colors cursor-text font-['Pretendard',sans-serif] font-medium placeholder:text-current placeholder:opacity-50"
-                                                    style={{ backgroundColor: 'transparent', borderColor: borderCol, color: fg }}
-                                                    placeholder="your@email.com"
-                                                    disabled={status === 'sending'}
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-[9px] uppercase tracking-widest mb-2 opacity-70 font-bold">Message</label>
-                                                <textarea
-                                                    value={message}
-                                                    onChange={e => setMessage(e.target.value)}
-                                                    rows={4}
-                                                    className="w-full px-0 py-2 text-[13px] border-b outline-none transition-colors resize-none cursor-text font-['Pretendard',sans-serif] font-medium placeholder:text-current placeholder:opacity-50"
-                                                    style={{ backgroundColor: 'transparent', borderColor: borderCol, color: fg }}
-                                                    placeholder="Tell me about your project..."
-                                                    disabled={status === 'sending'}
-                                                />
-                                            </div>
-
-                                            {status === 'error' && (
-                                                <p className="text-[10px] text-red-500">{errorMsg}</p>
-                                            )}
-
-                                            <button
-                                                type="submit"
-                                                disabled={status === 'sending'}
-                                                className="w-full py-3 text-[10px] uppercase tracking-[0.3em] transition-all duration-300 cursor-pointer"
-                                                style={{
-                                                    backgroundColor: fg,
-                                                    color: bg,
-                                                    opacity: status === 'sending' ? 0.5 : 1,
-                                                }}
-                                            >
-                                                {status === 'sending' ? 'Sending...' : 'Send Message'}
-                                            </button>
-
-                                            {!isConfigured && (
-                                                <p className="text-[9px] text-center opacity-60 mt-2 font-bold font-sans tracking-widest">
-                                                    Demo mode — Firebase 설정 후 실제 전송됩니다
-                                                </p>
-                                            )}
-                                        </form>
-                                    )}
+                                    <div className="space-y-6">
+                                        <div className="flex flex-col gap-2 border-b pb-4" style={{ borderColor: borderCol }}>
+                                            <span className="text-[9px] uppercase tracking-widest opacity-40 font-bold">Name</span>
+                                            <span className="text-[14px] font-['Pretendard',sans-serif] font-medium tracking-tight">이재웅</span>
+                                        </div>
+                                        <div className="flex flex-col gap-2 border-b pb-4" style={{ borderColor: borderCol }}>
+                                            <span className="text-[9px] uppercase tracking-widest opacity-40 font-bold">Email</span>
+                                            <a href="mailto:example@email.com" className="text-[14px] font-['Pretendard',sans-serif] font-medium tracking-tight hover:opacity-70 transition-opacity">
+                                                example@email.com
+                                            </a>
+                                        </div>
+                                        <div className="flex flex-col gap-2 border-b pb-4" style={{ borderColor: borderCol }}>
+                                            <span className="text-[9px] uppercase tracking-widest opacity-40 font-bold">Phone</span>
+                                            <a href="tel:010-0000-0000" className="text-[14px] font-['Pretendard',sans-serif] font-medium tracking-tight hover:opacity-70 transition-opacity">
+                                                010-0000-0000
+                                            </a>
+                                        </div>
+                                        <div className="flex flex-col gap-2 border-b pb-4" style={{ borderColor: borderCol }}>
+                                            <span className="text-[9px] uppercase tracking-widest opacity-40 font-bold">Instagram</span>
+                                            <a href="https://instagram.com/your_account" target="_blank" rel="noopener noreferrer" className="text-[14px] font-['Pretendard',sans-serif] font-medium tracking-tight hover:opacity-70 transition-opacity">
+                                                @your_account
+                                            </a>
+                                        </div>
+                                    </div>
 
                                     {/* Hidden Admin access */}
-                                    <div className="mt-8 text-center">
+                                    <div className="mt-10 text-center">
                                         <button
                                             onClick={() => { setMode('admin'); setErrorMsg(''); }}
                                             className="text-[9px] uppercase tracking-widest opacity-60 hover:opacity-100 transition-opacity cursor-pointer font-bold"
