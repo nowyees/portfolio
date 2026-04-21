@@ -43,9 +43,9 @@ export default function Home() {
   };
 
   useEffect(() => {
-
     const savedProjectId = sessionStorage.getItem('lastActiveProject');
     let targetId: string | null = null;
+    isScrollingRef.current = true; // Lock the intersection observer immediately
 
     getAllProjects().then(res => {
       setProjects(res);
@@ -57,13 +57,20 @@ export default function Home() {
         setActiveProjectId(targetId);
 
         if (targetId) {
+          // Grant higher timeout to wait for flex containers and images to resolve width
           setTimeout(() => {
             const idx = res.findIndex(p => `${p.category}-${p.id}` === targetId);
             if (idx !== -1) {
               scrollToCenter(idx, true);
+            } else {
+              isScrollingRef.current = false;
             }
-          }, 50);
+          }, 200);
+        } else {
+          isScrollingRef.current = false;
         }
+      } else {
+        isScrollingRef.current = false;
       }
     });
   }, []);
