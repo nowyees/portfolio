@@ -74,12 +74,12 @@ export default function ProjectDetail() {
                     <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight mb-4">
                         {project.title}
                     </h2>
-                    <p className="text-[11px] md:text-[13px] leading-[1.7] opacity-80 whitespace-pre-wrap font-medium">
+                    <p className="text-[12px] md:text-[14.5px] leading-[1.7] opacity-80 whitespace-pre-wrap font-medium">
                         {project.desc}
                     </p>
 
                     {/* Metadata: Year */}
-                    <div className="flex flex-wrap items-center mt-4 text-[#111] text-[10px] md:text-[11px] font-mono tracking-widest opacity-60">
+                    <div className="flex flex-wrap items-center mt-4 text-[#111] text-[11px] md:text-[12.5px] font-mono tracking-[0.05em] opacity-60">
                         <span className="font-bold">{project.year}</span>
                     </div>
                 </div>
