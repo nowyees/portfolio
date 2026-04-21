@@ -103,20 +103,20 @@ export default function ContactDialog({ open, onClose, dark = false }: ContactDi
                                         </div>
                                         <div className="flex flex-col gap-2 border-b pb-4" style={{ borderColor: borderCol }}>
                                             <span className="text-[9px] uppercase tracking-widest opacity-40 font-bold">Email</span>
-                                            <a href="mailto:example@email.com" className="text-[14px] font-['Pretendard',sans-serif] font-medium tracking-tight hover:opacity-70 transition-opacity">
-                                                example@email.com
+                                            <a href="mailto:ljwoong1104@gmail.com" className="text-[14px] font-['Pretendard',sans-serif] font-medium tracking-tight hover:opacity-70 transition-opacity">
+                                                ljwoong1104@gmail.com
                                             </a>
                                         </div>
                                         <div className="flex flex-col gap-2 border-b pb-4" style={{ borderColor: borderCol }}>
                                             <span className="text-[9px] uppercase tracking-widest opacity-40 font-bold">Phone</span>
-                                            <a href="tel:010-0000-0000" className="text-[14px] font-['Pretendard',sans-serif] font-medium tracking-tight hover:opacity-70 transition-opacity">
-                                                010-0000-0000
+                                            <a href="tel:010-2380-9280" className="text-[14px] font-['Pretendard',sans-serif] font-medium tracking-tight hover:opacity-70 transition-opacity">
+                                                010-2380-9280
                                             </a>
                                         </div>
                                         <div className="flex flex-col gap-2 border-b pb-4" style={{ borderColor: borderCol }}>
                                             <span className="text-[9px] uppercase tracking-widest opacity-40 font-bold">Instagram</span>
-                                            <a href="https://instagram.com/your_account" target="_blank" rel="noopener noreferrer" className="text-[14px] font-['Pretendard',sans-serif] font-medium tracking-tight hover:opacity-70 transition-opacity">
-                                                @your_account
+                                            <a href="https://instagram.com/now_y_es" target="_blank" rel="noopener noreferrer" className="text-[14px] font-['Pretendard',sans-serif] font-medium tracking-tight hover:opacity-70 transition-opacity">
+                                                @now_y_es
                                             </a>
                                         </div>
                                     </div>
