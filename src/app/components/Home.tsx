@@ -26,18 +26,18 @@ export default function Home() {
 
   const isMobile = windowWidth < 768;
 
-  // Card dimensions — reduced sizes as requested by user
-  const cardWidth = isMobile ? 90 : 140;
-  const cardHeight = isMobile ? 160 : 250;
+  // Card dimensions — slightly increased as requested
+  const cardWidth = isMobile ? 100 : 160;
+  const cardHeight = isMobile ? 180 : 280;
 
   // Angle between adjacent cards
   const angleStep = 24;
 
   // Radius calculated for edge-to-edge contact:
   // R = (cardWidth / 2) / tan(angleStep / 2)
-  // Desktop: 70 / tan(12°) = 70 / 0.2126 = 329px → use 330px
-  // Mobile: 45 / tan(12°) = 45 / 0.2126 = 211px → use 210px
-  const radius = isMobile ? 210 : 330;
+  // Desktop: 80 / tan(12°) = 80 / 0.2126 = 376px → use 380px
+  // Mobile: 50 / tan(12°) = 50 / 0.2126 = 235px → use 235px
+  const radius = isMobile ? 235 : 380;
 
   useEffect(() => {
     const savedProjectId = sessionStorage.getItem('lastActiveProject');
@@ -152,33 +152,34 @@ export default function Home() {
           </h1>
         </div>
 
-        <div className="hidden md:block absolute left-[28%] lg:left-[26%] top-6 md:top-8 max-w-[320px] text-[10px] lg:text-[11px] leading-[1.65] text-left pointer-events-auto font-medium transition-opacity duration-500 text-[#f7f6f0]">
-          {activeProject ? (
-            <>
-              <span className="font-bold block mb-[6px] text-[#f7f6f0] tracking-tight text-[11px] lg:text-[12px] uppercase">
-                {activeProject.title}
-              </span>
-              <p className="line-clamp-3 mb-2 text-[#f7f6f0]/75 font-normal">{activeProject.desc}</p>
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-[#f7f6f0]/60 text-[9px] lg:text-[10px] font-normal">
-                <span className="font-semibold text-[#f7f6f0]">{activeProject.year}</span>
-                {activeProject.hashtags && activeProject.hashtags.map((tag, i) => (
-                  <span key={i}>#{tag}</span>
-                ))}
-                {activeProject.showExternalLink && activeProject.externalLink && (
-                  <a href={activeProject.externalLink} target="_blank" rel="noopener noreferrer"
-                    className="underline hover:opacity-50 transition-opacity font-bold ml-1 text-[#f7f6f0]">Link ↗</a>
-                )}
-              </div>
-            </>
-          ) : (
-            <span className="opacity-0">Loading...</span>
-          )}
-        </div>
-
         <nav className="flex-1 flex flex-col items-end">
           <button onClick={() => setContactOpen(true)} className="text-xs md:text-sm lg:text-base font-bold tracking-[-0.02em] leading-none text-[#f7f6f0] hover:opacity-60 transition-opacity pointer-events-auto font-['Pretendard',sans-serif]">CONTACT</button>
         </nav>
       </motion.header>
+
+      {/* PROJECT INFO - Center Left */}
+      <div className="hidden md:block fixed left-6 md:left-10 top-1/2 -translate-y-1/2 max-w-[320px] text-[10px] lg:text-[11px] leading-[1.65] text-left pointer-events-auto font-medium transition-opacity duration-500 text-[#f7f6f0] z-50">
+        {activeProject ? (
+          <>
+            <span className="font-bold block mb-[6px] text-[#f7f6f0] tracking-tight text-[11px] lg:text-[12px] uppercase">
+              {activeProject.title}
+            </span>
+            <p className="line-clamp-4 mb-2 text-[#f7f6f0]/75 font-normal">{activeProject.desc}</p>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-[#f7f6f0]/60 text-[9px] lg:text-[10px] font-normal">
+              <span className="font-semibold text-[#f7f6f0]">{activeProject.year}</span>
+              {activeProject.hashtags && activeProject.hashtags.map((tag, i) => (
+                <span key={i}>#{tag}</span>
+              ))}
+              {activeProject.showExternalLink && activeProject.externalLink && (
+                <a href={activeProject.externalLink} target="_blank" rel="noopener noreferrer"
+                  className="underline hover:opacity-50 transition-opacity font-bold ml-1 text-[#f7f6f0]">Link ↗</a>
+              )}
+            </div>
+          </>
+        ) : (
+          <span className="opacity-0">Loading...</span>
+        )}
+      </div>
 
       {/* CONCAVE 3D CAROUSEL — cards face INWARD like an IMAX curved screen */}
       <motion.main
