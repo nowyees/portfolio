@@ -26,9 +26,15 @@ export default function Home() {
 
   const isMobile = windowWidth < 768;
   
-  // Tighter radius and smaller cards to create a continuous curved wall and plenty of screen breathing space
-  const radius = isMobile ? 240 : 420;
-  const angleStep = 30; // degrees
+  // Card dimensions: 240px width on desktop, 140px on mobile
+  const cardWidth = isMobile ? 140 : 240;
+  const angleStep = 30; // degrees between cards
+
+  // Mathematically calculated radius for perfect edge-to-edge contact:
+  // R = (Width / 2) / tan(angleStep / 2)
+  // For desktop: W=240, angleStep=30 => R = 120 / tan(15deg) = 120 / 0.2679 = 447.8px.
+  // We use slightly smaller values (440px / 255px) to create a tiny sub-pixel overlap that prevents lines between cards.
+  const radius = isMobile ? 255 : 440;
 
   useEffect(() => {
     const savedProjectId = sessionStorage.getItem('lastActiveProject');
@@ -96,7 +102,7 @@ export default function Home() {
 
         wheelTimeoutRef.current = window.setTimeout(() => {
           wheelTimeoutRef.current = null;
-        }, 220); // Snappy wheel throttling
+        }, 220);
       }
     };
 
@@ -194,7 +200,6 @@ export default function Home() {
         ref={mainRef}
         onPan={handlePan}
         onPanEnd={handlePanEnd}
-        // Stronger perspective (1000px) brings the camera closer, creating a much more pronounced 3D curved wrapping effect
         className="absolute inset-0 flex items-center justify-center z-40 overflow-hidden outline-none cursor-grab active:cursor-grabbing select-none"
         style={{ perspective: '1000px' }}
       >
@@ -202,14 +207,12 @@ export default function Home() {
           className="relative flex items-center justify-center"
           style={{
             transformStyle: 'preserve-3d',
-            // Smaller, elegant card dimensions to leave lots of space on screen
-            width: isMobile ? '140px' : '240px',
+            width: `${cardWidth}px`,
             height: isMobile ? '210px' : '360px',
           }}
           animate={{
             rotateY: -activeIndex * angleStep + dragRotation,
           }}
-          // Highly snappy, bouncy, chewy spring behavior: high stiffness + low damping
           transition={isDraggingRef.current ? { type: 'just' } : { type: 'spring', stiffness: 220, damping: 16 }}
         >
           {projects.map((project, i) => {
@@ -231,9 +234,10 @@ export default function Home() {
                 }}
               >
                 <motion.div
+                  // We remove manual scaling (scale: 1) so that the cards remain perfectly edge-to-edge.
+                  // The 3D perspective naturally makes the center card look larger since it is physically closer to the screen.
                   animate={{
-                    scale: isActive ? 1.05 : 0.85,
-                    opacity: isActive ? 1 : Math.max(0.1, 0.65 - Math.abs(i - activeIndex) * 0.14),
+                    opacity: isActive ? 1 : Math.max(0.15, 0.65 - Math.abs(i - activeIndex) * 0.12),
                   }}
                   transition={{ duration: 0.6, ease: [0.25, 1, 0.5, 1] }}
                   className="w-full h-full flex flex-col items-start gap-2 md:gap-3 group"
@@ -258,7 +262,7 @@ export default function Home() {
                       src={project.image}
                       alt={project.title}
                       loading="lazy"
-                      className="w-full h-full object-cover transition-transform duration-[1.5s] ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:scale-[1.03]"
+                      className="w-full h-full object-cover transition-transform duration-[1.5s] ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:scale-[1.02]"
                     />
                     {!isActive && (
                       <div className="absolute inset-0 bg-black/55 transition-opacity duration-700 group-hover:opacity-25 pointer-events-none"></div>
