@@ -28,13 +28,20 @@ export default function Home() {
   
   // Card dimensions: 240px width on desktop, 140px on mobile
   const cardWidth = isMobile ? 140 : 240;
-  const angleStep = 30; // degrees between cards
+  
+  // We increase the angle step to 32 degrees to rotate side cards more, making the compression/expansion effect more pronounced
+  const angleStep = 32; // degrees between cards
 
-  // Mathematically calculated radius for perfect edge-to-edge contact:
+  // Mathematically calculated radius for perfect edge-to-edge contact with W=240 and angleStep=32:
   // R = (Width / 2) / tan(angleStep / 2)
-  // For desktop: W=240, angleStep=30 => R = 120 / tan(15deg) = 120 / 0.2679 = 447.8px.
-  // We use slightly smaller values (440px / 255px) to create a tiny sub-pixel overlap that prevents lines between cards.
-  const radius = isMobile ? 255 : 440;
+  // For desktop: W=240, angleStep=32 => R = 120 / tan(16deg) = 120 / 0.2867 = 418.5px. We use 410px for a tiny sub-pixel overlap.
+  // For mobile: W=140, angleStep=32 => R = 70 / tan(16deg) = 70 / 0.2867 = 244.1px. We use 238px.
+  const radius = isMobile ? 238 : 410;
+
+  // We bring the perspective camera much closer (from 1000px down to 700px)
+  // This wide-angle lens distortion causes the center card to look much larger and dynamically "stretch/expand"
+  // as it rotates to the front, while side cards compress and skew heavily, exactly like the VK Fest video.
+  const perspectiveVal = isMobile ? '550px' : '700px';
 
   useEffect(() => {
     const savedProjectId = sessionStorage.getItem('lastActiveProject');
@@ -201,7 +208,7 @@ export default function Home() {
         onPan={handlePan}
         onPanEnd={handlePanEnd}
         className="absolute inset-0 flex items-center justify-center z-40 overflow-hidden outline-none cursor-grab active:cursor-grabbing select-none"
-        style={{ perspective: '1000px' }}
+        style={{ perspective: perspectiveVal }}
       >
         <motion.div
           className="relative flex items-center justify-center"
@@ -234,8 +241,6 @@ export default function Home() {
                 }}
               >
                 <motion.div
-                  // We remove manual scaling (scale: 1) so that the cards remain perfectly edge-to-edge.
-                  // The 3D perspective naturally makes the center card look larger since it is physically closer to the screen.
                   animate={{
                     opacity: isActive ? 1 : Math.max(0.15, 0.65 - Math.abs(i - activeIndex) * 0.12),
                   }}
