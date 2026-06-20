@@ -26,18 +26,18 @@ export default function Home() {
 
   const isMobile = windowWidth < 768;
 
-  // Card dimensions — tall portrait cards like the VK Fest reference
-  const cardWidth = isMobile ? 160 : 300;
-  const cardHeight = isMobile ? 280 : 500;
+  // Card dimensions — smaller cards so 3D projection doesn't fill the screen
+  const cardWidth = isMobile ? 110 : 180;
+  const cardHeight = isMobile ? 195 : 320;
 
   // Angle between adjacent cards
   const angleStep = 24;
 
   // Radius calculated for edge-to-edge contact:
   // R = (cardWidth / 2) / tan(angleStep / 2)
-  // Desktop: 150 / tan(12°) = 150 / 0.2126 = 705px → use 700px (tiny overlap to prevent seams)
-  // Mobile: 80 / tan(12°) = 80 / 0.2126 = 376px → use 370px
-  const radius = isMobile ? 370 : 700;
+  // Desktop: 90 / tan(12°) = 90 / 0.2126 = 423px → use 420px
+  // Mobile: 55 / tan(12°) = 55 / 0.2126 = 259px → use 255px
+  const radius = isMobile ? 255 : 420;
 
   useEffect(() => {
     const savedProjectId = sessionStorage.getItem('lastActiveProject');
@@ -186,7 +186,7 @@ export default function Home() {
         onPan={handlePan}
         onPanEnd={handlePanEnd}
         className="absolute inset-0 flex items-center justify-center z-40 overflow-hidden outline-none cursor-grab active:cursor-grabbing select-none"
-        style={{ perspective: isMobile ? '600px' : '900px' }}
+        style={{ perspective: isMobile ? '800px' : '1200px' }}
       >
         <motion.div
           className="relative"
