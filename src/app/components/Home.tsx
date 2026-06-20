@@ -25,8 +25,10 @@ export default function Home() {
   }, []);
 
   const isMobile = windowWidth < 768;
-  const radius = isMobile ? 380 : 750;
-  const angleStep = 35; // degrees
+  
+  // Tighter radius and smaller cards to create a continuous curved wall and plenty of screen breathing space
+  const radius = isMobile ? 240 : 420;
+  const angleStep = 30; // degrees
 
   useEffect(() => {
     const savedProjectId = sessionStorage.getItem('lastActiveProject');
@@ -94,7 +96,7 @@ export default function Home() {
 
         wheelTimeoutRef.current = window.setTimeout(() => {
           wheelTimeoutRef.current = null;
-        }, 250);
+        }, 220); // Snappy wheel throttling
       }
     };
 
@@ -107,7 +109,7 @@ export default function Home() {
 
   const handlePan = (event: any, info: any) => {
     isDraggingRef.current = true;
-    const sensitivity = isMobile ? 0.22 : 0.12;
+    const sensitivity = isMobile ? 0.25 : 0.14;
     setDragRotation(prev => {
       const nextRotation = prev + info.delta.x * sensitivity;
       const totalRot = -activeIndex * angleStep + nextRotation;
@@ -192,20 +194,23 @@ export default function Home() {
         ref={mainRef}
         onPan={handlePan}
         onPanEnd={handlePanEnd}
+        // Stronger perspective (1000px) brings the camera closer, creating a much more pronounced 3D curved wrapping effect
         className="absolute inset-0 flex items-center justify-center z-40 overflow-hidden outline-none cursor-grab active:cursor-grabbing select-none"
-        style={{ perspective: '1600px' }}
+        style={{ perspective: '1000px' }}
       >
         <motion.div
           className="relative flex items-center justify-center"
           style={{
             transformStyle: 'preserve-3d',
-            width: isMobile ? '220px' : '340px',
-            height: isMobile ? '293px' : '453px',
+            // Smaller, elegant card dimensions to leave lots of space on screen
+            width: isMobile ? '140px' : '240px',
+            height: isMobile ? '210px' : '360px',
           }}
           animate={{
             rotateY: -activeIndex * angleStep + dragRotation,
           }}
-          transition={isDraggingRef.current ? { type: 'just' } : { type: 'spring', stiffness: 100, damping: 20 }}
+          // Highly snappy, bouncy, chewy spring behavior: high stiffness + low damping
+          transition={isDraggingRef.current ? { type: 'just' } : { type: 'spring', stiffness: 220, damping: 16 }}
         >
           {projects.map((project, i) => {
             const isActive = `${project.category}-${project.id}` === activeProjectId;
@@ -228,7 +233,7 @@ export default function Home() {
                 <motion.div
                   animate={{
                     scale: isActive ? 1.05 : 0.85,
-                    opacity: isActive ? 1 : Math.max(0.1, 0.55 - Math.abs(i - activeIndex) * 0.12),
+                    opacity: isActive ? 1 : Math.max(0.1, 0.65 - Math.abs(i - activeIndex) * 0.14),
                   }}
                   transition={{ duration: 0.6, ease: [0.25, 1, 0.5, 1] }}
                   className="w-full h-full flex flex-col items-start gap-2 md:gap-3 group"
@@ -247,7 +252,7 @@ export default function Home() {
                     <span className="text-[7px] w-[10px] h-[10px] flex items-center justify-center">○</span> {project.title}
                   </div>
 
-                  {/* Card Frame */}
+                  {/* Card Frame (Aspect ratio 2:3) */}
                   <div className="relative w-full flex-1 bg-[#1a1a1a] overflow-hidden shadow-2xl rounded-sm">
                     <img
                       src={project.image}
@@ -256,7 +261,7 @@ export default function Home() {
                       className="w-full h-full object-cover transition-transform duration-[1.5s] ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:scale-[1.03]"
                     />
                     {!isActive && (
-                      <div className="absolute inset-0 bg-black/45 transition-opacity duration-700 group-hover:opacity-20 pointer-events-none"></div>
+                      <div className="absolute inset-0 bg-black/55 transition-opacity duration-700 group-hover:opacity-25 pointer-events-none"></div>
                     )}
 
                     {/* View Icon */}
