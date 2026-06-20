@@ -108,19 +108,19 @@ export default function Home() {
     const sensitivity = isMobile ? 0.25 : 0.14;
     setDragRotation(prev => {
       const nextRotation = prev + info.delta.x * sensitivity;
-      // Clamp so you can't scroll past first/last card
-      const totalRot = activeIndex * angleStep + nextRotation;
-      const minRot = -20;
-      const maxRot = (projects.length - 1) * angleStep + 20;
+      // Container rotation is negative to show right-side cards
+      const totalRot = activeIndex * -angleStep + nextRotation;
+      const minRot = -(projects.length - 1) * angleStep - 20;
+      const maxRot = 20;
       const clampedRot = Math.max(minRot, Math.min(maxRot, totalRot));
-      return clampedRot - activeIndex * angleStep;
+      return clampedRot - activeIndex * -angleStep;
     });
   };
 
   const handlePanEnd = () => {
     isDraggingRef.current = false;
-    const totalRotation = activeIndex * angleStep + dragRotation;
-    const closestIndex = Math.round(totalRotation / angleStep);
+    const totalRotation = activeIndex * -angleStep + dragRotation;
+    const closestIndex = Math.round(totalRotation / -angleStep);
     const targetIndex = Math.max(0, Math.min(projects.length - 1, closestIndex));
 
     const nextId = `${projects[targetIndex].category}-${projects[targetIndex].id}`;
@@ -133,8 +133,8 @@ export default function Home() {
   const activeProject = projects[activeIndex] || projects[0];
 
   // CONCAVE container rotation:
-  // Positive rotation to bring the active card's NEGATIVE rotation to face the viewer
-  const containerRotation = activeIndex * angleStep + dragRotation;
+  // Negative rotation to bring the active card's POSITIVE rotation to face the viewer
+  const containerRotation = activeIndex * -angleStep + dragRotation;
 
   return (
     <div className="relative w-full h-[100dvh] overflow-hidden bg-[#0d0d0d] text-[#f7f6f0] selection:bg-[#f7f6f0] selection:text-[#0d0d0d] flex flex-col justify-between font-['Pretendard',sans-serif]">
@@ -209,9 +209,9 @@ export default function Home() {
                 key={`${project.category}-${project.id}`}
                 className="absolute top-0 left-0 w-full h-full group"
                 style={{
-                  // CONCAVE: negative angleStep makes cards face INWARD
+                  // CONCAVE: positive angleStep makes cards flow left to right visually
                   // Each card is placed on the inside surface of a cylinder
-                  transform: `rotateY(${i * -angleStep}deg) translateZ(${radius}px)`,
+                  transform: `rotateY(${i * angleStep}deg) translateZ(${radius}px)`,
                   transformStyle: 'preserve-3d',
                   backfaceVisibility: 'hidden',
                 }}
