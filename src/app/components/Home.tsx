@@ -158,14 +158,14 @@ export default function Home() {
       </motion.header>
 
       {/* PROJECT INFO - Center Left */}
-      <div className="hidden md:block fixed left-6 md:left-10 top-1/2 -translate-y-1/2 max-w-[320px] text-[10px] lg:text-[11px] leading-[1.65] text-left pointer-events-auto font-medium transition-opacity duration-500 text-[#f7f6f0] z-50">
+      <div className="hidden md:block fixed left-6 md:left-10 top-1/2 -translate-y-1/2 max-w-[380px] text-[13px] lg:text-[15px] leading-[1.65] text-left pointer-events-auto font-medium transition-opacity duration-500 text-[#f7f6f0] z-50">
         {activeProject ? (
           <>
-            <span className="font-bold block mb-[6px] text-[#f7f6f0] tracking-tight text-[11px] lg:text-[12px] uppercase">
+            <span className="font-bold block mb-[8px] text-[#f7f6f0] tracking-tight text-[16px] lg:text-[18px] uppercase">
               {activeProject.title}
             </span>
-            <p className="line-clamp-4 mb-2 text-[#f7f6f0]/75 font-normal">{activeProject.desc}</p>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-[#f7f6f0]/60 text-[9px] lg:text-[10px] font-normal">
+            <p className="line-clamp-4 mb-3 text-[#f7f6f0]/80 font-normal">{activeProject.desc}</p>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-3 text-[#f7f6f0]/60 text-[11px] lg:text-[12px] font-normal">
               <span className="font-semibold text-[#f7f6f0]">{activeProject.year}</span>
               {activeProject.hashtags && activeProject.hashtags.map((tag, i) => (
                 <span key={i}>#{tag}</span>
