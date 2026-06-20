@@ -26,18 +26,18 @@ export default function Home() {
 
   const isMobile = windowWidth < 768;
 
-  // Card dimensions — smaller cards so 3D projection doesn't fill the screen
-  const cardWidth = isMobile ? 110 : 180;
-  const cardHeight = isMobile ? 195 : 320;
+  // Card dimensions — reduced sizes as requested by user
+  const cardWidth = isMobile ? 90 : 140;
+  const cardHeight = isMobile ? 160 : 250;
 
   // Angle between adjacent cards
   const angleStep = 24;
 
   // Radius calculated for edge-to-edge contact:
   // R = (cardWidth / 2) / tan(angleStep / 2)
-  // Desktop: 90 / tan(12°) = 90 / 0.2126 = 423px → use 420px
-  // Mobile: 55 / tan(12°) = 55 / 0.2126 = 259px → use 255px
-  const radius = isMobile ? 255 : 420;
+  // Desktop: 70 / tan(12°) = 70 / 0.2126 = 329px → use 330px
+  // Mobile: 45 / tan(12°) = 45 / 0.2126 = 211px → use 210px
+  const radius = isMobile ? 210 : 330;
 
   useEffect(() => {
     const savedProjectId = sessionStorage.getItem('lastActiveProject');
