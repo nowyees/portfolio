@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, useMotionValue, animate } from 'motion/react';
 import ContactDialog from './ContactDialog';
 import { getAllProjects, type Project } from '../../lib/portfolioService';
 import '../../lib/seedData';
@@ -14,7 +14,6 @@ export default function Home() {
   const mainRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef(false);
   const wheelTimeoutRef = useRef<number | null>(null);
-  const [dragRotation, setDragRotation] = useState(0);
 
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
 
@@ -26,22 +25,21 @@ export default function Home() {
 
   const isMobile = windowWidth < 768;
   
-  // Card dimensions: 240px width on desktop, 140px on mobile
-  const cardWidth = isMobile ? 140 : 240;
+  // Card dimensions: 220px width on desktop, 130px on mobile
+  const cardWidth = isMobile ? 130 : 220;
   
-  // We increase the angle step to 32 degrees to rotate side cards more, making the compression/expansion effect more pronounced
-  const angleStep = 32; // degrees between cards
+  // Bulge parameters: only cards near the center warp in 3D, side cards remain in a flat plane
+  const angleStep = 32; // degrees
+  const radius = isMobile ? 240 : 400; // cylinder radius for local warp
+  const maxZ = isMobile ? 50 : 100; // forward bulge displacement
 
-  // Mathematically calculated radius for perfect edge-to-edge contact with W=240 and angleStep=32:
-  // R = (Width / 2) / tan(angleStep / 2)
-  // For desktop: W=240, angleStep=32 => R = 120 / tan(16deg) = 120 / 0.2867 = 418.5px. We use 410px for a tiny sub-pixel overlap.
-  // For mobile: W=140, angleStep=32 => R = 70 / tan(16deg) = 70 / 0.2867 = 244.1px. We use 238px.
-  const radius = isMobile ? 238 : 410;
+  // Motion value to track the current offset index continuously (e.g. during dragging or animation)
+  const offsetMV = useMotionValue(0);
+  const [currentOffset, setCurrentOffset] = useState(0);
 
-  // We bring the perspective camera much closer (from 1000px down to 700px)
-  // This wide-angle lens distortion causes the center card to look much larger and dynamically "stretch/expand"
-  // as it rotates to the front, while side cards compress and skew heavily, exactly like the VK Fest video.
-  const perspectiveVal = isMobile ? '550px' : '700px';
+  useEffect(() => {
+    return offsetMV.on('change', (v) => setCurrentOffset(v));
+  }, [offsetMV]);
 
   useEffect(() => {
     const savedProjectId = sessionStorage.getItem('lastActiveProject');
@@ -51,10 +49,31 @@ export default function Home() {
         const targetId = savedProjectId && res.some(p => `${p.category}-${p.id}` === savedProjectId)
           ? savedProjectId
           : `${res[0].category}-${res[0].id}`;
+        
         setActiveProjectId(targetId);
+        const idx = res.findIndex(p => `${p.category}-${p.id}` === targetId);
+        if (idx !== -1) {
+          offsetMV.set(idx);
+          setCurrentOffset(idx);
+        }
       }
     });
   }, []);
+
+  const activeIndex = projects.findIndex(p => `${p.category}-${p.id}` === activeProjectId);
+  const activeProject = projects[activeIndex] || projects[0];
+
+  // Animate offsetMV whenever activeIndex changes
+  useEffect(() => {
+    if (isDraggingRef.current || projects.length === 0 || activeIndex === -1) return;
+    
+    const controls = animate(offsetMV, activeIndex, {
+      type: 'spring',
+      stiffness: 220,
+      damping: 16
+    });
+    return () => controls.stop();
+  }, [activeIndex, projects]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -84,7 +103,7 @@ export default function Home() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [projects, activeProjectId]);
 
-  // Mouse wheel scroll to snaps
+  // Mouse wheel scroll
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
       if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
@@ -122,31 +141,26 @@ export default function Home() {
 
   const handlePan = (event: any, info: any) => {
     isDraggingRef.current = true;
-    const sensitivity = isMobile ? 0.25 : 0.14;
-    setDragRotation(prev => {
-      const nextRotation = prev + info.delta.x * sensitivity;
-      const totalRot = -activeIndex * angleStep + nextRotation;
-      const minRot = -(projects.length - 1) * angleStep - 20;
-      const maxRot = 20;
-      const clampedRot = Math.max(minRot, Math.min(maxRot, totalRot));
-      return clampedRot - (-activeIndex * angleStep);
-    });
+    const spacing = cardWidth; // Edge-to-edge spacing
+    const dragIdxOffset = -info.offset.x / spacing;
+    offsetMV.set(activeIndex + dragIdxOffset);
   };
 
   const handlePanEnd = (event: any, info: any) => {
     isDraggingRef.current = false;
-    const totalRotation = -activeIndex * angleStep + dragRotation;
-    const closestIndex = Math.round(-totalRotation / angleStep);
-    const targetIndex = Math.max(0, Math.min(projects.length - 1, closestIndex));
+    const finalOffset = offsetMV.get();
+    const targetIndex = Math.max(0, Math.min(projects.length - 1, Math.round(finalOffset)));
 
     const nextId = `${projects[targetIndex].category}-${projects[targetIndex].id}`;
     setActiveProjectId(nextId);
     sessionStorage.setItem('lastActiveProject', nextId);
-    setDragRotation(0);
-  };
 
-  const activeIndex = projects.findIndex(p => `${p.category}-${p.id}` === activeProjectId);
-  const activeProject = projects[activeIndex] || projects[0];
+    animate(offsetMV, targetIndex, {
+      type: 'spring',
+      stiffness: 220,
+      damping: 16
+    });
+  };
 
   return (
     <div className="relative w-full h-[100dvh] overflow-hidden bg-[#0d0d0d] text-[#f7f6f0] selection:bg-[#f7f6f0] selection:text-[#0d0d0d] flex flex-col justify-between font-['Pretendard',sans-serif]">
@@ -202,30 +216,46 @@ export default function Home() {
         </nav>
       </motion.header>
 
-      {/* 3D CYLINDRICAL CAROUSEL */}
+      {/* 3D CYLINDRICAL CAROUSEL (LOCAL bulge IN THE CENTER OF A FLAT PLANE) */}
       <main
         ref={mainRef}
         onPan={handlePan}
         onPanEnd={handlePanEnd}
         className="absolute inset-0 flex items-center justify-center z-40 overflow-hidden outline-none cursor-grab active:cursor-grabbing select-none"
-        style={{ perspective: perspectiveVal }}
+        style={{ perspective: isMobile ? '550px' : '700px' }}
       >
-        <motion.div
+        <div
           className="relative flex items-center justify-center"
           style={{
             transformStyle: 'preserve-3d',
             width: `${cardWidth}px`,
             height: isMobile ? '210px' : '360px',
           }}
-          animate={{
-            rotateY: -activeIndex * angleStep + dragRotation,
-          }}
-          transition={isDraggingRef.current ? { type: 'just' } : { type: 'spring', stiffness: 220, damping: 16 }}
         >
           {projects.map((project, i) => {
             const isActive = `${project.category}-${project.id}` === activeProjectId;
             const isVisible = Math.abs(i - activeIndex) <= 4;
             if (!isVisible) return null;
+
+            // Math to blend flat ribbon position with local 3D cylinder bulge at the center
+            const offset = i - currentOffset;
+            const absOffset = Math.abs(offset);
+
+            // Flat translation X (continuous edge-to-edge strip)
+            const transX_flat = offset * cardWidth;
+
+            // Cylinder translation X & Z (curved ribbon)
+            const angle = offset * angleStep;
+            const transX_cylinder = radius * Math.sin(angle * Math.PI / 180);
+            const transZ_cylinder = radius * (Math.cos(angle * Math.PI / 180) - 1) + maxZ;
+
+            // Blend factor: 1 at center (offset = 0), smooth cosine decay to 0 at offset = 2
+            const blend = absOffset < 2 ? Math.pow(Math.cos((offset * Math.PI) / 4), 2) : 0;
+
+            // Blended X, Z, and Y rotation
+            const transX = (1 - blend) * transX_flat + blend * transX_cylinder;
+            const transZ = blend * transZ_cylinder;
+            const rotY = angleStep * offset * blend;
 
             return (
               <div
@@ -236,7 +266,7 @@ export default function Home() {
                   top: '0',
                   width: '100%',
                   height: '100%',
-                  transform: `rotateY(${i * angleStep}deg) translateZ(${radius}px)`,
+                  transform: `translate3d(${transX}px, 0px, ${transZ}px) rotateY(${rotY}deg)`,
                   transformStyle: 'preserve-3d',
                 }}
               >
@@ -284,7 +314,7 @@ export default function Home() {
               </div>
             );
           })}
-        </motion.div>
+        </div>
       </main>
 
       {/* Bottom Progress Navigator */}
