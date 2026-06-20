@@ -21,7 +21,14 @@ export async function uploadImage(file: File): Promise<string> {
     );
 
     if (!response.ok) {
-        throw new Error('업로드에 실패했습니다.');
+        let errMsg = '업로드에 실패했습니다.';
+        try {
+            const errData = await response.json();
+            if (errData && errData.error && errData.error.message) {
+                errMsg = errData.error.message;
+            }
+        } catch (_) {}
+        throw new Error(errMsg);
     }
 
     const data = await response.json();

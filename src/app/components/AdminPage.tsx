@@ -78,8 +78,8 @@ export default function AdminPage() {
             const url = await uploadImage(file);
             setEditingProject(prev => prev ? { ...prev, image: url } : prev);
             showNotification('썸네일 업로드 완료');
-        } catch (err) {
-            showNotification('썸네일 업로드 실패');
+        } catch (err: any) {
+            showNotification(`썸네일 업로드 실패: ${err.message || err}`);
         }
         setUploadingImage(false);
     };
@@ -96,8 +96,8 @@ export default function AdminPage() {
                     if (!prev) return prev;
                     return { ...prev, media: [...(prev.media || []), { url, type }] };
                 });
-            } catch (err) {
-                showNotification(`"${file.name}" 업로드 실패`);
+            } catch (err: any) {
+                showNotification(`"${file.name}" 실패: ${err.message || err}`);
             }
         }
         showNotification(`${files.length}개 미디어 업로드 완료`);
@@ -126,9 +126,9 @@ export default function AdminPage() {
                 };
                 await addProject('freedive', newProject);
                 successCount++;
-            } catch (err) {
+            } catch (err: any) {
                 console.error(err);
-                showNotification(`"${file.name}" 실패`);
+                showNotification(`"${file.name}" 실패: ${err.message || err}`);
             }
         }
         showNotification(`${successCount}개 미디어 업로드 완료 ✓`);
@@ -345,8 +345,8 @@ export default function AdminPage() {
                                 return { ...prev, media: newMedia };
                             });
                             showNotification('비디오 썸네일 업로드 완료');
-                        } catch (err) {
-                            showNotification('비디오 썸네일 업로드 실패');
+                        } catch (err: any) {
+                            showNotification(`비디오 썸네일 업로드 실패: ${err.message || err}`);
                         }
                         setUploadingImage(false);
                     }
