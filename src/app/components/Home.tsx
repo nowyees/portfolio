@@ -11,94 +11,35 @@ export default function Home() {
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
   const [contactOpen, setContactOpen] = useState(false);
 
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const observerRef = useRef<IntersectionObserver | null>(null);
-  const imageRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const isScrollingRef = useRef(false);
+  const mainRef = useRef<HTMLDivElement>(null);
+  const isDraggingRef = useRef(false);
   const wheelTimeoutRef = useRef<number | null>(null);
+  const [dragRotation, setDragRotation] = useState(0);
 
-  // Smooth native scroll to center without hacky layout shifts
-  const scrollToCenter = (index: number, immediate = false) => {
-    const container = scrollContainerRef.current;
-    const el = imageRefs.current[index];
-    if (el && container) {
-      isScrollingRef.current = true;
-      // Disable scroll-snap so Safari doesn't fight the programmatic scroll
-      container.style.scrollSnapType = 'none';
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
 
-      const elRect = el.getBoundingClientRect();
-      const containerRect = container.getBoundingClientRect();
-      const scrollLeft = container.scrollLeft + (elRect.left - containerRect.left) - (containerRect.width / 2) + (elRect.width / 2);
-      container.scrollTo({
-        left: scrollLeft,
-        behavior: immediate ? 'instant' : 'smooth'
-      });
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
-      // Re-enable snap after scroll completes
-      setTimeout(() => {
-        if (container) container.style.scrollSnapType = 'x mandatory';
-        isScrollingRef.current = false;
-      }, immediate ? 50 : 800);
-    }
-  };
+  const isMobile = windowWidth < 768;
+  const radius = isMobile ? 380 : 750;
+  const angleStep = 35; // degrees
 
   useEffect(() => {
     const savedProjectId = sessionStorage.getItem('lastActiveProject');
-    let targetId: string | null = null;
-    isScrollingRef.current = true; // Lock the intersection observer immediately
-
     getAllProjects().then(res => {
       setProjects(res);
       if (res.length > 0) {
-        targetId = savedProjectId && res.some(p => `${p.category}-${p.id}` === savedProjectId)
+        const targetId = savedProjectId && res.some(p => `${p.category}-${p.id}` === savedProjectId)
           ? savedProjectId
           : `${res[0].category}-${res[0].id}`;
-
         setActiveProjectId(targetId);
-
-        if (targetId) {
-          // Grant higher timeout to wait for flex containers and images to resolve width
-          setTimeout(() => {
-            const idx = res.findIndex(p => `${p.category}-${p.id}` === targetId);
-            if (idx !== -1) {
-              scrollToCenter(idx, true);
-            } else {
-              isScrollingRef.current = false;
-            }
-          }, 200);
-        } else {
-          isScrollingRef.current = false;
-        }
-      } else {
-        isScrollingRef.current = false;
       }
     });
   }, []);
-
-  useEffect(() => {
-    observerRef.current = new IntersectionObserver((entries) => {
-      if (isScrollingRef.current) return;
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          const id = entry.target.getAttribute('data-id');
-          if (id) {
-            setActiveProjectId(id);
-            sessionStorage.setItem('lastActiveProject', id);
-          }
-        }
-      });
-    }, {
-      root: scrollContainerRef.current,
-      rootMargin: '0px -40% 0px -40%',
-      threshold: 0
-    });
-
-    imageRefs.current.forEach(ref => {
-      if (ref) observerRef.current?.observe(ref);
-    });
-
-    return () => observerRef.current?.disconnect();
-  }, [projects]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -118,7 +59,9 @@ export default function Home() {
       }
 
       if (nextIndex !== currentIndex) {
-        scrollToCenter(nextIndex);
+        const nextId = `${projects[nextIndex].category}-${projects[nextIndex].id}`;
+        setActiveProjectId(nextId);
+        sessionStorage.setItem('lastActiveProject', nextId);
       }
     };
 
@@ -126,12 +69,10 @@ export default function Home() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [projects, activeProjectId]);
 
-  // Mouse wheel vertical to horizontal mapping (Step-by-step smooth feel)
+  // Mouse wheel scroll to snaps
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
-      // Trackpads native horizontal scroll should be ignored
       if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
-
       e.preventDefault();
 
       if (wheelTimeoutRef.current) return;
@@ -147,26 +88,53 @@ export default function Home() {
       }
 
       if (nextIndex !== currentIndex) {
-        setActiveProjectId(`${projects[nextIndex].category}-${projects[nextIndex].id}`);
-        scrollToCenter(nextIndex);
+        const nextId = `${projects[nextIndex].category}-${projects[nextIndex].id}`;
+        setActiveProjectId(nextId);
+        sessionStorage.setItem('lastActiveProject', nextId);
 
         wheelTimeoutRef.current = window.setTimeout(() => {
           wheelTimeoutRef.current = null;
-        }, 150); // Aggressively reduced timeout to allow rapid scrolling
+        }, 250);
       }
     };
 
-    const container = scrollContainerRef.current;
+    const container = mainRef.current;
     if (container) {
       container.addEventListener('wheel', handleWheel, { passive: false });
       return () => container.removeEventListener('wheel', handleWheel);
     }
   }, [projects, activeProjectId]);
 
-  const activeProject = projects.find(p => `${p.category}-${p.id}` === activeProjectId) || projects[0];
+  const handlePan = (event: any, info: any) => {
+    isDraggingRef.current = true;
+    const sensitivity = isMobile ? 0.22 : 0.12;
+    setDragRotation(prev => {
+      const nextRotation = prev + info.delta.x * sensitivity;
+      const totalRot = -activeIndex * angleStep + nextRotation;
+      const minRot = -(projects.length - 1) * angleStep - 20;
+      const maxRot = 20;
+      const clampedRot = Math.max(minRot, Math.min(maxRot, totalRot));
+      return clampedRot - (-activeIndex * angleStep);
+    });
+  };
+
+  const handlePanEnd = (event: any, info: any) => {
+    isDraggingRef.current = false;
+    const totalRotation = -activeIndex * angleStep + dragRotation;
+    const closestIndex = Math.round(-totalRotation / angleStep);
+    const targetIndex = Math.max(0, Math.min(projects.length - 1, closestIndex));
+
+    const nextId = `${projects[targetIndex].category}-${projects[targetIndex].id}`;
+    setActiveProjectId(nextId);
+    sessionStorage.setItem('lastActiveProject', nextId);
+    setDragRotation(0);
+  };
+
+  const activeIndex = projects.findIndex(p => `${p.category}-${p.id}` === activeProjectId);
+  const activeProject = projects[activeIndex] || projects[0];
 
   return (
-    <div className="relative w-full h-[100dvh] overflow-hidden bg-[#f3f3f3] text-[#111] selection:bg-[#111] selection:text-[#f3f3f3] flex flex-col justify-between font-['Pretendard',sans-serif]">
+    <div className="relative w-full h-[100dvh] overflow-hidden bg-[#0d0d0d] text-[#f7f6f0] selection:bg-[#f7f6f0] selection:text-[#0d0d0d] flex flex-col justify-between font-['Pretendard',sans-serif]">
 
       {/* TOP HEADER */}
       <motion.header
@@ -177,22 +145,22 @@ export default function Home() {
       >
         {/* Left: Logo Area */}
         <div className="flex-[1.5] lg:flex-1 min-w-0">
-          <h1 className="text-xs md:text-sm lg:text-base font-bold tracking-[-0.02em] whitespace-nowrap leading-none text-[#111] pointer-events-auto cursor-pointer font-['Pretendard',sans-serif]" onClick={() => navigate('/')}>
+          <h1 className="text-xs md:text-sm lg:text-base font-bold tracking-[-0.02em] whitespace-nowrap leading-none text-[#f7f6f0] pointer-events-auto cursor-pointer font-['Pretendard',sans-serif]" onClick={() => navigate('/')}>
             LEEJAEWOONG
           </h1>
         </div>
 
         {/* Center: Blurb - Dynamic Active Project Info */}
-        <div className="hidden md:block absolute left-[28%] lg:left-[26%] top-6 md:top-8 max-w-[320px] text-[10px] lg:text-[11px] leading-[1.65] text-left pointer-events-auto font-medium transition-opacity duration-500 text-[#111]">
+        <div className="hidden md:block absolute left-[28%] lg:left-[26%] top-6 md:top-8 max-w-[320px] text-[10px] lg:text-[11px] leading-[1.65] text-left pointer-events-auto font-medium transition-opacity duration-500 text-[#f7f6f0]">
           {activeProject ? (
             <>
-              <span className="font-bold block mb-[6px] text-[#111] tracking-tight text-[11px] lg:text-[12px] uppercase">
+              <span className="font-bold block mb-[6px] text-[#f7f6f0] tracking-tight text-[11px] lg:text-[12px] uppercase">
                 {activeProject.title}
               </span>
-              <p className="line-clamp-3 mb-2">{activeProject.desc}</p>
+              <p className="line-clamp-3 mb-2 text-[#f7f6f0]/75 font-normal">{activeProject.desc}</p>
 
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-[#111] text-[9px] lg:text-[10px]">
-                <span className="font-semibold">{activeProject.year}</span>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-[#f7f6f0]/60 text-[9px] lg:text-[10px] font-normal">
+                <span className="font-semibold text-[#f7f6f0]">{activeProject.year}</span>
                 {activeProject.hashtags && activeProject.hashtags.map((tag, i) => (
                   <span key={i}>#{tag}</span>
                 ))}
@@ -201,7 +169,7 @@ export default function Home() {
                     href={activeProject.externalLink}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="underline hover:opacity-50 transition-opacity font-bold ml-1"
+                    className="underline hover:opacity-50 transition-opacity font-bold ml-1 text-[#f7f6f0]"
                   >
                     Link ↗
                   </a>
@@ -215,110 +183,110 @@ export default function Home() {
 
         {/* Right: Navigation links */}
         <nav className="flex-1 flex flex-col items-end">
-          <button onClick={() => setContactOpen(true)} className="text-xs md:text-sm lg:text-base font-bold tracking-[-0.02em] leading-none text-[#111] hover:opacity-60 transition-opacity pointer-events-auto font-['Pretendard',sans-serif]">CONTACT</button>
+          <button onClick={() => setContactOpen(true)} className="text-xs md:text-sm lg:text-base font-bold tracking-[-0.02em] leading-none text-[#f7f6f0] hover:opacity-60 transition-opacity pointer-events-auto font-['Pretendard',sans-serif]">CONTACT</button>
         </nav>
       </motion.header>
 
-      {/* BOTTOM GALLERY */}
-      <motion.main
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 1.5, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-        ref={scrollContainerRef}
-        className="absolute bottom-0 w-full h-[85vh] overflow-x-auto overflow-y-hidden flex items-center md:items-end pb-[6vh] md:pb-[8vh] gap-3 md:gap-5 snap-x snap-mandatory z-40"
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      {/* 3D CYLINDRICAL CAROUSEL */}
+      <main
+        ref={mainRef}
+        onPan={handlePan}
+        onPanEnd={handlePanEnd}
+        className="absolute inset-0 flex items-center justify-center z-40 overflow-hidden outline-none cursor-grab active:cursor-grabbing select-none"
+        style={{ perspective: '1600px' }}
       >
-        <style>{`
-          main::-webkit-scrollbar { display: none; }
-        `}</style>
+        <motion.div
+          className="relative flex items-center justify-center"
+          style={{
+            transformStyle: 'preserve-3d',
+            width: isMobile ? '220px' : '340px',
+            height: isMobile ? '293px' : '453px',
+          }}
+          animate={{
+            rotateY: -activeIndex * angleStep + dragRotation,
+          }}
+          transition={isDraggingRef.current ? { type: 'just' } : { type: 'spring', stiffness: 100, damping: 20 }}
+        >
+          {projects.map((project, i) => {
+            const isActive = `${project.category}-${project.id}` === activeProjectId;
+            const isVisible = Math.abs(i - activeIndex) <= 4;
+            if (!isVisible) return null;
 
-        {/* Start Spacer with Scroll Prompt */}
-        <div className="shrink-0 w-[50vw] md:w-[40vw] h-full relative">
-          <motion.div
-            animate={{ x: [0, 10, 0] }}
-            transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
-            className="absolute left-1/2 -translate-x-1/2 bottom-[29vh] md:bottom-[37vh] translate-y-1/2 hidden md:flex items-center gap-2 text-[9px] md:text-[10px] uppercase tracking-widest font-bold opacity-30 whitespace-nowrap"
-          >
-            <span>Scroll to discover</span>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
-          </motion.div>
-        </div>
-
-        {projects.map((project, idx) => {
-          const isActive = `${project.category}-${project.id}` === activeProjectId;
-          const aspectStr = project.aspect ? project.aspect.replace('aspect-[', '').replace(']', '') : '3/4';
-
-          return (
-            <div
-              key={`${project.category}-${project.id}`}
-              data-id={`${project.category}-${project.id}`}
-              ref={(el) => { imageRefs.current[idx] = el; }}
-              className={`snap-center shrink-0 flex flex-col items-start cursor-pointer group`}
-              style={{ transformOrigin: 'bottom center' }}
-              onClick={() => {
-                if (!isActive) {
-                  scrollToCenter(idx);
-                  // Force active state immediately so second click navigates
-                  const newId = `${project.category}-${project.id}`;
-                  setActiveProjectId(newId);
-                  sessionStorage.setItem('lastActiveProject', newId);
-                } else {
-                  navigate(`/project/${project.category}/${project.id}`);
-                }
-              }}
-            >
+            return (
               <div
-                className={`transition-transform duration-[800ms] ease-[cubic-bezier(0.25,1,0.5,1)] flex flex-col items-start gap-2 md:gap-3 ${isActive ? 'scale-100 opacity-100' : 'scale-[0.80] opacity-50 hover:opacity-90'} origin-bottom`}
+                key={`${project.category}-${project.id}`}
+                style={{
+                  position: 'absolute',
+                  left: '0',
+                  top: '0',
+                  width: '100%',
+                  height: '100%',
+                  transform: `rotateY(${i * angleStep}deg) translateZ(${radius}px)`,
+                  transformStyle: 'preserve-3d',
+                }}
               >
-                <div className={`flex items-center gap-[6px] text-[9.5px] md:text-[11px] font-bold tracking-tight ml-[2px]`}>
-                  <span className="text-[7px] w-[10px] h-[10px] flex items-center justify-center">○</span> {project.title}
-                </div>
-
-                {/* The card size perfectly matches standard DOM width avoiding layout shift. Only the container scales visually with CSS Transforms. */}
-                <div
-                  className={`relative bg-[#eae9e4] overflow-hidden transition-all duration-500 h-[45vh] md:h-[62vh] max-w-[80vw] md:max-w-none ${isActive ? 'shadow-xl shadow-black-[0.03]' : 'shadow-md filter saturate-[0.85]'}`}
-                  style={{ aspectRatio: aspectStr }}
+                <motion.div
+                  animate={{
+                    scale: isActive ? 1.05 : 0.85,
+                    opacity: isActive ? 1 : Math.max(0.1, 0.55 - Math.abs(i - activeIndex) * 0.12),
+                  }}
+                  transition={{ duration: 0.6, ease: [0.25, 1, 0.5, 1] }}
+                  className="w-full h-full flex flex-col items-start gap-2 md:gap-3 group"
+                  onClick={() => {
+                    if (!isActive) {
+                      const nextId = `${project.category}-${project.id}`;
+                      setActiveProjectId(nextId);
+                      sessionStorage.setItem('lastActiveProject', nextId);
+                    } else {
+                      navigate(`/project/${project.category}/${project.id}`);
+                    }
+                  }}
                 >
-                  <img
-                    src={project.image}
-                    alt={project.title}
-                    loading="lazy"
-                    className="w-full h-full object-cover transition-transform duration-[1.5s] ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:scale-[1.03]"
-                  />
-                  {!isActive && (
-                    <div className="absolute inset-0 bg-[#f3f3f3]/10 mix-blend-overlay z-10 transition-opacity duration-700 group-hover:opacity-0 pointer-events-none"></div>
-                  )}
-
-                  {/* Expand / View Icon */}
-                  <div className="absolute top-[10px] right-[10px] md:top-[12px] md:right-[12px] w-[26px] h-[26px] md:w-[32px] md:h-[32px] bg-[#f3f3f3]/95 backdrop-blur-md rounded-[6px] md:rounded-[8px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20 shadow-sm text-[#111]">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" strokeLinejoin="miter" className="scale-75 md:scale-90">
-                      <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
-                    </svg>
+                  {/* Title */}
+                  <div className="flex items-center gap-[6px] text-[9.5px] md:text-[11px] font-bold tracking-tight ml-[2px] text-[#f7f6f0] opacity-80 group-hover:opacity-100 transition-opacity duration-300">
+                    <span className="text-[7px] w-[10px] h-[10px] flex items-center justify-center">○</span> {project.title}
                   </div>
-                </div>
-              </div>
-            </div>
-          );
-        })}
 
-        {/* End Spacer - large enough for the last card to fully center */}
-        <div className="shrink-0 w-[100vw] md:w-[80vw] h-[1px]" />
-      </motion.main>
+                  {/* Card Frame */}
+                  <div className="relative w-full flex-1 bg-[#1a1a1a] overflow-hidden shadow-2xl rounded-sm">
+                    <img
+                      src={project.image}
+                      alt={project.title}
+                      loading="lazy"
+                      className="w-full h-full object-cover transition-transform duration-[1.5s] ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:scale-[1.03]"
+                    />
+                    {!isActive && (
+                      <div className="absolute inset-0 bg-black/45 transition-opacity duration-700 group-hover:opacity-20 pointer-events-none"></div>
+                    )}
+
+                    {/* View Icon */}
+                    <div className="absolute top-[10px] right-[10px] md:top-[12px] md:right-[12px] w-[26px] h-[26px] md:w-[32px] md:h-[32px] bg-[#f7f6f0]/95 backdrop-blur-md rounded-[6px] md:rounded-[8px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20 shadow-sm text-[#111]">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" strokeLinejoin="miter" className="scale-75 md:scale-90">
+                        <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            );
+          })}
+        </motion.div>
+      </main>
 
       {/* Bottom Progress Navigator */}
-      <div className="fixed bottom-4 left-6 md:left-10 md:bottom-6 z-50 text-[#111] text-[10px] md:text-[11px] font-bold font-mono tracking-widest flex items-center gap-4 pointer-events-none">
-        <span>{String(projects.findIndex(p => `${p.category}-${p.id}` === activeProjectId) + 1 || 1).padStart(2, '0')}</span>
-        <div className="w-[40px] md:w-[60px] h-[1px] bg-[#111]/20 relative overflow-hidden">
+      <div className="fixed bottom-4 left-6 md:left-10 md:bottom-6 z-50 text-[#f7f6f0] text-[10px] md:text-[11px] font-bold font-mono tracking-widest flex items-center gap-4 pointer-events-none">
+        <span>{String(activeIndex + 1 || 1).padStart(2, '0')}</span>
+        <div className="w-[40px] md:w-[60px] h-[1px] bg-[#f7f6f0]/20 relative overflow-hidden">
           <motion.div
-            className="absolute top-0 left-0 h-full bg-[#111]"
-            animate={{ width: `${((projects.findIndex(p => `${p.category}-${p.id}` === activeProjectId) + 1 || 1) / (projects.length || 1)) * 100}%` }}
+            className="absolute top-0 left-0 h-full bg-[#f7f6f0]"
+            animate={{ width: `${((activeIndex + 1 || 1) / (projects.length || 1)) * 100}%` }}
             transition={{ duration: 0.3 }}
           />
         </div>
         <span className="opacity-40">{String(projects.length || 1).padStart(2, '0')}</span>
       </div>
 
-      <ContactDialog open={contactOpen} onClose={() => setContactOpen(false)} dark={false} />
+      <ContactDialog open={contactOpen} onClose={() => setContactOpen(false)} dark={true} />
     </div>
   );
 }
