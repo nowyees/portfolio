@@ -1,0 +1,449 @@
+[
+  {
+    "id": 9,
+    "image": "https://res.cloudinary.com/dwxglojis/image/upload/v1776271815/portfolio/pov7mkb5ocf9zwwrd7v7.png",
+    "aspect": "aspect-[3/4]",
+    "externalLink": "",
+    "year": "2025",
+    "desc": "EDM의 음악을 느낄때 산소가 부족하며 느끼는 카타르시스를 차용해 역으로 산소를 일부 차단하여 카타르시스에 도달하게 하는 디바이스",
+    "order": 0,
+    "hashtags": [
+      "Design engineering",
+      "Arduino"
+    ],
+    "media": [
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/video/upload/v1776521345/portfolio/sxrzhuw2tgkyvw1wdos9.mp4",
+        "type": "video"
+      },
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776599271/portfolio/moqjljtih1bs80ge5gwx.jpg",
+        "type": "image"
+      },
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776599395/portfolio/zp8trjwdnjbzaozyjxgj.png",
+        "type": "image"
+      },
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776599398/portfolio/wnjuywgq9w761gvjc7zd.png",
+        "type": "image"
+      },
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776599429/portfolio/ts7lmbgdtouryt2eqfyh.png",
+        "type": "image"
+      }
+    ],
+    "showExternalLink": false,
+    "title": "Breathless"
+  },
+  {
+    "desc": "우주 산업 생태계에서 회전운동을 컨트롤하고 몸을 고정할 수 있는 웨어러블 꼬리 디바이스와 모빌리티",
+    "year": "2025",
+    "order": 1,
+    "media": [
+      {
+        "type": "image",
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776759213/portfolio/fn5qibgyuvwtunzm3roc.png"
+      },
+      {
+        "type": "video",
+        "url": "https://res.cloudinary.com/dwxglojis/video/upload/v1776599854/portfolio/fns5ckryw6et5jbbdvot.mp4",
+        "thumbnailUrl": "https://res.cloudinary.com/dwxglojis/image/upload/v1776759850/portfolio/kqtzkegur0bkykk1tfpp.png"
+      },
+      {
+        "thumbnailUrl": "https://res.cloudinary.com/dwxglojis/image/upload/v1776759897/portfolio/bqrewngdf7bnp4enyzzi.png",
+        "url": "https://res.cloudinary.com/dwxglojis/video/upload/v1776521259/portfolio/q3qj6jz6pmmynbjyjmex.mp4",
+        "type": "video"
+      },
+      {
+        "thumbnailUrl": "https://res.cloudinary.com/dwxglojis/image/upload/v1776759901/portfolio/reat8tilwlig57hxdtoe.png",
+        "url": "https://res.cloudinary.com/dwxglojis/video/upload/v1776521274/portfolio/wzmrtbq5ott6chf589lk.mp4",
+        "type": "video"
+      }
+    ],
+    "title": "LUNARIS",
+    "id": 4,
+    "externalLink": "https://www.dezeen.com/2025/12/15/wearable-device-for-sensory-problems-among-projects-from-hongik-university/",
+    "hashtags": [
+      "product"
+    ],
+    "showExternalLink": true,
+    "image": "https://res.cloudinary.com/dwxglojis/image/upload/v1772885515/portfolio/jqo2zbvvrkcdc3ah1zqt.png",
+    "aspect": "aspect-[3/4]"
+  },
+  {
+    "title": "Identity Camouflager",
+    "showExternalLink": false,
+    "media": [
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776601570/portfolio/rtqxpsyrjxpyeclxpcr4.jpg",
+        "type": "image"
+      },
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/video/upload/v1776583425/portfolio/gezbvmkf3tu4kboqhivd.mp4",
+        "type": "video"
+      }
+    ],
+    "externalLink": "",
+    "aspect": "aspect-[3/4]",
+    "order": 2,
+    "hashtags": [
+      "Speculative design"
+    ],
+    "id": 8,
+    "year": "2024",
+    "desc": "이 프로젝트는 30년 뒤 지구의 미래를 상상하여 스토리를 제작하고 스토리 중 일부 장면들을 실제로 움직이는 형태로 제작해본 프로젝트입니다.",
+    "image": "https://res.cloudinary.com/dwxglojis/image/upload/v1772885573/portfolio/thtisqdxttypgwgalfq5.png"
+  },
+  {
+    "order": 3,
+    "year": "2024",
+    "desc": "로봇이 공간속에서 가이드 역할 이상의 마스코트 형태로 자리잡기 위해서는 어떤 조형언어와 공간과의 합치가 필요한지 고민한 경복궁 가이드 로봇",
+    "title": "Doya",
+    "media": [
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776599042/portfolio/rfudmhyggri8k0nkvycb.png",
+        "type": "image"
+      },
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776599048/portfolio/bgg8pjcpkar7vkeuenup.png",
+        "type": "image"
+      },
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776599049/portfolio/lkl64ksbaetdo8kxkqkk.png",
+        "type": "image"
+      },
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776599051/portfolio/spd9tnxxmltfvwnyv6ut.png",
+        "type": "image"
+      },
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776599054/portfolio/lo0fx3sx8bsqeidkfvsj.png",
+        "type": "image"
+      },
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776599055/portfolio/gibizsomm1hmpaipdz4n.png",
+        "type": "image"
+      },
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776599057/portfolio/xlmoix1qsy9yeuen6aua.png",
+        "type": "image"
+      },
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776599060/portfolio/kwew1zjx7mpi6yue2cx2.png",
+        "type": "image"
+      },
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776599064/portfolio/i5d9yuvjvegv2pgbfvk4.png",
+        "type": "image"
+      }
+    ],
+    "hashtags": [
+      "robotics"
+    ],
+    "image": "https://res.cloudinary.com/dwxglojis/image/upload/v1772885561/portfolio/saczyqq3vansjm2acvo1.png",
+    "id": 5,
+    "aspect": "aspect-[3/4]"
+  },
+  {
+    "desc": "소방관의 지하시설, 대형 건물의 구조과정에서의 사람들의 능동적인 탈출을 돕는 디바이스군",
+    "image": "https://res.cloudinary.com/dwxglojis/image/upload/v1776584364/portfolio/js3syuxupbqxof2rzhgn.png",
+    "year": "2024",
+    "aspect": "aspect-[3/4]",
+    "showExternalLink": false,
+    "id": 12,
+    "externalLink": "",
+    "order": 4,
+    "media": [
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776758570/portfolio/axddypp3aogxlgkgyy3c.png",
+        "type": "image"
+      },
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776758571/portfolio/yigrsgugato8cvdvwhjh.png",
+        "type": "image"
+      },
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776758572/portfolio/lo0wjqkj6sigzogwgc5t.png",
+        "type": "image"
+      },
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776758573/portfolio/stfzalpne43gykiftut9.png",
+        "type": "image"
+      },
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776758574/portfolio/odumxcouqtztidhj30k7.png",
+        "type": "image"
+      },
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776758575/portfolio/ooha5njauelvj2ia1u53.png",
+        "type": "image"
+      },
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776758576/portfolio/unitkzowasmd3u7nibvw.png",
+        "type": "image"
+      },
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776758577/portfolio/gummhhv3ufp0ixsav8ma.png",
+        "type": "image"
+      },
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776758578/portfolio/pfly1nay4klk6aqq8brn.png",
+        "type": "image"
+      },
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776758579/portfolio/xn5kawl6mpashggmtpvl.png",
+        "type": "image"
+      },
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776758580/portfolio/b7unaki8aqlconpbudxe.png",
+        "type": "image"
+      },
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776758580/portfolio/ha6uxqv51v5keammhmch.png",
+        "type": "image"
+      }
+    ],
+    "title": "EXIT",
+    "hashtags": []
+  },
+  {
+    "aspect": "aspect-[3/4]",
+    "hashtags": [],
+    "externalLink": "",
+    "image": "https://res.cloudinary.com/dwxglojis/image/upload/v1776584239/portfolio/vfnnqiripuy2hz6c8dyl.png",
+    "id": 11,
+    "desc": "건강관리는 필요하지만 젊은 삶을 살아가는 액티브 시니어들을 위한 오브제형 건강관리 제품군",
+    "media": [
+      {
+        "type": "image",
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776752488/portfolio/bjubtpfb0bgutyiziqkd.png"
+      },
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776751192/portfolio/lu37yd1erx7otchuaymz.png",
+        "type": "image"
+      },
+      {
+        "type": "image",
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776752464/portfolio/xrccu8zmqszsctaa2dwb.png"
+      },
+      {
+        "type": "image",
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776751195/portfolio/g5lwgznhynzaraowumd3.png"
+      },
+      {
+        "type": "image",
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776752670/portfolio/adrrh8jswiszwvafw8ay.png"
+      },
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776751196/portfolio/te7688y5rnpribsslgqf.png",
+        "type": "image"
+      },
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776751198/portfolio/di96l7zww3b5y0fiftvn.png",
+        "type": "image"
+      },
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776756050/portfolio/echnkwcgd5ugnjp8xy0t.png",
+        "type": "image"
+      }
+    ],
+    "year": "2023",
+    "title": "D-Light",
+    "showExternalLink": false,
+    "order": 5
+  },
+  {
+    "hashtags": [],
+    "image": "https://res.cloudinary.com/dwxglojis/image/upload/v1776583824/portfolio/paf2ko18vhte2vriqkne.png",
+    "year": "2024",
+    "showExternalLink": false,
+    "desc": "가로등을 짓지 않았던 유럽의 문화에서 비롯하여 바로셀로나의 거리 무드와 어울릴 수 있는 이동형 전기차 충전기",
+    "externalLink": "",
+    "order": 6,
+    "id": 10,
+    "aspect": "aspect-[3/4]",
+    "title": "EV charger",
+    "media": [
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776611203/portfolio/icztcdl3gzrr4svcgctq.png",
+        "type": "image"
+      },
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776611213/portfolio/deldlln1scxtb9r8inij.png",
+        "type": "image"
+      },
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776611248/portfolio/zucgrbuvlpwbhzvfnngv.png",
+        "type": "image"
+      },
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776611255/portfolio/lwxurthnmqfw883qtdl7.png",
+        "type": "image"
+      }
+    ]
+  },
+  {
+    "image": "https://res.cloudinary.com/dwxglojis/image/upload/v1772885324/portfolio/monxbjipwocrpcdtthkb.png",
+    "id": 7,
+    "hashtags": [
+      "product"
+    ],
+    "aspect": "aspect-[3/4]",
+    "media": [
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776600813/portfolio/lrlaahhfgz3qo8x4glsl.png",
+        "type": "image"
+      },
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776600813/portfolio/raff4xv4nsnenhdkcd1l.png",
+        "type": "image"
+      },
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776600814/portfolio/fwodudbykp0yf9ld9utq.png",
+        "type": "image"
+      },
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776600815/portfolio/e6fju1bthhdtmb7lp7fr.png",
+        "type": "image"
+      },
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776600815/portfolio/b3mpm13pdpqzaic0tvvu.png",
+        "type": "image"
+      },
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776600816/portfolio/zbglcbasgspl5v6u1cqu.png",
+        "type": "image"
+      },
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776600817/portfolio/cnn0ics2plzzwc4ggx4x.png",
+        "type": "image"
+      }
+    ],
+    "title": "Vaek",
+    "desc": "한국의 도자기 곡선의 멋을 표현하며 약간 비튼 사용성을 통해 새로운 감각을 제안한 화병",
+    "year": "2024",
+    "order": 7
+  },
+  {
+    "aspect": "aspect-[3/4]",
+    "image": "https://res.cloudinary.com/dwxglojis/image/upload/v1772885315/portfolio/gg0dt71f0zxd2s8svroi.png",
+    "id": 6,
+    "media": [
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776601002/portfolio/umzhqmqldnbadc3ydjdr.png",
+        "type": "image"
+      },
+      {
+        "type": "image",
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776601002/portfolio/ghyyv6wwpp6qgaaxcvto.png"
+      },
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776601003/portfolio/g1uqojn8ea7gkj5ymhag.png",
+        "type": "image"
+      },
+      {
+        "type": "image",
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776601004/portfolio/rwjlmhp6vxnz0zw2oodq.png"
+      },
+      {
+        "type": "image",
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776601005/portfolio/hrkpiez2tysdpfv5ekmy.png"
+      },
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776601107/portfolio/kj1t4zoyikz4owvpdkvi.png",
+        "type": "image"
+      }
+    ],
+    "title": "Foudre",
+    "desc": "90년대 포터블 위스키병을 오마주하여 자유로운 젊은 사랑을 표현한 향수 브랜드",
+    "hashtags": [
+      "product"
+    ],
+    "order": 8,
+    "year": "2024"
+  },
+  {
+    "year": "2026",
+    "id": 2,
+    "image": "https://res.cloudinary.com/dwxglojis/image/upload/v1772498634/portfolio/xkv10ycnuthgyx0nwczl.png",
+    "desc": "Attisu 브랜드에 조형물들의 연속성은 가지되 새로운 형태를 가지고 브랜드 무드와 어울릴 수 있는 조형물 제안",
+    "hashtags": [
+      "Fashion",
+      "Object'",
+      "Space"
+    ],
+    "aspect": "aspect-[3/4]",
+    "order": 9,
+    "media": [
+      {
+        "layout": "half",
+        "type": "image",
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776612853/portfolio/kcalod2itoodrk1qqnhm.png"
+      },
+      {
+        "type": "image",
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776612854/portfolio/dvz8uslzxuow0weqhixr.png",
+        "layout": "half"
+      },
+      {
+        "layout": "half",
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776612854/portfolio/c8u7byxqkama3u9i0krd.png",
+        "type": "image"
+      },
+      {
+        "type": "image",
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776612856/portfolio/zv8bktsmswolcxsxd1ls.png",
+        "layout": "half"
+      },
+      {
+        "type": "image",
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776612857/portfolio/zr0g2gdhdvpqhqmzlwpb.png"
+      },
+      {
+        "type": "image",
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776612890/portfolio/bnob3idf3wj5woqlpmx7.png"
+      }
+    ],
+    "title": "Runway Collection"
+  },
+  {
+    "aspect": "aspect-[3/4]",
+    "id": 1,
+    "image": "https://res.cloudinary.com/dwxglojis/image/upload/v1774261461/portfolio/zqkzesqdyib9qkmzwhnr.png",
+    "year": "2026",
+    "media": [
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1772406789/portfolio/sarlkxcj0rnnu9brkqi3.jpg",
+        "type": "image"
+      },
+      {
+        "type": "image",
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1772406799/portfolio/ghdq6y00nugevexmmyqf.jpg"
+      },
+      {
+        "type": "image",
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1772515657/portfolio/nv3l84ssitmekieimttb.png",
+        "layout": "half"
+      },
+      {
+        "type": "image",
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1772516045/portfolio/d9vjkojjythexrnvvo4t.png",
+        "layout": "half"
+      },
+      {
+        "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1772516124/portfolio/ucwkx0ah4qkgbixq5ydy.png",
+        "type": "image",
+        "layout": "half"
+      }
+    ],
+    "title": "OFFICK",
+    "desc": "지겨운 회사속 작은 반항을 표현하는 패션 브랜드 일반적인 오피스룩을 과감히 잘라 투피스로 배치하고 발레코어의 언발란스함으로 반항적인 무드를 표현",
+    "hashtags": [
+      "Fashion",
+      "Ai",
+      "Office look"
+    ],
+    "order": 10
+  }
+]

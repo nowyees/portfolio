@@ -69,6 +69,6 @@ export function isAdmin(user: User | null): boolean {
  * Auth 상태 변화 구독
  */
 export function onAuthChange(callback: (user: User | null) => void): () => void {
-    if (!auth) return () => { };
+    if (!auth) { callback(null); return () => { }; }
     return onAuthStateChanged(auth, callback);
 }

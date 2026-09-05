@@ -1,287 +1,135 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router';
-import { motion, AnimatePresence } from 'motion/react';
-import ContactDialog from './ContactDialog';
-import { getAllProjects, type Project } from '../../lib/portfolioService';
-import '../../lib/seedData';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router';
+import * as Dialog from '@radix-ui/react-dialog';
+import SiteShell from './SiteShell';
+import { usePortfolio, imageUrl } from '../../lib/usePortfolio';
 
 export default function Home() {
-  const navigate = useNavigate();
-  const [projects, setProjects] = useState<Array<Project & { category: string }>>([]);
-  const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
-  const [contactOpen, setContactOpen] = useState(false);
-
-  const mainRef = useRef<HTMLDivElement>(null);
-  const isDraggingRef = useRef(false);
-  const wheelTimeoutRef = useRef<number | null>(null);
-  const [dragRotation, setDragRotation] = useState(0);
-
-  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
-
-  useEffect(() => {
-    const handleResize = () => setWindowWidth(window.innerWidth);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  const isMobile = windowWidth < 768;
-
-  // Card dimensions — slightly increased as requested
-  const cardWidth = isMobile ? 100 : 160;
-  const cardHeight = isMobile ? 180 : 280;
-
-  // Angle between adjacent cards
-  const angleStep = 24;
-
-  // Radius calculated for edge-to-edge contact:
-  // R = (cardWidth / 2) / tan(angleStep / 2)
-  // Desktop: 80 / tan(12°) = 80 / 0.2126 = 376px → use 380px
-  // Mobile: 50 / tan(12°) = 50 / 0.2126 = 235px → use 235px
-  const radius = isMobile ? 235 : 380;
+  const projects = usePortfolio();
+  const [selected, setSelected] = useState<number | null>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const cardsRef = useRef<Array<HTMLButtonElement | null>>([]);
+  const rotation = useRef({ x: .12, y: .35, vx: 0, vy: 0, drag: false, moved: false, distance: 0, px: 0, py: 0, hover: false });
+  const items = useMemo(() => {
+    const thumbs = projects.filter(p => p.image).map(project => ({ project, image: project.image }));
+    const extras = projects.flatMap(project => {
+      const media = project.media?.find(m => m.type === 'image' && m.url !== project.image);
+      return media ? [{ project, image: media.url }] : [];
+    }).slice(0, 7);
+    return [...thumbs, ...extras];
+  }, [projects]);
+  const selectedItem = selected === null ? null : items[selected];
 
   useEffect(() => {
-    const savedProjectId = sessionStorage.getItem('lastActiveProject');
-    getAllProjects().then(res => {
-      setProjects(res);
-      if (res.length > 0) {
-        const targetId = savedProjectId && res.some(p => `${p.category}-${p.id}` === savedProjectId)
-          ? savedProjectId
-          : `${res[0].category}-${res[0].id}`;
-        setActiveProjectId(targetId);
+    const stage = stageRef.current;
+    if (!stage) return;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let frame = 0, last = 0, width = stage.clientWidth, height = stage.clientHeight;
+    const observer = new ResizeObserver(() => { width = stage.clientWidth; height = stage.clientHeight; });
+    observer.observe(stage);
+    const tick = (now: number) => {
+      const dt = Math.min(now - (last || now), 32); last = now;
+      const r = rotation.current;
+      if (!r.drag && selected === null) {
+        if (!reduced.matches && !r.hover) r.y += dt * .000055;
+        r.y += r.vy; r.x += r.vx; r.vx *= .94; r.vy *= .94;
       }
-    });
-  }, []);
-
-  // Keyboard navigation
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
-      const currentIndex = projects.findIndex(p => `${p.category}-${p.id}` === activeProjectId);
-      if (currentIndex === -1) return;
-      e.preventDefault();
-
-      let nextIndex = currentIndex;
-      if (e.key === 'ArrowRight' && currentIndex < projects.length - 1) nextIndex = currentIndex + 1;
-      else if (e.key === 'ArrowLeft' && currentIndex > 0) nextIndex = currentIndex - 1;
-
-      if (nextIndex !== currentIndex) {
-        const nextId = `${projects[nextIndex].category}-${projects[nextIndex].id}`;
-        setActiveProjectId(nextId);
-        sessionStorage.setItem('lastActiveProject', nextId);
-      }
+      r.x = Math.max(-.8, Math.min(.8, r.x));
+      const radius = Math.min(width * .33, height * .31, 315);
+      const mobile = width < 700;
+      items.forEach((_, i) => {
+        const node = cardsRef.current[i];
+        if (!node) return;
+        const py = 1 - 2 * (i + .5) / items.length;
+        const spread = Math.sqrt(1 - py * py);
+        const angle = i * 2.39996323 + r.y;
+        const px = Math.cos(angle) * spread;
+        const pz = Math.sin(angle) * spread;
+        const y = py * Math.cos(r.x) - pz * Math.sin(r.x);
+        const z = py * Math.sin(r.x) + pz * Math.cos(r.x);
+        const depth = .76 + (z + 1) * .19;
+        const w = (mobile ? 48 : 69) * depth;
+        node.style.width = w + 'px';
+        node.style.transform = 'translate(-50%, -50%) translate3d(' + (px * radius) + 'px,' + (y * radius) + 'px,0)';
+        node.style.zIndex = String(Math.round((z + 1) * 50));
+      });
+      frame = requestAnimationFrame(tick);
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [projects, activeProjectId]);
-
-  // Mouse wheel scroll
-  useEffect(() => {
-    const handleWheel = (e: WheelEvent) => {
-      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
-      e.preventDefault();
-      if (wheelTimeoutRef.current) return;
-
-      const currentIndex = projects.findIndex(p => `${p.category}-${p.id}` === activeProjectId);
-      if (currentIndex === -1) return;
-
-      let nextIndex = currentIndex;
-      if (e.deltaY > 5 && currentIndex < projects.length - 1) nextIndex = currentIndex + 1;
-      else if (e.deltaY < -5 && currentIndex > 0) nextIndex = currentIndex - 1;
-
-      if (nextIndex !== currentIndex) {
-        const nextId = `${projects[nextIndex].category}-${projects[nextIndex].id}`;
-        setActiveProjectId(nextId);
-        sessionStorage.setItem('lastActiveProject', nextId);
-        wheelTimeoutRef.current = window.setTimeout(() => { wheelTimeoutRef.current = null; }, 220);
-      }
+    frame = requestAnimationFrame(tick);
+    const wheel = (event: WheelEvent) => {
+      if (selected !== null) return;
+      event.preventDefault();
+      rotation.current.y += Math.max(-100, Math.min(100, event.deltaY + event.deltaX)) * .003;
     };
-    const container = mainRef.current;
-    if (container) {
-      container.addEventListener('wheel', handleWheel, { passive: false });
-      return () => container.removeEventListener('wheel', handleWheel);
-    }
-  }, [projects, activeProjectId]);
-
-  // Drag to rotate
-  const handlePan = (event: any, info: any) => {
-    isDraggingRef.current = true;
-    const sensitivity = isMobile ? 0.25 : 0.14;
-    setDragRotation(prev => {
-      const nextRotation = prev + info.delta.x * sensitivity;
-      // Container rotation is negative to show right-side cards
-      const totalRot = activeIndex * -angleStep + nextRotation;
-      const minRot = -(projects.length - 1) * angleStep - 20;
-      const maxRot = 20;
-      const clampedRot = Math.max(minRot, Math.min(maxRot, totalRot));
-      return clampedRot - activeIndex * -angleStep;
-    });
-  };
-
-  const handlePanEnd = () => {
-    isDraggingRef.current = false;
-    const totalRotation = activeIndex * -angleStep + dragRotation;
-    const closestIndex = Math.round(totalRotation / -angleStep);
-    const targetIndex = Math.max(0, Math.min(projects.length - 1, closestIndex));
-
-    const nextId = `${projects[targetIndex].category}-${projects[targetIndex].id}`;
-    setActiveProjectId(nextId);
-    sessionStorage.setItem('lastActiveProject', nextId);
-    setDragRotation(0);
-  };
-
-  const activeIndex = projects.findIndex(p => `${p.category}-${p.id}` === activeProjectId);
-  const activeProject = projects[activeIndex] || projects[0];
-
-  // CONCAVE container rotation:
-  // Negative rotation to bring the active card's POSITIVE rotation to face the viewer
-  const containerRotation = activeIndex * -angleStep + dragRotation;
+    stage.addEventListener('wheel', wheel, { passive: false });
+    return () => { cancelAnimationFrame(frame); observer.disconnect(); stage.removeEventListener('wheel', wheel); };
+  }, [items, selected]);
 
   return (
-    <div className="relative w-full h-[100dvh] overflow-hidden bg-[#0d0d0d] text-[#f7f6f0] selection:bg-[#f7f6f0] selection:text-[#0d0d0d] flex flex-col justify-between font-['Pretendard',sans-serif]">
-
-      {/* TOP HEADER */}
-      <motion.header
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-        className="fixed top-0 w-full flex justify-between items-start px-6 pt-6 pb-4 md:px-10 md:pt-8 z-50 pointer-events-none"
-      >
-        <div className="flex-[1.5] lg:flex-1 min-w-0">
-          <h1 className="text-xs md:text-sm lg:text-base font-bold tracking-[-0.02em] whitespace-nowrap leading-none text-[#f7f6f0] pointer-events-auto cursor-pointer font-['Pretendard',sans-serif]" onClick={() => navigate('/')}>
-            LEEJAEWOONG
-          </h1>
-        </div>
-
-        <nav className="flex-1 flex items-end justify-end gap-4">
-          <button onClick={() => navigate('/about')} className="text-xs md:text-sm lg:text-base font-bold tracking-[-0.02em] leading-none text-[#f7f6f0] hover:opacity-60 transition-opacity pointer-events-auto font-['Pretendard',sans-serif]">ABOUT</button>
-          <button onClick={() => setContactOpen(true)} className="text-xs md:text-sm lg:text-base font-bold tracking-[-0.02em] leading-none text-[#f7f6f0] hover:opacity-60 transition-opacity pointer-events-auto font-['Pretendard',sans-serif]">CONTACT</button>
-        </nav>
-      </motion.header>
-
-      {/* PROJECT INFO - Center Left */}
-      <div className="hidden md:block fixed left-6 md:left-10 top-1/2 -translate-y-1/2 max-w-[380px] text-[13px] lg:text-[15px] leading-[1.65] text-left pointer-events-auto font-medium transition-opacity duration-500 text-[#f7f6f0] z-50">
-        {activeProject ? (
-          <>
-            <span className="font-bold block mb-[8px] text-[#f7f6f0] tracking-tight text-[16px] lg:text-[18px] uppercase">
-              {activeProject.title}
-            </span>
-            <p className="line-clamp-4 mb-3 text-[#f7f6f0]/80 font-normal">{activeProject.desc}</p>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-3 text-[#f7f6f0]/60 text-[11px] lg:text-[12px] font-normal">
-              <span className="font-semibold text-[#f7f6f0]">{activeProject.year}</span>
-              {activeProject.hashtags && activeProject.hashtags.map((tag, i) => (
-                <span key={i}>#{tag}</span>
-              ))}
-              {activeProject.showExternalLink && activeProject.externalLink && (
-                <a href={activeProject.externalLink} target="_blank" rel="noopener noreferrer"
-                  className="underline hover:opacity-50 transition-opacity font-bold ml-1 text-[#f7f6f0]">Link ↗</a>
-              )}
-            </div>
-          </>
-        ) : (
-          <span className="opacity-0">Loading...</span>
-        )}
-      </div>
-
-      {/* CONCAVE 3D CAROUSEL — cards face INWARD like an IMAX curved screen */}
-      <motion.main
-        ref={mainRef}
-        onPan={handlePan}
-        onPanEnd={handlePanEnd}
-        className="absolute inset-0 flex items-center justify-center z-40 overflow-hidden outline-none cursor-grab active:cursor-grabbing select-none"
-        style={{ perspective: isMobile ? '800px' : '1200px' }}
-      >
-        <motion.div
-          className="relative"
-          style={{
-            transformStyle: 'preserve-3d',
-            width: `${cardWidth}px`,
-            height: `${cardHeight}px`,
+    <SiteShell active="space">
+      <main className="creative-space">
+        <h1 className="sr-only">Lee Jae Woong — Creative Space</h1>
+        <div className="space-stage" ref={stageRef} aria-label="Interactive project gallery"
+          onPointerDown={event => {
+            if (event.button !== 0) return;
+            const r = rotation.current; r.drag = true; r.moved = false; r.distance = 0; r.px = event.clientX; r.py = event.clientY; r.vx = 0; r.vy = 0;
           }}
-          animate={{ rotateY: containerRotation }}
-          transition={isDraggingRef.current ? { type: 'just' } : { type: 'spring', stiffness: 200, damping: 18 }}
+          onPointerMove={event => {
+            const r = rotation.current;
+            if (!r.drag) return;
+            const dx = event.clientX - r.px, dy = event.clientY - r.py;
+            r.distance += Math.abs(dx) + Math.abs(dy);
+            if (r.distance > 6) r.moved = true;
+            r.vy = dx * .006; r.vx = dy * .003;
+            r.y += r.vy; r.x += r.vx; r.px = event.clientX; r.py = event.clientY;
+          }}
+          onPointerUp={() => { rotation.current.drag = false; }}
+          onPointerCancel={() => { rotation.current.drag = false; }}
+          onPointerLeave={() => { rotation.current.drag = false; rotation.current.hover = false; }}
         >
-          {projects.map((project, i) => {
-            const isActive = `${project.category}-${project.id}` === activeProjectId;
-            const isVisible = Math.abs(i - activeIndex) <= 6;
-            if (!isVisible) return null;
-
-            return (
-              <div
-                key={`${project.category}-${project.id}`}
-                className="absolute top-0 left-0 w-full h-full group"
-                style={{
-                  // CONCAVE: positive angleStep makes cards flow left to right visually
-                  // Each card is placed on the inside surface of a cylinder
-                  transform: `rotateY(${i * angleStep}deg) translateZ(${radius}px)`,
-                  transformStyle: 'preserve-3d',
-                  backfaceVisibility: 'hidden',
-                }}
-              >
-                <motion.div
-                  animate={{
-                    opacity: isActive ? 1 : Math.max(0.25, 0.8 - Math.abs(i - activeIndex) * 0.1),
-                  }}
-                  transition={{ duration: 0.5 }}
-                  className="w-full h-full cursor-pointer"
-                  onClick={() => {
-                    if (!isActive) {
-                      const nextId = `${project.category}-${project.id}`;
-                      setActiveProjectId(nextId);
-                      sessionStorage.setItem('lastActiveProject', nextId);
-                    } else {
-                      navigate(`/project/${project.category}/${project.id}`);
-                    }
-                  }}
-                >
-                  <div className="relative w-full h-full bg-[#1a1a1a] overflow-hidden shadow-2xl">
-                    <img
-                      src={project.image}
-                      alt={project.title}
-                      loading="lazy"
-                      className="w-full h-full object-cover transition-transform duration-[1.5s] ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:scale-[1.03]"
-                    />
-                    {!isActive && (
-                      <div className="absolute inset-0 bg-black/40 transition-opacity duration-500 group-hover:opacity-10 pointer-events-none" />
-                    )}
-
-                    {/* Title overlay at bottom */}
-                    <div className="absolute bottom-0 left-0 right-0 p-3 md:p-4 bg-gradient-to-t from-black/70 to-transparent">
-                      <div className="text-[10px] md:text-[12px] font-bold tracking-tight text-[#f7f6f0] uppercase leading-tight">
-                        {project.title}
-                      </div>
-                      <div className="text-[8px] md:text-[9px] text-[#f7f6f0]/60 mt-0.5 font-medium">
-                        {project.year}
-                      </div>
-                    </div>
-
-                    {/* View Icon */}
-                    <div className="absolute top-[10px] right-[10px] md:top-[12px] md:right-[12px] w-[26px] h-[26px] md:w-[32px] md:h-[32px] bg-[#f7f6f0]/95 backdrop-blur-md rounded-[6px] md:rounded-[8px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20 shadow-sm text-[#111]">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" strokeLinejoin="miter" className="scale-75 md:scale-90">
-                        <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
-                      </svg>
-                    </div>
-                  </div>
-                </motion.div>
-              </div>
-            );
-          })}
-        </motion.div>
-      </motion.main>
-
-      {/* Bottom Progress Navigator */}
-      <div className="fixed bottom-4 left-6 md:left-10 md:bottom-6 z-50 text-[#f7f6f0] text-[10px] md:text-[11px] font-bold font-mono tracking-widest flex items-center gap-4 pointer-events-none">
-        <span>{String(activeIndex + 1 || 1).padStart(2, '0')}</span>
-        <div className="w-[40px] md:w-[60px] h-[1px] bg-[#f7f6f0]/20 relative overflow-hidden">
-          <motion.div
-            className="absolute top-0 left-0 h-full bg-[#f7f6f0]"
-            animate={{ width: `${((activeIndex + 1 || 1) / (projects.length || 1)) * 100}%` }}
-            transition={{ duration: 0.3 }}
-          />
+          {items.map((item, index) => (
+            <button key={item.project.id + '-' + item.image} className="space-card"
+              ref={node => { cardsRef.current[index] = node; }}
+              style={{ '--entry-delay': Math.min(index * 24, 380) + 'ms' } as React.CSSProperties}
+              type="button" aria-label={'View ' + item.project.title}
+              onMouseEnter={() => { rotation.current.hover = true; }}
+              onMouseLeave={() => { rotation.current.hover = false; }}
+              onFocus={() => { rotation.current.hover = true; }}
+              onBlur={() => { rotation.current.hover = false; }}
+              onClick={event => { if (event.detail === 0 || !rotation.current.moved) setSelected(index); }}
+            >
+              <img src={imageUrl(item.image, 300)} alt="" draggable={false} />
+              <span className="space-card-label">{item.project.title}</span>
+            </button>
+          ))}
         </div>
-        <span className="opacity-40">{String(projects.length || 1).padStart(2, '0')}</span>
-      </div>
-
-      <ContactDialog open={contactOpen} onClose={() => setContactOpen(false)} dark={true} />
-    </div>
+        <Dialog.Root open={selectedItem !== null} onOpenChange={open => { if (!open) setSelected(null); }}>
+          <Dialog.Portal>
+            <Dialog.Overlay className="space-overlay" />
+            <Dialog.Content className="space-selection" aria-describedby={undefined}
+              onKeyDown={event => {
+                if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+                  event.preventDefault();
+                  setSelected(current => current === null ? null : (current + (event.key === 'ArrowLeft' ? -1 : 1) + items.length) % items.length);
+                }
+              }}>
+              <Dialog.Close className="space-close">Close</Dialog.Close>
+              {selectedItem && <>
+                <Link to={'/project/' + selectedItem.project.category + '/' + selectedItem.project.id} className="space-selected-image" aria-label={'View case: ' + selectedItem.project.title}>
+                  <img src={imageUrl(selectedItem.image, 1000)} alt={selectedItem.project.title} />
+                  <span>View Case ↗</span>
+                </Link>
+                <div className="space-selection-caption">
+                  <Dialog.Title>{selectedItem.project.title}</Dialog.Title>
+                  <p>{selectedItem.project.hashtags?.join(', ') || selectedItem.project.year}</p>
+                </div>
+                <button className="space-previous" aria-label="Previous image" onClick={() => setSelected(((selected ?? 0) - 1 + items.length) % items.length)}>←</button>
+                <button className="space-next" aria-label="Next image" onClick={() => setSelected(((selected ?? 0) + 1) % items.length)}>→</button>
+              </>}
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog.Root>
+      </main>
+    </SiteShell>
   );
 }

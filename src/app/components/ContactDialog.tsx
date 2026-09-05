@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { adminLogin, getCurrentUser, onAuthChange } from '../../lib/authService';
-import { isConfigured } from '../../lib/firebase';
+import { adminLogin, onAuthChange } from '../../lib/authService';
 import type { User } from 'firebase/auth';
 
 interface ContactDialogProps {
@@ -21,6 +20,26 @@ export default function ContactDialog({ open, onClose, dark = false }: ContactDi
     const [adminPw, setAdminPw] = useState('');
     const [adminLoading, setAdminLoading] = useState(false);
     const [currentUser, setCurrentUser] = useState<User | null>(null);
+    const dialogRef = React.useRef<HTMLDivElement>(null);
+
+    React.useEffect(() => {
+        if (!open) return;
+        const previousFocus = document.activeElement as HTMLElement | null;
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        dialogRef.current?.focus();
+        const keydown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') { event.preventDefault(); handleClose(); }
+            if (event.key !== 'Tab') return;
+            const focusable = dialogRef.current?.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([disabled])');
+            if (!focusable?.length) return;
+            const first = focusable[0], last = focusable[focusable.length - 1];
+            if (event.shiftKey && (document.activeElement === first || document.activeElement === dialogRef.current)) { event.preventDefault(); last.focus(); }
+            else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+        };
+        window.addEventListener('keydown', keydown);
+        return () => { document.body.style.overflow = previousOverflow; window.removeEventListener('keydown', keydown); previousFocus?.focus(); };
+    }, [open]);
 
     React.useEffect(() => {
         const unsubscribe = onAuthChange((user) => setCurrentUser(user));
@@ -56,7 +75,7 @@ export default function ContactDialog({ open, onClose, dark = false }: ContactDi
         onClose();
     };
 
-    const bg = dark ? '#111' : '#f7f6f0';
+    const bg = dark ? '#111' : '#fff';
     const fg = dark ? '#f7f6f0' : '#111';
     const borderCol = dark ? 'rgba(247,246,240,0.15)' : 'rgba(17,17,17,0.15)';
 
@@ -74,6 +93,11 @@ export default function ContactDialog({ open, onClose, dark = false }: ContactDi
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
 
                     <motion.div
+                        ref={dialogRef}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-label={mode === 'contact' ? 'Contact' : 'Admin Login'}
+                        tabIndex={-1}
                         initial={{ scale: 0.95, opacity: 0, y: 20 }}
                         animate={{ scale: 1, opacity: 1, y: 0 }}
                         exit={{ scale: 0.95, opacity: 0, y: 20 }}
@@ -151,8 +175,10 @@ export default function ContactDialog({ open, onClose, dark = false }: ContactDi
                                     ) : (
                                         <form onSubmit={handleAdminLogin} className="flex flex-col gap-6">
                                             <div>
-                                                <label className="block text-[9px] uppercase tracking-widest mb-2 opacity-70 font-bold select-none">Admin ID</label>
+                                                <label htmlFor="admin-id" className="block text-[9px] uppercase tracking-widest mb-2 opacity-70 font-bold select-none">Admin ID</label>
                                                 <input
+                                                    id="admin-id"
+                                                    autoComplete="username"
                                                     type="text"
                                                     value={adminId}
                                                     onChange={e => setAdminId(e.target.value)}
@@ -162,8 +188,10 @@ export default function ContactDialog({ open, onClose, dark = false }: ContactDi
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-[9px] uppercase tracking-widest mb-2 opacity-70 font-bold select-none">Password</label>
+                                                <label htmlFor="admin-password" className="block text-[9px] uppercase tracking-widest mb-2 opacity-70 font-bold select-none">Password</label>
                                                 <input
+                                                    id="admin-password"
+                                                    autoComplete="current-password"
                                                     type="password"
                                                     value={adminPw}
                                                     onChange={e => setAdminPw(e.target.value)}
