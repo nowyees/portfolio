@@ -3,9 +3,11 @@ import Home from "./components/Home";
 import ProjectDetail from "./components/ProjectDetail";
 import AdminPage from "./components/AdminPage";
 import FreeDive from "./components/FreeDive";
+import About from "./components/About";
 
 export const router = createBrowserRouter([
   { path: "/", Component: Home },
+  { path: "/about", Component: About },
   { path: "/project/:category/:id", Component: ProjectDetail },
   { path: "/admin", Component: AdminPage },
   { path: "/freedive", Component: FreeDive },

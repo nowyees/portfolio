@@ -152,7 +152,8 @@ export default function Home() {
           </h1>
         </div>
 
-        <nav className="flex-1 flex flex-col items-end">
+        <nav className="flex-1 flex items-end justify-end gap-4">
+          <button onClick={() => navigate('/about')} className="text-xs md:text-sm lg:text-base font-bold tracking-[-0.02em] leading-none text-[#f7f6f0] hover:opacity-60 transition-opacity pointer-events-auto font-['Pretendard',sans-serif]">ABOUT</button>
           <button onClick={() => setContactOpen(true)} className="text-xs md:text-sm lg:text-base font-bold tracking-[-0.02em] leading-none text-[#f7f6f0] hover:opacity-60 transition-opacity pointer-events-auto font-['Pretendard',sans-serif]">CONTACT</button>
         </nav>
       </motion.header>
