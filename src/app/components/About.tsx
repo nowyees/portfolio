@@ -13,8 +13,8 @@ export default function About() {
     const object = objectRef.current;
     if (!object) return;
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
-    let frame = 0, current = 0;
-    let target = 0;
+    let frame = 0, current = 0, target = 0;
+    let pointerX = Infinity, pointerY = Infinity, repelX = 0, repelY = 0;
     const draw = () => {
       frame = 0;
       current += (target - current) * .11;
@@ -25,22 +25,51 @@ export default function About() {
       const landing = reduced.matches ? 0 : Math.pow(Math.abs(Math.cos(phase)), 14) * Math.sin(current * Math.PI);
       const scaleX = 1 + landing * .055;
       const scaleY = 1 - landing * .045;
-      object.style.transform = 'translate(-50%, -50%) translate3d(' + x + 'px,' + -bounce + 'px,0) scale(' + scaleX + ',' + scaleY + ')';
-      if (Math.abs(target - current) > .0001) frame = requestAnimationFrame(draw);
+      const centerX = innerWidth * .5 + x, centerY = innerHeight * .52 - bounce;
+      const dx = centerX - pointerX, dy = centerY - pointerY;
+      const distance = Math.hypot(dx, dy);
+      const range = Math.min(240, Math.max(150, object.offsetWidth * 1.35));
+      let repelTargetX = 0, repelTargetY = 0;
+      if (!reduced.matches && Number.isFinite(distance) && distance < range) {
+        const force = Math.pow(1 - distance / range, 2) * Math.min(155, innerWidth * .28);
+        repelTargetX = (distance > 1 ? dx / distance : -1) * force;
+        repelTargetY = (distance > 1 ? dy / distance : -.35) * force;
+      }
+      repelX += (repelTargetX - repelX) * .16;
+      repelY += (repelTargetY - repelY) * .16;
+      const radius = object.offsetWidth * .5;
+      const movedX = Math.max(-innerWidth * .5 + radius + 14, Math.min(innerWidth * .5 - radius - 14, x + repelX));
+      const movedY = Math.max(-innerHeight * .52 + radius + 62, Math.min(innerHeight * .48 - radius - 14, -bounce + repelY));
+      object.style.transform = 'translate(-50%, -50%) translate3d(' + movedX + 'px,' + movedY + 'px,0) scale(' + scaleX + ',' + scaleY + ')';
+      if (Math.abs(target - current) > .0001 || Math.abs(repelTargetX - repelX) > .15 || Math.abs(repelTargetY - repelY) > .15) frame = requestAnimationFrame(draw);
     };
     const updateTarget = () => {
       const maxScroll = Math.max(1, document.documentElement.scrollHeight - innerHeight);
       target = Math.max(0, Math.min(1, scrollY / maxScroll));
       if (!frame) frame = requestAnimationFrame(draw);
     };
+    const avoidPointer = (event: PointerEvent) => {
+      pointerX = event.clientX;
+      pointerY = event.clientY;
+      if (!frame) frame = requestAnimationFrame(draw);
+    };
+    const releasePointer = () => {
+      pointerX = Infinity;
+      pointerY = Infinity;
+      if (!frame) frame = requestAnimationFrame(draw);
+    };
     updateTarget();
     window.addEventListener('scroll', updateTarget, { passive: true });
     window.addEventListener('resize', updateTarget);
+    window.addEventListener('pointermove', avoidPointer, { passive: true });
+    document.documentElement.addEventListener('pointerleave', releasePointer);
     reduced.addEventListener('change', updateTarget);
     return () => {
       cancelAnimationFrame(frame);
       window.removeEventListener('scroll', updateTarget);
       window.removeEventListener('resize', updateTarget);
+      window.removeEventListener('pointermove', avoidPointer);
+      document.documentElement.removeEventListener('pointerleave', releasePointer);
       reduced.removeEventListener('change', updateTarget);
     };
   }, [location.hash]);
