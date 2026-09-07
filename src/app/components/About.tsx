@@ -2,16 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import SiteShell from './SiteShell';
 import ContactDialog from './ContactDialog';
-import { usePortfolio } from '../../lib/usePortfolio';
 
-const chapters = [
-  { title: 'Form', ids: [5, 7] },
-  { title: 'Feel', ids: [11, 9] },
-  { title: 'Purpose', ids: [12, 4] },
-  { title: 'Story', ids: [8, 1] },
-];
 export default function About() {
-  const projects = usePortfolio();
   const [contactOpen, setContactOpen] = useState(false);
   const objectRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
@@ -21,26 +13,35 @@ export default function About() {
     const object = objectRef.current;
     if (!object) return;
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
-    let frame = 0;
-    const contact = document.getElementById('contact');
-    const paint = () => {
+    let frame = 0, current = 0;
+    let target = 0;
+    const draw = () => {
       frame = 0;
-      const progress = scrollY / innerHeight;
-      const atContact = contact?.getBoundingClientRect().top ?? Infinity;
-      const scale = reduced.matches ? 1 : 1 - Math.max(0, Math.min(1, progress)) * .18;
-      object.style.transform = 'translate(-50%, -50%) scale(' + scale + ')';
-      object.style.opacity = String(Math.max(0, Math.min(1, (atContact - innerHeight * .15) / (innerHeight * .6))));
+      current += (target - current) * .11;
+      const phase = current * Math.PI * 8;
+      const travel = Math.min(innerWidth * .25, 300);
+      const x = reduced.matches ? 0 : Math.sin(current * Math.PI * 2.35) * travel;
+      const bounce = reduced.matches ? 0 : Math.abs(Math.sin(phase)) * Math.min(innerHeight * .1, 88);
+      const landing = reduced.matches ? 0 : Math.pow(Math.abs(Math.cos(phase)), 14) * Math.sin(current * Math.PI);
+      const scaleX = 1 + landing * .055;
+      const scaleY = 1 - landing * .045;
+      object.style.transform = 'translate(-50%, -50%) translate3d(' + x + 'px,' + -bounce + 'px,0) scale(' + scaleX + ',' + scaleY + ')';
+      if (Math.abs(target - current) > .0001) frame = requestAnimationFrame(draw);
     };
-    const schedulePaint = () => { if (!frame) frame = requestAnimationFrame(paint); };
-    paint();
-    window.addEventListener('scroll', schedulePaint, { passive: true });
-    window.addEventListener('resize', schedulePaint);
-    reduced.addEventListener('change', schedulePaint);
+    const updateTarget = () => {
+      const maxScroll = Math.max(1, document.documentElement.scrollHeight - innerHeight);
+      target = Math.max(0, Math.min(1, scrollY / maxScroll));
+      if (!frame) frame = requestAnimationFrame(draw);
+    };
+    updateTarget();
+    window.addEventListener('scroll', updateTarget, { passive: true });
+    window.addEventListener('resize', updateTarget);
+    reduced.addEventListener('change', updateTarget);
     return () => {
       cancelAnimationFrame(frame);
-      window.removeEventListener('scroll', schedulePaint);
-      window.removeEventListener('resize', schedulePaint);
-      reduced.removeEventListener('change', schedulePaint);
+      window.removeEventListener('scroll', updateTarget);
+      window.removeEventListener('resize', updateTarget);
+      reduced.removeEventListener('change', updateTarget);
     };
   }, [location.hash]);
 
@@ -55,15 +56,6 @@ export default function About() {
         <div><h2>Product Design</h2><p>Objects<br />Robotics<br />Wearable Devices<br />Design Engineering</p></div>
         <div><h2>Visual Exploration</h2><p>Image Making<br />3D Design<br />Speculative Design<br />Fashion &amp; Space</p></div>
       </section>
-      {chapters.map(chapter => <section className="about-chapter" key={chapter.title}>
-        <header><h2>{chapter.title}</h2></header>
-        <div className="chapter-body">
-          {chapter.ids.map(id => {
-            const project = projects.find(p => p.id === id);
-            return project && <div className="chapter-copy" key={id}><Link to={'/project/' + project.category + '/' + project.id}>{project.title} ↗</Link><p lang="ko">{project.desc}</p></div>;
-          })}
-        </div>
-      </section>)}
       <section id="contact" className="about-contact-section">
         <div className="about-press"><h2>Selected Press</h2><a href="https://www.dezeen.com/2025/12/15/wearable-device-for-sensory-problems-among-projects-from-hongik-university/" target="_blank" rel="noopener noreferrer">Dezeen <sup>2025</sup></a><p>LUNARIS</p></div>
         <div className="about-contact"><h2>Contact</h2><a href="mailto:ljwoong1104@gmail.com">ljwoong1104@gmail.com</a><a href="https://instagram.com/now_y_es" target="_blank" rel="noopener noreferrer">Instagram ↗</a><a href="tel:010-2380-9280">010-2380-9280</a><button type="button" onClick={() => setContactOpen(true)}>Contact / Admin ↗</button></div>
