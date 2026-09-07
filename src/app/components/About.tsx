@@ -2,17 +2,16 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import SiteShell from './SiteShell';
 import ContactDialog from './ContactDialog';
-import { usePortfolio, imageUrl } from '../../lib/usePortfolio';
+import { usePortfolio } from '../../lib/usePortfolio';
 
 const chapters = [
-  { title: 'Form', numeral: 'I', label: 'Ch. One', ids: [5, 7] },
-  { title: 'Feel', numeral: 'II', label: 'Ch. Two', ids: [11, 9] },
-  { title: 'Purpose', numeral: 'III', label: 'Ch. Three', ids: [12, 4] },
-  { title: 'Story', numeral: 'IV', label: 'Ch. Four', ids: [8, 1] },
+  { title: 'Form', ids: [5, 7] },
+  { title: 'Feel', ids: [11, 9] },
+  { title: 'Purpose', ids: [12, 4] },
+  { title: 'Story', ids: [8, 1] },
 ];
 export default function About() {
   const projects = usePortfolio();
-  const objectProject = projects.find(p => p.id === 11) || projects[0];
   const [contactOpen, setContactOpen] = useState(false);
   const objectRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
@@ -22,24 +21,32 @@ export default function About() {
     const object = objectRef.current;
     if (!object) return;
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
-    let frame = 0, mx = 0, my = 0;
-    const pointer = (event: PointerEvent) => { if (reduced.matches) { mx = 0; my = 0; return; } mx = (event.clientX / innerWidth - .5) * 2; my = (event.clientY / innerHeight - .5) * 2; };
+    let frame = 0;
+    const contact = document.getElementById('contact');
     const paint = () => {
+      frame = 0;
       const progress = scrollY / innerHeight;
-      const atContact = document.getElementById('contact')?.getBoundingClientRect().top ?? Infinity;
-      const scale = progress < 1 ? 1 : .82;
-      const tilt = reduced.matches ? 0 : Math.sin(progress * 1.25) * 13;
-      object.style.transform = 'translate(-50%, -50%) perspective(800px) rotateY(' + (mx * 20 + tilt) + 'deg) rotateX(' + (-my * 10) + 'deg) rotateZ(' + tilt + 'deg) scale(' + scale + ')';
+      const atContact = contact?.getBoundingClientRect().top ?? Infinity;
+      const scale = reduced.matches ? 1 : 1 - Math.max(0, Math.min(1, progress)) * .18;
+      object.style.transform = 'translate(-50%, -50%) scale(' + scale + ')';
       object.style.opacity = String(Math.max(0, Math.min(1, (atContact - innerHeight * .15) / (innerHeight * .6))));
-      frame = requestAnimationFrame(paint);
     };
-    window.addEventListener('pointermove', pointer); frame = requestAnimationFrame(paint);
-    return () => { cancelAnimationFrame(frame); window.removeEventListener('pointermove', pointer); };
+    const schedulePaint = () => { if (!frame) frame = requestAnimationFrame(paint); };
+    paint();
+    window.addEventListener('scroll', schedulePaint, { passive: true });
+    window.addEventListener('resize', schedulePaint);
+    reduced.addEventListener('change', schedulePaint);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', schedulePaint);
+      window.removeEventListener('resize', schedulePaint);
+      reduced.removeEventListener('change', schedulePaint);
+    };
   }, [location.hash]);
 
   return <SiteShell active="about">
     <main className="about-page">
-      <div className="about-object" ref={objectRef} aria-hidden="true">{objectProject && <img src={imageUrl(objectProject.image, 700)} alt="" />}</div>
+      <div className="about-object" ref={objectRef} aria-hidden="true" />
       <section className="about-opening">
         <h1>Exploring the space between<br />objects, people and the<br />stories that connect them.</h1>
         <p>Lee Jae Woong — Design Engineer</p>
@@ -48,8 +55,8 @@ export default function About() {
         <div><h2>Product Design</h2><p>Objects<br />Robotics<br />Wearable Devices<br />Design Engineering</p></div>
         <div><h2>Visual Exploration</h2><p>Image Making<br />3D Design<br />Speculative Design<br />Fashion &amp; Space</p></div>
       </section>
-      {chapters.map(chapter => <section className="about-chapter" key={chapter.numeral}>
-        <header><span>{chapter.label}</span><span className="chapter-numeral">{chapter.numeral}</span><h2>{chapter.title}</h2></header>
+      {chapters.map(chapter => <section className="about-chapter" key={chapter.title}>
+        <header><h2>{chapter.title}</h2></header>
         <div className="chapter-body">
           {chapter.ids.map(id => {
             const project = projects.find(p => p.id === id);

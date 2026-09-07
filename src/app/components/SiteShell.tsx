@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router';
 
 type ActivePage = 'space' | 'projects' | 'about';
 const items: Array<{ key: ActivePage; label: string; index: string; to: string }> = [
-  { key: 'space', label: 'Creative Space', index: '1', to: '/' },
+  { key: 'space', label: 'Space', index: '1', to: '/' },
   { key: 'projects', label: 'Projects', index: '2', to: '/projects' },
   { key: 'about', label: 'About', index: '3', to: '/about' },
 ];
@@ -41,10 +41,10 @@ export default function SiteShell({ active, children }: { active: ActivePage; ch
     <a href="#page-content" className="skip-link">Skip to content</a>
     <header className="editorial-nav">
       <div className="editorial-nav-center">
-        <Link to="/" className="editorial-brand" aria-label="Lee Jae Woong — home">LJ .W</Link>
+        <Link to="/" className="editorial-brand" aria-label="Lee Jae Woong — home">LJ<span aria-hidden="true">/</span>W</Link>
         <nav aria-label="Main">
-          {items.map(item => <Link key={item.key} to={item.to} className={'editorial-tab ' + (active === item.key ? 'is-active' : '')} aria-label={item.label + ' ' + item.index} aria-current={active === item.key ? 'page' : undefined}>
-            <span className="editorial-tab-label">{item.label}</span><sup>{item.index}</sup>
+          {items.map(item => <Link key={item.key} to={item.to} className={'editorial-tab ' + (active === item.key ? 'is-active' : '')} aria-label={item.label} aria-keyshortcuts={item.index} aria-current={active === item.key ? 'page' : undefined}>
+            <span className="editorial-tab-label">{item.label}</span>
           </Link>)}
         </nav>
       </div>
