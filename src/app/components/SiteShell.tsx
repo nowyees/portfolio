@@ -43,7 +43,7 @@ export default function SiteShell({ active, children }: { active: ActivePage; ch
       <div className="editorial-nav-center">
         <Link to="/" className="editorial-brand" aria-label="Lee Jae Woong — home">LJ .W</Link>
         <nav aria-label="Main">
-          {items.map(item => <Link key={item.key} to={item.to} className={'editorial-tab ' + (active === item.key ? 'is-active' : '')} aria-label={item.label} aria-keyshortcuts={item.index} aria-current={active === item.key ? 'page' : undefined}>
+          {items.map(item => <Link key={item.key} to={item.to} className={'editorial-tab ' + (active === item.key ? 'is-active' : '')} style={{ '--characters': item.label.length } as React.CSSProperties} aria-label={item.label} aria-keyshortcuts={item.index} aria-current={active === item.key ? 'page' : undefined}>
             <span className="editorial-tab-label">{item.label}</span>
           </Link>)}
         </nav>
