@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 
 type ActivePage = 'space' | 'projects' | 'about';
@@ -7,6 +7,34 @@ const items: Array<{ key: ActivePage; label: string; index: string; to: string }
   { key: 'projects', label: 'Projects', index: '2', to: '/projects' },
   { key: 'about', label: 'About', index: '3', to: '/about' },
 ];
+const typedLabels = new Set<ActivePage>();
+const typingCadence = [82, 148, 66, 116, 91, 164, 74, 132];
+
+function TypingTab({ item, active }: { item: typeof items[number]; active: boolean }) {
+  const [text, setText] = useState(typedLabels.has(item.key) ? item.label : '');
+  const typingRef = useRef(false);
+  const timerRef = useRef<number | null>(null);
+  const typeLabel = useCallback(() => {
+    if (typingRef.current || typedLabels.has(item.key)) { setText(item.label); return; }
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      typedLabels.add(item.key); setText(item.label); return;
+    }
+    typingRef.current = true;
+    let character = 0;
+    const typeNext = () => {
+      character += 1;
+      setText(item.label.slice(0, character));
+      if (character < item.label.length) timerRef.current = window.setTimeout(typeNext, typingCadence[(character - 1) % typingCadence.length]);
+      else { typedLabels.add(item.key); typingRef.current = false; timerRef.current = null; }
+    };
+    timerRef.current = window.setTimeout(typeNext, 90);
+  }, [item.key, item.label]);
+  useEffect(() => { if (active) typeLabel(); return () => { if (timerRef.current) window.clearTimeout(timerRef.current); }; }, [active, typeLabel]);
+  return <Link to={item.to} className={'editorial-tab ' + (active ? 'is-active' : '')} aria-label={item.label} aria-keyshortcuts={item.index} aria-current={active ? 'page' : undefined} onMouseEnter={typeLabel} onFocus={typeLabel}>
+    <span className="editorial-tab-label"><span>{text}</span><span className="editorial-tab-caret" aria-hidden="true">|</span></span>
+  </Link>;
+}
+
 let soundEnabled = false;
 let audioContext: AudioContext | null = null;
 function playClick() {
@@ -43,9 +71,7 @@ export default function SiteShell({ active, children }: { active: ActivePage; ch
       <div className="editorial-nav-center">
         <Link to="/" className="editorial-brand" aria-label="Lee Jae Woong — home">LJ .W</Link>
         <nav aria-label="Main">
-          {items.map(item => <Link key={item.key} to={item.to} className={'editorial-tab ' + (active === item.key ? 'is-active' : '')} style={{ '--characters': item.label.length } as React.CSSProperties} aria-label={item.label} aria-keyshortcuts={item.index} aria-current={active === item.key ? 'page' : undefined}>
-            <span className="editorial-tab-label">{item.label}</span>
-          </Link>)}
+          {items.map(item => <TypingTab key={item.key} item={item} active={active === item.key} />)}
         </nav>
       </div>
       <button type="button" className={'editorial-sound ' + (soundOn ? 'is-on' : '')} aria-label={soundOn ? 'Turn off sound' : 'Turn on sound'} aria-pressed={soundOn}
@@ -56,3 +82,4 @@ export default function SiteShell({ active, children }: { active: ActivePage; ch
     <div id="page-content" key={location.pathname} className="page-enter">{children}</div>
   </div>;
 }
+

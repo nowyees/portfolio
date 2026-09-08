@@ -20,6 +20,7 @@ export interface Project {
     hashtags?: string[];
     externalLink?: string;
     showExternalLink?: boolean;
+    detailLayout?: 'padded' | 'gallery';
     order?: number;
 }
 
@@ -268,3 +269,4 @@ export async function updateCategoryInfo(
 }
 
 export { FALLBACK_DATA };
+

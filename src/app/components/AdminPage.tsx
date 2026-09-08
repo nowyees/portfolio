@@ -232,6 +232,7 @@ export default function AdminPage() {
             image: '',
             aspect: 'aspect-[3/4]',
             media: [],
+            detailLayout: 'padded',
             hashtags: [],
             externalLink: '',
             showExternalLink: false,
@@ -683,6 +684,29 @@ export default function AdminPage() {
                                                     </div>
                                                 </div>
 
+                                                <div>
+                                                    <label className="block text-[9px] uppercase tracking-widest mb-2 opacity-40">Detail Page Layout</label>
+                                                    <div className="grid grid-cols-2 gap-2 max-w-md">
+                                                        {([
+                                                            ['padded', '여백형', '양옆 여백을 둔 세로 목록'],
+                                                            ['gallery', '갤러리형', '좌우 스크롤과 이전/다음 버튼'],
+                                                        ] as const).map(([value, title, description]) => (
+                                                            <button
+                                                                type="button"
+                                                                key={value}
+                                                                onClick={() => setEditingProject({ ...editingProject, detailLayout: value })}
+                                                                className={`p-3 border text-left transition-colors ${(editingProject.detailLayout || 'padded') === value
+                                                                    ? 'border-[#111] bg-[#111] text-[#f7f6f0]'
+                                                                    : 'border-[#111]/10 hover:border-[#111]/30'
+                                                                    }`}
+                                                            >
+                                                                <span className="block text-[10px] font-bold mb-1">{title}</span>
+                                                                <span className="block text-[9px] opacity-60">{description}</span>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
                                                 {/* Media Gallery */}
                                                 <div>
                                                     <label className="block text-[9px] uppercase tracking-widest mb-2 opacity-40">
@@ -790,3 +814,4 @@ export default function AdminPage() {
         </div>
     );
 }
+
