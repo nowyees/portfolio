@@ -30,6 +30,8 @@ export default function AdminPage() {
     const [saving, setSaving] = useState(false);
     const [editingProject, setEditingProject] = useState<Project | null>(null);
     const [isReordering, setIsReordering] = useState(false);
+    const [draggedProjectId, setDraggedProjectId] = useState<number | null>(null);
+    const [draggedMediaIndex, setDraggedMediaIndex] = useState<number | null>(null);
     const [notification, setNotification] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const mediaFileInputRef = useRef<HTMLInputElement>(null);
@@ -154,6 +156,15 @@ export default function AdminPage() {
         setEditingProject({ ...editingProject, media: newMedia });
     };
 
+    const dropMedia = (targetIndex: number) => {
+        if (!editingProject || draggedMediaIndex === null || draggedMediaIndex === targetIndex) return;
+        const newMedia = [...(editingProject.media || [])];
+        const [moved] = newMedia.splice(draggedMediaIndex, 1);
+        newMedia.splice(targetIndex, 0, moved);
+        setEditingProject({ ...editingProject, media: newMedia });
+        setDraggedMediaIndex(null);
+    };
+
     const handleSaveProject = async () => {
         if (!editingProject || !data) return;
         setSaving(true);
@@ -190,6 +201,17 @@ export default function AdminPage() {
         newProjects[index + direction] = temp;
 
         setData({ ...data, projects: newProjects });
+    };
+
+    const dropProject = (targetIndex: number) => {
+        if (!data || draggedProjectId === null) return;
+        const sourceIndex = data.projects.findIndex(project => project.id === draggedProjectId);
+        if (sourceIndex < 0 || sourceIndex === targetIndex) return;
+        const newProjects = [...data.projects];
+        const [moved] = newProjects.splice(sourceIndex, 1);
+        newProjects.splice(targetIndex, 0, moved);
+        setData({ ...data, projects: newProjects });
+        setDraggedProjectId(null);
     };
 
     const handleSaveOrder = async () => {
@@ -422,7 +444,7 @@ export default function AdminPage() {
                                 </button>
                             ) : (
                                 <button onClick={() => setIsReordering(true)} className="px-4 py-2 border border-[#111]/20 text-[10px] uppercase tracking-widest hover:border-[#111] transition-colors">
-                                    Reorder
+                                    Drag to reorder
                                 </button>
                             )}
                         </div>
@@ -482,6 +504,11 @@ export default function AdminPage() {
                                     <motion.div
                                         key={project.id}
                                         layout
+                                        draggable={isReordering}
+                                        onDragStartCapture={() => setDraggedProjectId(project.id)}
+                                        onDragEndCapture={() => setDraggedProjectId(null)}
+                                        onDragOverCapture={event => { if (isReordering) event.preventDefault(); }}
+                                        onDropCapture={event => { event.preventDefault(); dropProject(index); }}
                                         className={`group border border-[#111]/10 transition-all ${editingProject?.id === project.id ? 'ring-2 ring-[#111]' : ''} ${isReordering ? '' : 'cursor-pointer hover:border-[#111]/30'}`}
                                         onClick={() => {
                                             if (!isReordering) {
@@ -504,7 +531,8 @@ export default function AdminPage() {
                                                 </div>
                                             )}
                                             {isReordering ? (
-                                                <div className="absolute inset-0 bg-white/70 backdrop-blur-[2px] flex items-center justify-center gap-4 z-20" onClick={(e) => e.stopPropagation()}>
+                                                <div className={`absolute inset-0 bg-white/75 backdrop-blur-[2px] flex items-center justify-center gap-4 z-20 cursor-grab active:cursor-grabbing ${draggedProjectId === project.id ? 'opacity-40' : ''}`} onClick={(e) => e.stopPropagation()}>
+                                                    <span className="absolute top-3 left-3 text-[9px] uppercase tracking-widest opacity-50">Drag card</span>
                                                     <button onClick={() => handleMoveProject(index, -1)} disabled={index === 0} className="w-10 h-10 bg-[#111] text-white flex items-center justify-center rounded-full disabled:opacity-20 hover:scale-105 transition-transform">←</button>
                                                     <button onClick={() => handleMoveProject(index, 1)} disabled={index === data.projects.length - 1} className="w-10 h-10 bg-[#111] text-white flex items-center justify-center rounded-full disabled:opacity-20 hover:scale-105 transition-transform">→</button>
                                                 </div>
@@ -712,10 +740,21 @@ export default function AdminPage() {
                                                     <label className="block text-[9px] uppercase tracking-widest mb-2 opacity-40">
                                                         Detail Media ({editingProject.media?.length || 0})
                                                     </label>
+                                                    <p className="text-[9px] opacity-40 mb-3">썸네일을 드래그해 순서를 바꾸고, 각 블록의 폭을 선택하세요.</p>
                                                     <div className="flex gap-2 flex-wrap">
                                                         {editingProject.media?.map((item, idx) => (
-                                                            <div key={idx} className="relative flex flex-col group">
-                                                                <div className="w-20 h-20 bg-[#e5e4de] relative">
+                                                            <div
+                                                                key={item.url + idx}
+                                                                className={`relative flex flex-col group ${draggedMediaIndex === idx ? 'opacity-40' : ''}`}
+                                                                onDragOver={event => event.preventDefault()}
+                                                                onDrop={event => { event.preventDefault(); dropMedia(idx); }}
+                                                            >
+                                                                <div
+                                                                    className="w-20 h-20 bg-[#e5e4de] relative cursor-grab active:cursor-grabbing"
+                                                                    draggable
+                                                                    onDragStart={() => setDraggedMediaIndex(idx)}
+                                                                    onDragEnd={() => setDraggedMediaIndex(null)}
+                                                                >
                                                                     {item.type === 'video' ? (
                                                                         <div className="w-full h-full flex flex-col items-center justify-center relative bg-[#111]/5">
                                                                             {item.thumbnailUrl ? (
@@ -764,12 +803,13 @@ export default function AdminPage() {
                                                                     value={item.layout || 'full'}
                                                                     onChange={(e) => {
                                                                         const newMedia = [...(editingProject.media || [])];
-                                                                        newMedia[idx] = { ...newMedia[idx], layout: e.target.value as 'full' | 'half' };
+                                                                        newMedia[idx] = { ...newMedia[idx], layout: e.target.value as 'full' | 'half' | 'inset' };
                                                                         setEditingProject({ ...editingProject, media: newMedia });
                                                                     }}
                                                                 >
                                                                     <option value="full">1단 꽉차게</option>
                                                                     <option value="half">2단 나란히</option>
+                                                                    <option value="inset">가운데 좁게</option>
                                                                 </select>
                                                             </div>
                                                         ))}
@@ -782,6 +822,43 @@ export default function AdminPage() {
                                                         </button>
                                                     </div>
                                                     <p className="text-[9px] opacity-20 mt-1">이미지 및 비디오 파일 업로드 가능</p>
+                                                </div>
+
+                                                <div className="border border-[#111]/10 bg-[#efeee9]">
+                                                    <div className="flex items-center justify-between px-4 py-3 border-b border-[#111]/10">
+                                                        <div>
+                                                            <span className="block text-[9px] uppercase tracking-[0.25em]">Live Preview</span>
+                                                            <span className="block text-[9px] opacity-40 mt-1">저장 전 상세 페이지 배치를 확인할 수 있습니다.</span>
+                                                        </div>
+                                                        <span className="text-[9px] uppercase opacity-40">{editingProject.detailLayout || 'padded'}</span>
+                                                    </div>
+                                                    <div className="bg-white py-8">
+                                                        <div className="text-center mb-8 px-4">
+                                                            <p className="text-[12px]">{editingProject.title || 'Untitled Project'}</p>
+                                                            <p className="text-[13px] font-serif mt-1 opacity-60">{editingProject.hashtags?.filter(Boolean).join(', ') || editingProject.year}</p>
+                                                        </div>
+                                                        <div className={(editingProject.detailLayout || 'padded') === 'gallery'
+                                                            ? 'flex gap-3 overflow-x-auto snap-x snap-mandatory px-[8%] pb-3'
+                                                            : 'grid grid-cols-2 gap-3 px-[8%]'}>
+                                                            {(editingProject.media?.length ? editingProject.media : editingProject.image ? [{ url: editingProject.image, type: 'image' as const, layout: 'full' as const }] : []).map((item, idx) => (
+                                                                <div
+                                                                    key={item.url + '-preview-' + idx}
+                                                                    className={(editingProject.detailLayout || 'padded') === 'gallery'
+                                                                        ? 'min-w-[78%] self-start snap-center bg-[#f5f5f5]'
+                                                                        : item.layout === 'half'
+                                                                            ? 'col-span-1 self-start bg-[#f5f5f5]'
+                                                                            : item.layout === 'inset'
+                                                                                ? 'col-span-2 w-[72%] justify-self-center bg-[#f5f5f5]'
+                                                                                : 'col-span-2 bg-[#f5f5f5]'}
+                                                                >
+                                                                    {item.type === 'video' || isVideoUrl(item.url)
+                                                                        ? <video src={item.url} poster={item.thumbnailUrl} controls muted playsInline className="block w-full h-auto" />
+                                                                        : <img src={item.url} alt="" className="block w-full h-auto" />}
+                                                                </div>
+                                                            ))}
+                                                            {!editingProject.media?.length && !editingProject.image && <div className="col-span-2 py-20 text-center text-[10px] uppercase tracking-widest opacity-20">Add media to preview</div>}
+                                                        </div>
+                                                    </div>
                                                 </div>
 
                                                 <div className="flex gap-3 pt-2">

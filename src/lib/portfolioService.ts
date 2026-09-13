@@ -5,7 +5,7 @@ import portfolioSnapshot from './portfolioSnapshot.json';
 export interface MediaItem {
     url: string;
     type: 'image' | 'video';
-    layout?: 'full' | 'half';
+    layout?: 'full' | 'half' | 'inset';
     thumbnailUrl?: string;
 }
 

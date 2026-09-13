@@ -44,7 +44,7 @@ export default function ProjectDetail() {
           <button type="button" onClick={() => moveGallery(1)} aria-label="Next media">Next →</button>
         </div>}
         <section ref={galleryRef} className={'detail-media is-' + detailLayout} aria-label={project.title + ' images and films'}>
-          {media.map((item, i) => <div className={'detail-media-item ' + (item.layout === 'half' ? 'is-half' : '')} key={item.url + i}>
+          {media.map((item, i) => <div className={'detail-media-item is-' + (item.layout || 'full')} key={item.url + i}>
             {item.type === 'video' || isVideoUrl(item.url)
               ? <video src={item.url} poster={item.thumbnailUrl} controls muted playsInline preload="metadata" aria-label={project.title + ' film ' + (i + 1)} />
               : <img src={imageUrl(item.url, 2000)} alt={project.title + ' — ' + (i + 1)} loading={i === 0 ? 'eager' : 'lazy'} />}

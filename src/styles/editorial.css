@@ -5,6 +5,7 @@
   --serif: 'Times New Roman', 'Noto Serif KR', serif;
   --sans: Arial, 'Pretendard Variable', sans-serif;
 }
+
 .editorial-site { min-height:100dvh; background:var(--paper); color:var(--ink); font-family:var(--sans); font-size:14px; letter-spacing:-.025em; }
 .editorial-site a { color:inherit; text-decoration:none; }
 .editorial-site button { font:inherit; color:inherit; cursor:pointer; }
@@ -59,11 +60,13 @@
 .detail-media { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:clamp(16px,2vw,32px); padding:0 clamp(24px,6vw,112px); }
 .detail-media-item { grid-column:1/-1; min-width:0; background:#f5f5f5; }
 .detail-media-item.is-half { grid-column:span 1; }
+.detail-media-item.is-inset { width:min(72%,1100px); justify-self:center; }
 .detail-media-item :is(img,video) { display:block; width:100%; height:auto; }
 .detail-media-item video { max-height:95dvh; background:#111; }
 .detail-media.is-gallery { display:flex; gap:clamp(14px,2vw,32px); overflow-x:auto; overscroll-behavior-x:contain; scroll-snap-type:x mandatory; scrollbar-width:none; padding:0 clamp(24px,8vw,150px) 24px; }
 .detail-media.is-gallery::-webkit-scrollbar { display:none; }
 .detail-media.is-gallery .detail-media-item { flex:0 0 min(78vw,1280px); scroll-snap-align:center; align-self:flex-start; }
+.detail-media.is-gallery .detail-media-item.is-inset { width:auto; justify-self:auto; }
 .detail-gallery-nav { display:flex; justify-content:space-between; padding:0 clamp(24px,8vw,150px) 14px; }
 .detail-gallery-nav button { border:0; background:transparent; padding:5px 0; font:13px/1 var(--sans); }
 .project-info { position:fixed; top:8px; left:8px; z-index:105; border-radius:3px; background:rgba(237,237,237,.7); backdrop-filter:blur(24px); max-height:calc(100dvh - 16px); overflow:auto; }
@@ -123,6 +126,7 @@
   .detail-intro h1 { font-size:15px; }
   .detail-intro p { font-size:16px; }
   .detail-media-item.is-half { grid-column:1/-1; }
+  .detail-media-item.is-inset { width:86%; }
   .detail-media { padding-inline:18px; }
   .detail-media.is-gallery { padding-inline:18px; gap:12px; }
   .detail-media.is-gallery .detail-media-item { flex-basis:84vw; }
