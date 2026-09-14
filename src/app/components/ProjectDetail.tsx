@@ -37,7 +37,10 @@ export default function ProjectDetail() {
     slides[nextIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
   };
   const clickGallery = (event: React.MouseEvent<HTMLElement>) => {
-    if (detailLayout !== 'gallery' || (event.target as HTMLElement).closest('video')) return;
+    if (detailLayout !== 'gallery') return;
+    const video = (event.target as HTMLElement).closest('video');
+    if (video && event.clientY > video.getBoundingClientRect().bottom - 64) return;
+    event.preventDefault();
     const rect = event.currentTarget.getBoundingClientRect();
     moveGallery(event.clientX < rect.left + rect.width * .5 ? -1 : 1);
   };
