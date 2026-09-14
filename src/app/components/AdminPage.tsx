@@ -844,7 +844,7 @@ export default function AdminPage() {
                                                                 <div
                                                                     key={item.url + '-preview-' + idx}
                                                                     className={(editingProject.detailLayout || 'padded') === 'gallery'
-                                                                        ? 'min-w-[78%] self-start snap-center bg-[#f5f5f5]'
+                                                                        ? 'min-w-[78%] h-[420px] grid place-items-center self-start snap-center bg-[#f5f5f5]'
                                                                         : item.layout === 'half'
                                                                             ? 'col-span-1 self-start bg-[#f5f5f5]'
                                                                             : item.layout === 'inset'
@@ -852,8 +852,8 @@ export default function AdminPage() {
                                                                                 : 'col-span-2 bg-[#f5f5f5]'}
                                                                 >
                                                                     {item.type === 'video' || isVideoUrl(item.url)
-                                                                        ? <video src={item.url} poster={item.thumbnailUrl} controls muted playsInline className="block w-full h-auto" />
-                                                                        : <img src={item.url} alt="" className="block w-full h-auto" />}
+                                                                        ? <video src={item.url} poster={item.thumbnailUrl} controls muted playsInline className={(editingProject.detailLayout || 'padded') === 'gallery' ? 'block w-full h-full object-contain' : 'block w-full h-auto'} />
+                                                                        : <img src={item.url} alt="" className={(editingProject.detailLayout || 'padded') === 'gallery' ? 'block w-full h-full object-contain' : 'block w-full h-auto'} />}
                                                                 </div>
                                                             ))}
                                                             {!editingProject.media?.length && !editingProject.image && <div className="col-span-2 py-20 text-center text-[10px] uppercase tracking-widest opacity-20">Add media to preview</div>}

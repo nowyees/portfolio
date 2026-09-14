@@ -23,7 +23,23 @@ export default function ProjectDetail() {
   const media = project.media?.length ? project.media : [{ url: project.image, type: 'image' as const, layout: 'full' as const }];
   const detailLayout = project.detailLayout || 'padded';
   const moveGallery = (direction: -1 | 1) => {
-    galleryRef.current?.scrollBy({ left: direction * galleryRef.current.clientWidth * .82, behavior: 'smooth' });
+    const gallery = galleryRef.current;
+    if (!gallery) return;
+    const slides = Array.from(gallery.querySelectorAll<HTMLElement>('.detail-media-item'));
+    if (!slides.length) return;
+    const galleryCenter = gallery.getBoundingClientRect().left + gallery.clientWidth * .5;
+    const currentIndex = slides.reduce((closest, slide, index) => {
+      const center = slide.getBoundingClientRect().left + slide.offsetWidth * .5;
+      const closestCenter = slides[closest].getBoundingClientRect().left + slides[closest].offsetWidth * .5;
+      return Math.abs(center - galleryCenter) < Math.abs(closestCenter - galleryCenter) ? index : closest;
+    }, 0);
+    const nextIndex = (currentIndex + direction + slides.length) % slides.length;
+    slides[nextIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  };
+  const clickGallery = (event: React.MouseEvent<HTMLElement>) => {
+    if (detailLayout !== 'gallery' || (event.target as HTMLElement).closest('video')) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    moveGallery(event.clientX < rect.left + rect.width * .5 ? -1 : 1);
   };
   const next = projects[(projects.indexOf(project) + 1) % projects.length];
   return (
@@ -39,11 +55,18 @@ export default function ProjectDetail() {
           </div>}
         </div>
         <header className="detail-intro"><h1>{project.title}</h1><p>{project.hashtags?.join(', ') || project.year}</p></header>
-        {detailLayout === 'gallery' && media.length > 1 && <div className="detail-gallery-nav" aria-label="Gallery controls">
-          <button type="button" onClick={() => moveGallery(-1)} aria-label="Previous media">← Previous</button>
-          <button type="button" onClick={() => moveGallery(1)} aria-label="Next media">Next →</button>
-        </div>}
-        <section ref={galleryRef} className={'detail-media is-' + detailLayout} aria-label={project.title + ' images and films'}>
+        <section
+          ref={galleryRef}
+          className={'detail-media is-' + detailLayout}
+          aria-label={project.title + (detailLayout === 'gallery' ? ' gallery. Click the left or right half to browse.' : ' images and films')}
+          tabIndex={detailLayout === 'gallery' ? 0 : undefined}
+          onClick={clickGallery}
+          onKeyDown={event => {
+            if (detailLayout === 'gallery' && (event.key === 'ArrowLeft' || event.key === 'ArrowRight')) {
+              event.preventDefault(); moveGallery(event.key === 'ArrowLeft' ? -1 : 1);
+            }
+          }}
+        >
           {media.map((item, i) => <div className={'detail-media-item is-' + (item.layout || 'full')} key={item.url + i}>
             {item.type === 'video' || isVideoUrl(item.url)
               ? <video src={item.url} poster={item.thumbnailUrl} controls muted playsInline preload="metadata" aria-label={project.title + ' film ' + (i + 1)} />

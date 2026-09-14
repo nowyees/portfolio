@@ -65,10 +65,11 @@
 .detail-media-item video { max-height:95dvh; background:#111; }
 .detail-media.is-gallery { display:flex; gap:clamp(14px,2vw,32px); overflow-x:auto; overscroll-behavior-x:contain; scroll-snap-type:x mandatory; scrollbar-width:none; padding:0 clamp(24px,8vw,150px) 24px; }
 .detail-media.is-gallery::-webkit-scrollbar { display:none; }
-.detail-media.is-gallery .detail-media-item { flex:0 0 min(78vw,1280px); scroll-snap-align:center; align-self:flex-start; }
+.detail-media.is-gallery .detail-media-item { flex:0 0 min(78vw,1280px); height:min(72dvh,820px); display:grid; place-items:center; scroll-snap-align:center; align-self:flex-start; cursor:ew-resize; }
+.detail-media.is-gallery .detail-media-item :is(img,video) { width:100%; height:100%; object-fit:contain; }
+.detail-media.is-gallery .detail-media-item:has(video) { cursor:default; }
 .detail-media.is-gallery .detail-media-item.is-inset { width:auto; justify-self:auto; }
-.detail-gallery-nav { display:flex; justify-content:space-between; padding:0 clamp(24px,8vw,150px) 14px; }
-.detail-gallery-nav button { border:0; background:transparent; padding:5px 0; font:13px/1 var(--sans); }
+.detail-media.is-gallery:focus-visible { outline:1px solid #111; outline-offset:-1px; }
 .project-info { position:fixed; top:8px; left:8px; z-index:105; border-radius:3px; background:rgba(237,237,237,.7); backdrop-filter:blur(24px); max-height:calc(100dvh - 16px); overflow:auto; }
 .project-info > button { padding:6px 8px; border:0; background:transparent; font:400 15px/1.2 var(--serif); }
 .project-info.is-open { width:calc(25vw - 10px); min-width:310px; }
@@ -129,8 +130,7 @@
   .detail-media-item.is-inset { width:86%; }
   .detail-media { padding-inline:18px; }
   .detail-media.is-gallery { padding-inline:18px; gap:12px; }
-  .detail-media.is-gallery .detail-media-item { flex-basis:84vw; }
-  .detail-gallery-nav { padding-inline:18px; }
+  .detail-media.is-gallery .detail-media-item { flex-basis:84vw; height:min(62dvh,620px); }
   .project-info { top:61px; }
   .project-info.is-open { width:calc(100vw - 16px); min-width:0; max-height:calc(100dvh - 77px); }
   .project-info-content { padding-top:25px; }
