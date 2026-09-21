@@ -88,7 +88,7 @@ export default function ProjectDetail() {
           tabIndex={detailLayout === 'gallery' ? 0 : undefined}
           onClick={clickGallery}
           onPointerDown={event => {
-            if (detailLayout !== 'gallery' || event.button !== 0) return;
+            if (detailLayout !== 'gallery' || event.button !== 0 || event.pointerType !== 'mouse') return;
             const video = (event.target as HTMLElement).closest('video');
             if (video && event.clientY > video.getBoundingClientRect().bottom - 64) return;
             const gallery = event.currentTarget;

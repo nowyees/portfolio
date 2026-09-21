@@ -128,8 +128,9 @@
   .detail-media-item.is-half { grid-column:1/-1; }
   .detail-media-item.is-inset { width:86%; }
   .detail-media { padding-inline:18px; }
-  .detail-media.is-gallery { padding-inline:18px; gap:12px; }
-  .detail-media.is-gallery .detail-media-item { height:min(58dvh,580px); }
+  .detail-media.is-gallery { padding-inline:18px; gap:12px; touch-action:pan-x pan-y; -webkit-overflow-scrolling:touch; }
+  .detail-media.is-gallery .detail-media-item { flex-basis:calc(100vw - 36px); width:calc(100vw - 36px); height:min(58dvh,580px); justify-content:center; background:transparent; }
+  .detail-media.is-gallery .detail-media-item :is(img,video) { width:auto; max-width:100%; height:auto; max-height:100%; object-fit:contain; }
   .detail-footer { padding:70px 12px 28px; font-size:12px; }
   .detail-footer em { font-size:24px; }
   .about-opening { padding:35px 18px 0; }
