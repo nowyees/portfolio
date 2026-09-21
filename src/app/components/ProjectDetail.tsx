@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef } from 'react';
 import { Link, useParams } from 'react-router';
 import SiteShell from './SiteShell';
 import { usePortfolio, imageUrl } from '../../lib/usePortfolio';
@@ -8,20 +8,9 @@ export default function ProjectDetail() {
   const { category, id } = useParams();
   const projects = usePortfolio();
   const project = projects.find(p => String(p.id) === id && p.category === category);
-  const [infoOpen, setInfoOpen] = useState(false);
-  const infoRef = useRef<HTMLDivElement>(null);
-  const introInfoRef = useRef<HTMLButtonElement>(null);
   const galleryRef = useRef<HTMLElement>(null);
-  useEffect(() => { window.scrollTo(0, 0); setInfoOpen(false); }, [id, category]);
-  useEffect(() => {
-    if (!infoOpen) return;
-    const close = (e: KeyboardEvent) => { if (e.key === 'Escape') setInfoOpen(false); };
-    const outside = (e: PointerEvent) => {
-      if (!infoRef.current?.contains(e.target as Node) && !introInfoRef.current?.contains(e.target as Node)) setInfoOpen(false);
-    };
-    window.addEventListener('keydown', close); window.addEventListener('pointerdown', outside);
-    return () => { window.removeEventListener('keydown', close); window.removeEventListener('pointerdown', outside); };
-  }, [infoOpen]);
+  const dragRef = useRef({ active: false, moved: false, startX: 0, scrollLeft: 0 });
+  useEffect(() => { window.scrollTo(0, 0); }, [id, category]);
   useLayoutEffect(() => {
     if (project?.detailLayout !== 'gallery') return;
     const gallery = galleryRef.current;
@@ -65,6 +54,7 @@ export default function ProjectDetail() {
   };
   const clickGallery = (event: React.MouseEvent<HTMLElement>) => {
     if (detailLayout !== 'gallery') return;
+    if (dragRef.current.moved) { event.preventDefault(); dragRef.current.moved = false; return; }
     const video = (event.target as HTMLElement).closest('video');
     if (video && event.clientY > video.getBoundingClientRect().bottom - 64) return;
     event.preventDefault();
@@ -75,18 +65,11 @@ export default function ProjectDetail() {
   return (
     <SiteShell active="projects">
       <main className="project-detail">
-        <div ref={infoRef} className={'project-info ' + (infoOpen ? 'is-open' : '')}>
-          <button type="button" onClick={() => setInfoOpen(value => !value)} aria-expanded={infoOpen} aria-controls="project-information">{infoOpen ? 'Close' : 'Project Info'}</button>
-          {infoOpen && <div className="project-info-content" id="project-information">
-            <h2>{project.title}</h2><p className="info-tags">{project.hashtags?.join(', ') || project.year}</p>
-            <p className="info-description">{project.desc}</p>
-            <dl><dt>Year</dt><dd>{project.year}</dd></dl>
-            {project.showExternalLink && project.externalLink && <a href={project.externalLink} target="_blank" rel="noopener noreferrer">View publication ↗</a>}
-          </div>}
-        </div>
         <header className="detail-intro">
           <h1>{project.title}</h1>
-          <button ref={introInfoRef} type="button" onClick={() => setInfoOpen(value => !value)} aria-expanded={infoOpen} aria-controls="project-information">Project Info</button>
+          <p className="detail-year">{project.year}</p>
+          <p className="detail-description">{project.desc}</p>
+          {project.showExternalLink && project.externalLink && <a className="detail-external-link" href={project.externalLink} target="_blank" rel="noopener noreferrer">View publication ↗</a>}
         </header>
         <section
           ref={galleryRef}
@@ -94,6 +77,33 @@ export default function ProjectDetail() {
           aria-label={project.title + (detailLayout === 'gallery' ? ' gallery. Click the left or right half to browse.' : ' images and films')}
           tabIndex={detailLayout === 'gallery' ? 0 : undefined}
           onClick={clickGallery}
+          onPointerDown={event => {
+            if (detailLayout !== 'gallery' || event.button !== 0) return;
+            const video = (event.target as HTMLElement).closest('video');
+            if (video && event.clientY > video.getBoundingClientRect().bottom - 64) return;
+            const gallery = event.currentTarget;
+            dragRef.current = { active: true, moved: false, startX: event.clientX, scrollLeft: gallery.scrollLeft };
+            gallery.setPointerCapture(event.pointerId);
+            gallery.classList.add('is-dragging');
+          }}
+          onPointerMove={event => {
+            if (!dragRef.current.active) return;
+            const distance = event.clientX - dragRef.current.startX;
+            if (Math.abs(distance) > 5) dragRef.current.moved = true;
+            event.currentTarget.scrollLeft = dragRef.current.scrollLeft - distance;
+            if (dragRef.current.moved) event.preventDefault();
+          }}
+          onPointerUp={event => {
+            if (!dragRef.current.active) return;
+            dragRef.current.active = false;
+            event.currentTarget.releasePointerCapture(event.pointerId);
+            event.currentTarget.classList.remove('is-dragging');
+          }}
+          onPointerCancel={event => {
+            dragRef.current.active = false;
+            dragRef.current.moved = false;
+            event.currentTarget.classList.remove('is-dragging');
+          }}
           onKeyDown={event => {
             if (detailLayout === 'gallery' && (event.key === 'ArrowLeft' || event.key === 'ArrowRight')) {
               event.preventDefault(); moveGallery(event.key === 'ArrowLeft' ? -1 : 1);
@@ -103,7 +113,7 @@ export default function ProjectDetail() {
           {media.map((item, i) => <div className={'detail-media-item is-' + (item.layout || 'full')} key={item.url + i}>
             {item.type === 'video' || isVideoUrl(item.url)
               ? <video src={item.url} poster={item.thumbnailUrl} controls muted playsInline preload="metadata" aria-label={project.title + ' film ' + (i + 1)} />
-              : <img src={imageUrl(item.url, 2000)} alt={project.title + ' — ' + (i + 1)} loading={i === 0 ? 'eager' : 'lazy'} />}
+              : <img src={imageUrl(item.url, 2000)} alt={project.title + ' — ' + (i + 1)} loading={i === 0 ? 'eager' : 'lazy'} draggable={detailLayout !== 'gallery'} />}
           </div>)}
         </section>
         <footer className="detail-footer">
