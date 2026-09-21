@@ -62,14 +62,25 @@ export default function ProjectDetail() {
     moveGallery(event.clientX < rect.left + rect.width * .5 ? -1 : 1);
   };
   const next = projects[(projects.indexOf(project) + 1) % projects.length];
+  const leadMediaCount = detailLayout === 'gallery'
+    ? media.length
+    : media[0]?.layout === 'half' && media[1]?.layout === 'half' ? 2 : 1;
+  const leadMedia = media.slice(0, leadMediaCount);
+  const remainingMedia = media.slice(leadMediaCount);
+  const renderMedia = (items: typeof media, startIndex = 0) => items.map((item, index) => {
+    const mediaIndex = startIndex + index;
+    return <div className={'detail-media-item is-' + (item.layout || 'full')} key={item.url + mediaIndex}>
+      {item.type === 'video' || isVideoUrl(item.url)
+        ? <video src={item.url} poster={item.thumbnailUrl} controls muted playsInline preload="metadata" aria-label={project.title + ' film ' + (mediaIndex + 1)} />
+        : <img src={imageUrl(item.url, 2000)} alt={project.title + ' — ' + (mediaIndex + 1)} loading={mediaIndex === 0 ? 'eager' : 'lazy'} draggable={detailLayout !== 'gallery'} />}
+    </div>;
+  });
   return (
     <SiteShell active="projects">
       <main className="project-detail">
         <header className="detail-intro">
           <h1>{project.title}</h1>
           <p className="detail-year">{project.year}</p>
-          <p className="detail-description">{project.desc}</p>
-          {project.showExternalLink && project.externalLink && <a className="detail-external-link" href={project.externalLink} target="_blank" rel="noopener noreferrer">View publication ↗</a>}
         </header>
         <section
           ref={galleryRef}
@@ -110,12 +121,15 @@ export default function ProjectDetail() {
             }
           }}
         >
-          {media.map((item, i) => <div className={'detail-media-item is-' + (item.layout || 'full')} key={item.url + i}>
-            {item.type === 'video' || isVideoUrl(item.url)
-              ? <video src={item.url} poster={item.thumbnailUrl} controls muted playsInline preload="metadata" aria-label={project.title + ' film ' + (i + 1)} />
-              : <img src={imageUrl(item.url, 2000)} alt={project.title + ' — ' + (i + 1)} loading={i === 0 ? 'eager' : 'lazy'} draggable={detailLayout !== 'gallery'} />}
-          </div>)}
+          {renderMedia(leadMedia)}
         </section>
+        <section className="detail-summary" aria-label="Project description">
+          <p className="detail-description">{project.desc}</p>
+          {project.showExternalLink && project.externalLink && <a className="detail-external-link" href={project.externalLink} target="_blank" rel="noopener noreferrer">View publication ↗</a>}
+        </section>
+        {remainingMedia.length > 0 && <section className={'detail-media detail-media-continuation is-' + detailLayout} aria-label={project.title + ' additional images and films'}>
+          {renderMedia(remainingMedia, leadMediaCount)}
+        </section>}
         <footer className="detail-footer">
           <Link to="/projects">All projects</Link>
           {next && <Link to={'/project/' + next.category + '/' + next.id}>Next Project<br /><em>{next.title} ↗</em></Link>}
