@@ -54,9 +54,11 @@
 .project-tile p { margin-top:4px; font:400 14px/1.3 var(--serif); letter-spacing:0; }
 .gallery-footer { display:flex; align-items:center; justify-content:space-between; padding:95px 8px 24px; font:13px/1.2 var(--sans); }
 
-.detail-intro { min-height:19dvh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; padding:11vh 24px 26px; text-align:center; }
+.detail-intro { min-height:30dvh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; padding:13vh 24px 28px; text-align:center; }
+.detail-intro.is-gallery { min-height:19dvh; padding:11vh 24px 26px; }
 .detail-intro h1 { font:700 17px/1.15 var(--sans); }
 .detail-intro .detail-year { font:400 12px/1.2 var(--sans); }
+.detail-intro .detail-description { margin-top:30px; }
 .detail-summary { display:flex; flex-direction:column; align-items:center; padding:38px 24px 50px; text-align:center; }
 .detail-description { width:min(900px,80vw); font:400 15px/1.32 var(--serif); white-space:pre-line; word-break:keep-all; }
 .detail-external-link { margin-top:16px; font:400 13px/1.2 var(--sans); text-decoration:underline!important; text-underline-offset:4px; }
@@ -74,7 +76,6 @@
 .detail-media.is-gallery .detail-media-item :is(img,video) { width:auto; max-width:none; height:100%; object-fit:contain; }
 .detail-media.is-gallery .detail-media-item.is-inset { width:auto; justify-self:auto; }
 .detail-media.is-gallery:focus-visible { outline:1px solid #111; outline-offset:-1px; }
-.detail-media-continuation { padding-top:0; }
 .detail-footer { display:flex; justify-content:space-between; align-items:flex-end; padding:100px 8px 32px; text-align:right; }
 .detail-footer > a:first-child { text-align:left; }
 .detail-footer em { display:block; padding-top:8px; font:400 32px/1.1 var(--serif); }
@@ -117,11 +118,13 @@
   .project-grid { grid-template-columns:1fr; gap:36px; }
   .project-tile h2 { font-size:14px; }
   .project-tile p { font-size:15px; }
-  .detail-intro { min-height:20dvh; padding:78px 18px 24px; }
+  .detail-intro { min-height:29dvh; padding:88px 18px 26px; }
+  .detail-intro.is-gallery { min-height:20dvh; padding:78px 18px 24px; }
   .detail-intro h1 { font-size:16px; }
   .detail-intro .detail-year { font-size:11px; }
   .detail-summary { padding:30px 18px 42px; }
   .detail-description { width:min(92vw,680px); font-size:14px; line-height:1.32; }
+  .detail-intro .detail-description { margin-top:26px; }
   .detail-media-item.is-half { grid-column:1/-1; }
   .detail-media-item.is-inset { width:86%; }
   .detail-media { padding-inline:18px; }
