@@ -14,15 +14,16 @@ export default function Projects() {
             <article className="project-tile" key={project.category + '-' + project.id}>
               <Link className="project-tile-image" to={'/project/' + project.category + '/' + project.id} aria-label={'View ' + project.title}>
                 <img src={imageUrl(project.image, 1000)} alt={project.title} loading="lazy" />
-                <span className="project-view">View ↗</span>
+                <span className="project-view">View ↗︎</span>
               </Link>
               <h2><Link to={'/project/' + project.category + '/' + project.id}>{project.title}</Link></h2>
               <p>{project.hashtags?.join(', ') || project.year}</p>
             </article>
           ))}
         </section>
-        <footer className="gallery-footer"><Link to="/about">Lee Jae Woong</Link><Link to="/about#contact">Contact ↗</Link></footer>
+        <footer className="gallery-footer"><Link to="/about">Lee Jae Woong</Link><Link to="/about#contact">Contact ↗︎</Link></footer>
       </main>
     </SiteShell>
   );
 }
+

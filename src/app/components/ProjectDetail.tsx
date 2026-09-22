@@ -35,7 +35,7 @@ export default function ProjectDetail() {
       firstMedia?.removeEventListener(firstMedia instanceof HTMLVideoElement ? 'loadedmetadata' : 'load', centerFirst);
     };
   }, [project?.id, project?.detailLayout, project?.media?.length]);
-  if (!project) return <SiteShell active="projects"><main className="missing-project"><h1>Project not found.</h1><Link to="/projects">All projects ↗</Link></main></SiteShell>;
+  if (!project) return <SiteShell active="projects"><main className="missing-project"><h1>Project not found.</h1><Link to="/projects">All projects ↗︎</Link></main></SiteShell>;
   const media = project.media?.length ? project.media : [{ url: project.image, type: 'image' as const, layout: 'full' as const }];
   const detailLayout = project.detailLayout || 'padded';
   const moveGallery = (direction: -1 | 1) => {
@@ -78,7 +78,7 @@ export default function ProjectDetail() {
           <p className="detail-year">{project.year}</p>
           {detailLayout !== 'gallery' && <>
             <p className="detail-description">{project.desc}</p>
-            {project.showExternalLink && project.externalLink && <a className="detail-external-link" href={project.externalLink} target="_blank" rel="noopener noreferrer">View publication ↗</a>}
+            {project.showExternalLink && project.externalLink && <a className="detail-external-link" href={project.externalLink} target="_blank" rel="noopener noreferrer">View publication ↗︎</a>}
           </>}
         </header>
         <section
@@ -124,11 +124,11 @@ export default function ProjectDetail() {
         </section>
         {detailLayout === 'gallery' && <section className="detail-summary" aria-label="Project description">
           <p className="detail-description">{project.desc}</p>
-          {project.showExternalLink && project.externalLink && <a className="detail-external-link" href={project.externalLink} target="_blank" rel="noopener noreferrer">View publication ↗</a>}
+          {project.showExternalLink && project.externalLink && <a className="detail-external-link" href={project.externalLink} target="_blank" rel="noopener noreferrer">View publication ↗︎</a>}
         </section>}
         <footer className="detail-footer">
           <Link to="/projects">All projects</Link>
-          {next && <Link to={'/project/' + next.category + '/' + next.id}>Next Project<br /><em>{next.title} ↗</em></Link>}
+          {next && <Link to={'/project/' + next.category + '/' + next.id}>Next Project<br /><em>{next.title} ↗︎</em></Link>}
         </footer>
       </main>
     </SiteShell>
