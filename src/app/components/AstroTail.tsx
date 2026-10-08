@@ -91,7 +91,7 @@ export default function AstroTail({ className }: { className?: string }) {
     //   a smooth curve that cannot kink at a joint or twist along its length.
     let segments: Array<{ group: THREE.Group; length: number }> = [];
     let P: THREE.Vector3[] = [], F: THREE.Quaternion[] = [], trialP: THREE.Vector3[] = [];
-    let restFrames: THREE.Quaternion[] = [], nearBand: number[] = [], farBand: number[] = [], tipBand: number[] = [], nearCover: number[] = [], farCover: number[] = [];
+    let restFrames: THREE.Quaternion[] = [], nearBand: number[] = [], farBand: number[] = [], tipBand: number[] = [], rootBand: number[] = [], nearCover: number[] = [], farCover: number[] = [];
     let restAxis: THREE.Vector3[] = [], restAngle: number[] = [];
     let restPenalty: number[] = [], restHidden: number[] = [];
     const view = new THREE.Matrix4();
@@ -101,14 +101,17 @@ export default function AstroTail({ className }: { className?: string }) {
     let capsules: Array<{ a: THREE.Vector3; b: THREE.Vector3; r: number }> = [];
     // [near swing (view axis), near swing (screen up), far swing (view axis), far swing (screen up), curl,
     //  near curl-plane roll, far curl-plane roll,
-    //  tip swing (view axis), tip swing (screen up)]
-    const NP = 9, HOME = [0, 0, 0, 0, 1, 0, 0, 0, 0];
-    const LO = [-2.4, -1.4, -2.4, -1.4, .15, -Math.PI, -Math.PI, -2, -1.2], HI = [2.4, 1.4, 2.4, 1.4, 1.25, Math.PI, Math.PI, 2, 1.2];
-    const PULL = [.02, .03, .02, .03, .08, .01, .01, .03, .04];
-    const MAX_RATE = [2.4, 1.6, 2.4, 1.6, 1, 2.5, 2.5, 2.8, 2]; // radians (or curl) per second
+    //  tip swing (view axis), tip swing (screen up), socket swing (view axis), socket swing (screen up)]
+    const NP = 11, HOME = [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0];
+    const LO = [-2.4, -1.4, -2.4, -1.4, .15, -Math.PI, -Math.PI, -2, -1.2, -1.05, -.8];
+    const HI = [2.4, 1.4, 2.4, 1.4, 1.25, Math.PI, Math.PI, 2, 1.2, 1.05, .8];
+    const PULL = [.02, .03, .02, .03, .08, .01, .01, .03, .04, .03, .06];
+    const MAX_RATE = [2.4, 1.6, 2.4, 1.6, 1, 2.5, 2.5, 2.8, 2, 1.8, 1.4]; // radians (or curl) per second
+    const LEAD = .4, LEAD_GAIN = 1.6; // how strongly, and how far, the socket link turns toward the target
     const params = HOME.slice(), smooth = HOME.slice(), trial = HOME.slice();
 
-    const restDir = new THREE.Vector3();
+    const restDir = new THREE.Vector3(), restRootDir = new THREE.Vector3(), restTipDir = new THREE.Vector3();
+    const lead = new THREE.Vector3(), leadWant = new THREE.Vector3();
     const camRight = new THREE.Vector3(), camUp = new THREE.Vector3(), camFwd = new THREE.Vector3();
     const aim = new THREE.Vector3(), goal = new THREE.Vector3(), ease1 = new THREE.Vector3(), ease2 = new THREE.Vector3();
     const pointer = { x: 0, y: 0, inside: false };
@@ -120,8 +123,8 @@ export default function AstroTail({ className }: { className?: string }) {
     const shapeOf = (p: number[], out: THREE.Vector3[], frames?: THREE.Quaternion[]) => {
       qf.copy(restFrames[0]);
       for (let i = 0; i < segments.length; i++) {
-        qa.setFromAxisAngle(camFwd, p[0] * nearBand[i] + p[2] * farBand[i] + p[7] * tipBand[i]);
-        qb.setFromAxisAngle(camUp, p[1] * nearBand[i] + p[3] * farBand[i] + p[8] * tipBand[i]);
+        qa.setFromAxisAngle(camFwd, p[0] * nearBand[i] + p[2] * farBand[i] + p[7] * tipBand[i] + p[9] * rootBand[i]);
+        qb.setFromAxisAngle(camUp, p[1] * nearBand[i] + p[3] * farBand[i] + p[8] * tipBand[i] + p[10] * rootBand[i]);
         axisR.copy(restAxis[i]).applyAxisAngle(restDir, p[5] * nearCover[i] + p[6] * farCover[i]);
         ql.setFromAxisAngle(axisR, restAngle[i] * p[4]);
         // Only the segment's direction is computed from curl and bend; the frame is then carried onto it
@@ -186,6 +189,11 @@ export default function AstroTail({ className }: { className?: string }) {
         out[k++] = 12 * soft(intrusion(trialP[i]) - restPenalty[i]);
         out[k++] = 70 * soft(hidden(trialP[i]) - restHidden[i]);
       }
+      // The socket link turns further than the target has turned away from the resting tip, so a cursor
+      // below makes the tail bend down right where it leaves the body.
+      leadWant.subVectors(target, trialP[0]).normalize().sub(restTipDir).multiplyScalar(LEAD_GAIN).add(restRootDir).normalize();
+      lead.subVectors(trialP[1], trialP[0]).normalize().sub(leadWant);
+      out[k++] = LEAD * lead.x * reach; out[k++] = LEAD * lead.y * reach; out[k++] = LEAD * lead.z * reach;
       for (let j = 0; j < NP; j++) out[k++] = PULL[j] * (p[j] - HOME[j]) * reach;
       return out;
     };
@@ -198,6 +206,13 @@ export default function AstroTail({ className }: { className?: string }) {
     // Levenberg-Marquardt, warm-started from the last solution. A step is kept only if it lowers the cost,
     // so for a still target the tail settles into one pose instead of hopping between two.
     const solve = (target: THREE.Vector3) => {
+      // Escape poor local minima: if the home pose, or halfway home, already fits better, start from there.
+      let best = cost(residuals(params, target, r0));
+      for (const blend of [0, .5]) {
+        for (let j = 0; j < NP; j++) candidate[j] = HOME[j] + (params[j] - HOME[j]) * blend;
+        const c = cost(residuals(candidate, target, r1));
+        if (c < best) { best = c; for (let j = 0; j < NP; j++) params[j] = candidate[j]; damping = .05; }
+      }
       for (let iter = 0; iter < 10; iter++) {
         const c0 = cost(residuals(params, target, r0));
         for (let c = 0; c < NP; c++) {
@@ -233,8 +248,12 @@ export default function AstroTail({ className }: { className?: string }) {
           for (let j = 0; j < NP; j++) candidate[j] = THREE.MathUtils.clamp(params[j] + delta[j], LO[j], HI[j]);
           const c1 = cost(residuals(candidate, target, r1));
           if (c1 < c0) {
-            // Converged: a vanishing gain would only nudge the pose back and forth, so the tail holds still.
-            if (c0 - c1 < c0 * 1e-5 + 1e-10) return;
+            if (c0 - c1 < c0 * 1e-5 + 1e-10) {
+              // A vanishing gain with heavy damping only means the steps got too timid: loosen and retry.
+              if (damping > .05) { damping = .05; continue; }
+              // Converged: further steps would only nudge the pose back and forth, so the tail holds still.
+              return;
+            }
             for (let j = 0; j < NP; j++) params[j] = candidate[j];
             damping = Math.max(1e-3, damping * .4);
             break;
@@ -295,6 +314,8 @@ export default function AstroTail({ className }: { className?: string }) {
         return w.map(x => x * 2 / total);
       };
       nearBand = band(.08, .22); farBand = band(.5, .22); tipBand = band(.88, .16);
+      rootBand = segments.map((_, i) => [.8, .55, .35, .2, .1][i] ?? 0); // the socket joint, easing over the next links
+      restRootDir.subVectors(P[1], P[0]).normalize(); restTipDir.subVectors(restTip, P[0]).normalize();
       nearBand[0] *= 3; // the socket joint swings more freely than any single vertebra
       const peak = (w: number[]) => { const m = Math.max(...w); return w.map(x => x / m); };
       nearCover = peak(nearBand); farCover = peak(farBand);
@@ -307,7 +328,7 @@ export default function AstroTail({ className }: { className?: string }) {
         { a: b('Spine2'), b: b('LeftHand'), r: .07 }, { a: b('Spine2'), b: b('RightHand'), r: .07 },
       ];
       restPenalty = P.map(p => Math.max(0, intrusion(p)));
-      r0 = new Array(3 + 2 * (P.length - 1) + NP).fill(0); r1 = r0.slice();
+      r0 = new Array(3 + 2 * (P.length - 1) + 3 + NP).fill(0); r1 = r0.slice();
       cols = Array.from({ length: NP }, () => r0.slice());
       goal.copy(restTip); aim.copy(restTip); ease1.copy(restTip); ease2.copy(restTip);
 
