@@ -119,18 +119,16 @@ export default function AstroTail({ className }: { className?: string }) {
     const shapeOf = (p: number[], out: THREE.Vector3[], frames?: THREE.Quaternion[]) => {
       qf.copy(restFrames[0]);
       for (let i = 0; i < segments.length; i++) {
-        if (i > 0) {
-          qa.setFromAxisAngle(camFwd, p[0] * nearBand[i] + p[2] * farBand[i]);
-          qb.setFromAxisAngle(camUp, p[1] * nearBand[i] + p[3] * farBand[i]);
-          axisR.copy(restAxis[i]).applyAxisAngle(restDir, p[5] * nearCover[i] + p[6] * farCover[i]);
-          ql.setFromAxisAngle(axisR, restAngle[i] * p[4]);
-          // Only the segment's direction is computed from curl and bend; the frame is then carried onto it
-          // by the minimal rotation from the previous segment (parallel transport), so no roll ever builds
-          // up and the vertebrae stay aligned instead of twisting along the tail.
-          from.copy(restDir).applyQuaternion(qf);
-          to.copy(restDir).applyQuaternion(ql.premultiply(qf)).applyQuaternion(qa.multiply(qb));
-          qf.premultiply(qb.setFromUnitVectors(from, to));
-        }
+        qa.setFromAxisAngle(camFwd, p[0] * nearBand[i] + p[2] * farBand[i]);
+        qb.setFromAxisAngle(camUp, p[1] * nearBand[i] + p[3] * farBand[i]);
+        axisR.copy(restAxis[i]).applyAxisAngle(restDir, p[5] * nearCover[i] + p[6] * farCover[i]);
+        ql.setFromAxisAngle(axisR, restAngle[i] * p[4]);
+        // Only the segment's direction is computed from curl and bend; the frame is then carried onto it
+        // by the minimal rotation from the previous segment (parallel transport), so no roll ever builds
+        // up and the vertebrae stay aligned instead of twisting along the tail.
+        from.copy(restDir).applyQuaternion(qf);
+        to.copy(restDir).applyQuaternion(ql.premultiply(qf)).applyQuaternion(qa.multiply(qb));
+        qf.premultiply(qb.setFromUnitVectors(from, to));
         if (frames) frames[i].copy(qf);
         step.copy(restDir).applyQuaternion(qf);
         out[i + 1].copy(out[i]).addScaledVector(step, segments[i].length);
@@ -250,7 +248,8 @@ export default function AstroTail({ className }: { className?: string }) {
 
       const controllers = new Set(data.ik.map(c => c.target).filter(Boolean));
       const order: string[] = [];
-      let name: string | undefined = 'Bone.002';
+      // The chain starts at the link leaving the backpack socket; it pivots there.
+      let name: string | undefined = 'Bone.001';
       while (name) {
         order.push(name);
         const parent: string = name;
@@ -267,7 +266,7 @@ export default function AstroTail({ className }: { className?: string }) {
       });
       reach = segments.reduce((sum, s) => sum + s.length, 0);
       restTip.copy(P[P.length - 1]);
-      restDir.subVectors(v(data.rest['Bone.002'].tail), v(data.rest['Bone.002'].head)).normalize();
+      restDir.subVectors(v(data.rest['Bone.001'].tail), v(data.rest['Bone.001'].head)).normalize();
       // Rest frames by parallel transport along the frame-135 curve, starting from the mount's orientation.
       const q = new THREE.Quaternion().fromArray(data.baseDelta), prev = restDir.clone().applyQuaternion(q), dir = new THREE.Vector3();
       restFrames = segments.map((_, i) => {
@@ -284,14 +283,15 @@ export default function AstroTail({ className }: { className?: string }) {
         restAngle.push(angle);
       });
       F = restFrames.map(f => f.clone());
-      // Extra bend lives in two smooth, overlapping bands (near half, far half); nothing bends at the mount.
+      // Extra bend lives in two smooth, overlapping bands (near half, far half), starting at the socket.
       const n = segments.length;
       const band = (centre: number, width: number) => {
-        const w = segments.map((_, i) => i < 2 ? 0 : Math.exp(-Math.pow((i / (n - 1) - centre) / width, 2)));
+        const w = segments.map((_, i) => Math.exp(-Math.pow((i / (n - 1) - centre) / width, 2)));
         const total = w.reduce((a, b) => a + b, 0);
         return w.map(x => x * 2 / total);
       };
-      nearBand = band(.3, .22); farBand = band(.72, .22);
+      nearBand = band(.08, .22); farBand = band(.6, .3);
+      nearBand[0] *= 3; // the socket joint swings more freely than any single vertebra
       const peak = (w: number[]) => { const m = Math.max(...w); return w.map(x => x / m); };
       nearCover = peak(nearBand); farCover = peak(farBand);
 
