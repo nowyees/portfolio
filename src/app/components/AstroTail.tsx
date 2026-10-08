@@ -86,19 +86,25 @@ export default function AstroTail({ className }: { className?: string }) {
 
     // Tail state. The tail is described by five numbers instead of free joint positions:
     //   swing about the view axis and about the screen's vertical, each for the near and the far half
-    //   (two overlapping smooth bands), plus curl (x rest curvature).
-    // Each segment's frame = extra bend * previous frame * (rest relative bend)^curl, so the chain is always a
-    // smooth curve; it cannot kink at one joint, whatever the target.
+    //   (two overlapping smooth bands), curl (x rest curvature), and the plane the rest curl bends in
+    //   (rolled per band). Directions come from these; frames follow by parallel transport, so the chain is
+    //   a smooth curve that cannot kink at a joint or twist along its length.
     let segments: Array<{ group: THREE.Group; length: number }> = [];
     let P: THREE.Vector3[] = [], F: THREE.Quaternion[] = [], trialP: THREE.Vector3[] = [];
-    let restFrames: THREE.Quaternion[] = [], localRest: THREE.Quaternion[] = [], nearBand: number[] = [], farBand: number[] = [];
-    let restPenalty: number[] = [];
+    let restFrames: THREE.Quaternion[] = [], nearBand: number[] = [], farBand: number[] = [], nearCover: number[] = [], farCover: number[] = [];
+    let restAxis: THREE.Vector3[] = [], restAngle: number[] = [];
+    let restPenalty: number[] = [], restHidden: number[] = [];
+    const view = new THREE.Matrix4();
+    let viewCapsules: Array<{ a: THREE.Vector3; b: THREE.Vector3; r: number }> = [];
     let reach = 1;
     const restTip = new THREE.Vector3();
     let capsules: Array<{ a: THREE.Vector3; b: THREE.Vector3; r: number }> = [];
-    // [near swing (view axis), near swing (screen up), far swing (view axis), far swing (screen up), curl]
-    const NP = 5, HOME = [0, 0, 0, 0, 1];
-    const LO = [-2.4, -1.2, -2.4, -1.2, .15], HI = [2.4, 1.2, 2.4, 1.2, 1.25], PULL = [.02, .03, .02, .03, .08];
+    // [near swing (view axis), near swing (screen up), far swing (view axis), far swing (screen up), curl,
+    //  near curl-plane roll, far curl-plane roll]
+    const NP = 7, HOME = [0, 0, 0, 0, 1, 0, 0];
+    const LO = [-1.5, -.9, -1.5, -.9, .15, -Math.PI, -Math.PI], HI = [1.5, .9, 1.5, .9, 1.25, Math.PI, Math.PI];
+    const PULL = [.02, .03, .02, .03, .08, .01, .01];
+    const MAX_RATE = [2.2, 1.4, 2.2, 1.4, 1, 2.5, 2.5]; // radians (or curl) per second
     const params = HOME.slice(), smooth = HOME.slice(), trial = HOME.slice();
 
     const restDir = new THREE.Vector3();
@@ -107,8 +113,8 @@ export default function AstroTail({ className }: { className?: string }) {
     const pointer = { x: 0, y: 0, last: -1e9, inside: false };
     let pointerWeight = 0;
 
-    const qa = new THREE.Quaternion(), qb = new THREE.Quaternion(), ql = new THREE.Quaternion(), qf = new THREE.Quaternion(), ID = new THREE.Quaternion();
-    const step = new THREE.Vector3();
+    const qa = new THREE.Quaternion(), qb = new THREE.Quaternion(), ql = new THREE.Quaternion(), qf = new THREE.Quaternion();
+    const step = new THREE.Vector3(), from = new THREE.Vector3(), to = new THREE.Vector3(), axisR = new THREE.Vector3();
     // Forward kinematics for a parameter set; frames are written only when `frames` is given.
     const shapeOf = (p: number[], out: THREE.Vector3[], frames?: THREE.Quaternion[]) => {
       qf.copy(restFrames[0]);
@@ -116,8 +122,14 @@ export default function AstroTail({ className }: { className?: string }) {
         if (i > 0) {
           qa.setFromAxisAngle(camFwd, p[0] * nearBand[i] + p[2] * farBand[i]);
           qb.setFromAxisAngle(camUp, p[1] * nearBand[i] + p[3] * farBand[i]);
-          ql.slerpQuaternions(ID, localRest[i], p[4]);
-          qf.premultiply(qb).premultiply(qa).multiply(ql);
+          axisR.copy(restAxis[i]).applyAxisAngle(restDir, p[5] * nearCover[i] + p[6] * farCover[i]);
+          ql.setFromAxisAngle(axisR, restAngle[i] * p[4]);
+          // Only the segment's direction is computed from curl and bend; the frame is then carried onto it
+          // by the minimal rotation from the previous segment (parallel transport), so no roll ever builds
+          // up and the vertebrae stay aligned instead of twisting along the tail.
+          from.copy(restDir).applyQuaternion(qf);
+          to.copy(restDir).applyQuaternion(ql.premultiply(qf)).applyQuaternion(qa.multiply(qb));
+          qf.premultiply(qb.setFromUnitVectors(from, to));
         }
         if (frames) frames[i].copy(qf);
         step.copy(restDir).applyQuaternion(qf);
@@ -134,55 +146,99 @@ export default function AstroTail({ className }: { className?: string }) {
       }
       return worst;
     };
-    // Residuals: tip-to-target, body intrusion beyond what the rest pose already has, and a gentle pull home.
+    // How far a point sits behind the body as seen from the camera (world units, 0 when visible).
+    const vp = new THREE.Vector3(), sa = new THREE.Vector2(), sb = new THREE.Vector2(), sp = new THREE.Vector2(), sd = new THREE.Vector2();
+    const hidden = (p: THREE.Vector3) => {
+      vp.copy(p).applyMatrix4(view);
+      const depth = -vp.z; sp.set(vp.x / depth, vp.y / depth);
+      let worst = 0;
+      for (const c of viewCapsules) {
+        sa.set(c.a.x / -c.a.z, c.a.y / -c.a.z); sb.set(c.b.x / -c.b.z, c.b.y / -c.b.z);
+        sd.subVectors(sb, sa);
+        const t = THREE.MathUtils.clamp(sd.dot(sa.clone().subVectors(sp, sa)) / Math.max(sd.lengthSq(), 1e-9), 0, 1);
+        const bodyDepth = -(c.a.z + (c.b.z - c.a.z) * t);
+        const gap = c.r * 1.2 / bodyDepth - sp.distanceTo(sa.addScaledVector(sd, t));
+        if (gap > 0 && depth > bodyDepth - c.r * .6) worst = Math.max(worst, gap * bodyDepth);
+      }
+      return worst;
+    };
+    // Penalties are exactly zero until contact, then rise with a continuous slope (quadratic, then linear),
+    // so the solver never chatters at the edge of the body.
+    const SOFT = .02;
+    const soft = (x: number) => x <= 0 ? 0 : x < SOFT ? x * x / (2 * SOFT) : x - SOFT / 2;
+    // Whether a point falls inside the body's outline on screen (depth ignored), with a small margin.
+    const covered = (p: THREE.Vector3) => {
+      vp.copy(p).applyMatrix4(view);
+      const depth = -vp.z; sp.set(vp.x / depth, vp.y / depth);
+      return viewCapsules.some(c => {
+        sa.set(c.a.x / -c.a.z, c.a.y / -c.a.z); sb.set(c.b.x / -c.b.z, c.b.y / -c.b.z); sd.subVectors(sb, sa);
+        const t = THREE.MathUtils.clamp(sd.dot(sa.clone().subVectors(sp, sa)) / Math.max(sd.lengthSq(), 1e-9), 0, 1);
+        const bodyDepth = -(c.a.z + (c.b.z - c.a.z) * t);
+        return sp.distanceTo(sa.addScaledVector(sd, t)) < c.r * 1.6 / bodyDepth;
+      });
+    };
+    // Residuals: tip-to-target, body intrusion and occlusion beyond the rest pose's, and a gentle pull home.
     const residuals = (p: number[], target: THREE.Vector3, out: number[]) => {
       shapeOf(p, trialP);
       const tip = trialP[trialP.length - 1];
       out[0] = tip.x - target.x; out[1] = tip.y - target.y; out[2] = tip.z - target.z;
       let k = 3;
-      for (let i = 1; i < trialP.length; i++) out[k++] = 6 * Math.max(0, intrusion(trialP[i]) - restPenalty[i]);
+      for (let i = 1; i < trialP.length; i++) {
+        out[k++] = 12 * soft(intrusion(trialP[i]) - restPenalty[i]);
+        out[k++] = 70 * soft(hidden(trialP[i]) - restHidden[i]);
+      }
       for (let j = 0; j < NP; j++) out[k++] = PULL[j] * (p[j] - HOME[j]) * reach;
       return out;
     };
     let r0: number[] = [], r1: number[] = [];
     let cols: number[][] = [];
     const A: number[][] = Array.from({ length: NP }, () => new Array(NP + 1).fill(0));
-    // A few damped Gauss-Newton steps per frame, warm-started from the last solution.
+    const candidate = HOME.slice(), delta = HOME.slice();
+    let damping = .1;
+    const cost = (r: number[]) => r.reduce((sum, x) => sum + x * x, 0);
+    // Levenberg-Marquardt, warm-started from the last solution. A step is kept only if it lowers the cost,
+    // so for a still target the tail settles into one pose instead of hopping between two.
     const solve = (target: THREE.Vector3) => {
-      for (let iter = 0; iter < 6; iter++) {
-        residuals(params, target, r0);
+      for (let iter = 0; iter < 10; iter++) {
+        const c0 = cost(residuals(params, target, r0));
         for (let c = 0; c < NP; c++) {
           for (let j = 0; j < NP; j++) trial[j] = params[j];
           trial[c] += 1e-3;
           residuals(trial, target, r1);
           for (let i = 0; i < r0.length; i++) cols[c][i] = (r1[i] - r0[i]) / 1e-3;
         }
-        // Normal equations (JtJ + damping) x = -Jt r, solved by Gaussian elimination.
-        for (let a = 0; a < NP; a++) {
-          let g = 0;
-          for (let i = 0; i < r0.length; i++) g += cols[a][i] * r0[i];
-          A[a][NP] = -g;
-          for (let b = 0; b < NP; b++) {
-            let sum = 0;
-            for (let i = 0; i < r0.length; i++) sum += cols[a][i] * cols[b][i];
-            A[a][b] = sum;
+        for (let attempt = 0; attempt < 4; attempt++) {
+          // Normal equations (JtJ + damping * diag) x = -Jt r, solved by Gaussian elimination.
+          for (let a = 0; a < NP; a++) {
+            let g = 0;
+            for (let i = 0; i < r0.length; i++) g += cols[a][i] * r0[i];
+            A[a][NP] = -g;
+            for (let b = 0; b < NP; b++) {
+              let sum = 0;
+              for (let i = 0; i < r0.length; i++) sum += cols[a][i] * cols[b][i];
+              A[a][b] = sum;
+            }
+            A[a][a] = A[a][a] * (1 + damping) + 1e-6;
           }
-          A[a][a] += 1e-4 + A[a][a] * .05;
-        }
-        for (let c = 0; c < NP; c++) {
-          for (let r = c + 1; r < NP; r++) {
-            const f = A[r][c] / A[c][c];
-            for (let k = c; k <= NP; k++) A[r][k] -= f * A[c][k];
+          for (let c = 0; c < NP; c++) {
+            for (let r = c + 1; r < NP; r++) {
+              const f = A[r][c] / A[c][c];
+              for (let k = c; k <= NP; k++) A[r][k] -= f * A[c][k];
+            }
           }
+          for (let r = NP - 1; r >= 0; r--) {
+            let x = A[r][NP];
+            for (let k = r + 1; k < NP; k++) x -= A[r][k] * delta[k];
+            delta[r] = x / A[r][r];
+          }
+          for (let j = 0; j < NP; j++) candidate[j] = THREE.MathUtils.clamp(params[j] + delta[j], LO[j], HI[j]);
+          if (cost(residuals(candidate, target, r1)) < c0) {
+            for (let j = 0; j < NP; j++) params[j] = candidate[j];
+            damping = Math.max(1e-3, damping * .4);
+            break;
+          }
+          damping = Math.min(1e4, damping * 5);
         }
-        let norm = 0;
-        for (let r = NP - 1; r >= 0; r--) {
-          let x = A[r][NP];
-          for (let k = r + 1; k < NP; k++) x -= A[r][k] * trial[k];
-          trial[r] = x / A[r][r]; norm += trial[r] * trial[r];
-        }
-        const scale = Math.min(1, .3 / Math.sqrt(norm || 1));
-        for (let j = 0; j < NP; j++) params[j] = THREE.MathUtils.clamp(params[j] + trial[j] * scale, LO[j], HI[j]);
       }
     };
 
@@ -219,7 +275,14 @@ export default function AstroTail({ className }: { className?: string }) {
         q.premultiply(new THREE.Quaternion().setFromUnitVectors(prev, dir)); prev.copy(dir);
         return q.clone();
       });
-      localRest = restFrames.map((f, i) => i === 0 ? new THREE.Quaternion() : restFrames[i - 1].clone().invert().multiply(f));
+      // Each rest bend as axis + angle in the segment's own frame (axis is perpendicular to the segment).
+      restAxis = []; restAngle = [];
+      restFrames.forEach((f, i) => {
+        const local = i === 0 ? new THREE.Quaternion() : restFrames[i - 1].clone().invert().multiply(f);
+        const angle = 2 * Math.acos(THREE.MathUtils.clamp(local.w, -1, 1)), s = Math.sqrt(Math.max(1e-12, 1 - local.w * local.w));
+        restAxis.push(angle > 1e-6 ? new THREE.Vector3(local.x / s, local.y / s, local.z / s) : new THREE.Vector3(1, 0, 0));
+        restAngle.push(angle);
+      });
       F = restFrames.map(f => f.clone());
       // Extra bend lives in two smooth, overlapping bands (near half, far half); nothing bends at the mount.
       const n = segments.length;
@@ -229,6 +292,8 @@ export default function AstroTail({ className }: { className?: string }) {
         return w.map(x => x * 2 / total);
       };
       nearBand = band(.3, .22); farBand = band(.72, .22);
+      const peak = (w: number[]) => { const m = Math.max(...w); return w.map(x => x / m); };
+      nearCover = peak(nearBand); farCover = peak(farBand);
 
       // Body as capsules (torso, head, legs, arms); the tail is kept out of them.
       const b = (k: string) => v(data.body[k]);
@@ -238,7 +303,7 @@ export default function AstroTail({ className }: { className?: string }) {
         { a: b('Spine2'), b: b('LeftHand'), r: .07 }, { a: b('Spine2'), b: b('RightHand'), r: .07 },
       ];
       restPenalty = P.map(p => Math.max(0, intrusion(p)));
-      r0 = new Array(3 + P.length - 1 + NP).fill(0); r1 = r0.slice();
+      r0 = new Array(3 + 2 * (P.length - 1) + NP).fill(0); r1 = r0.slice();
       cols = Array.from({ length: NP }, () => r0.slice());
       goal.copy(restTip); aim.copy(restTip); ease1.copy(restTip); ease2.copy(restTip);
 
@@ -266,6 +331,9 @@ export default function AstroTail({ className }: { className?: string }) {
       camRight.setFromMatrixColumn(camera.matrixWorld, 0);
       camUp.setFromMatrixColumn(camera.matrixWorld, 1);
       camera.getWorldDirection(camFwd);
+      view.copy(camera.matrixWorldInverse);
+      viewCapsules = capsules.map(c => ({ a: c.a.clone().applyMatrix4(view), b: c.b.clone().applyMatrix4(view), r: c.r }));
+      restHidden = P.map(p => hidden(p));
       observer.observe(host); resize();
     };
 
@@ -280,8 +348,12 @@ export default function AstroTail({ className }: { className?: string }) {
       const k = 1 - Math.exp(-dt * 5);
       ease1.lerp(goal, k); ease2.lerp(ease1, k);
       solve(ease2);
+      // Ease toward the solved pose with a speed cap, so even a change of pose glides rather than pops.
       const ks = 1 - Math.exp(-dt * 14);
-      for (let j = 0; j < NP; j++) smooth[j] += (params[j] - smooth[j]) * ks;
+      for (let j = 0; j < NP; j++) {
+        const cap = MAX_RATE[j] * dt;
+        smooth[j] += THREE.MathUtils.clamp((params[j] - smooth[j]) * ks, -cap, cap);
+      }
       shapeOf(smooth, P, F);
     };
     const pose = () => {
@@ -299,7 +371,11 @@ export default function AstroTail({ className }: { className?: string }) {
       if (pointer.inside) {
         plane.setFromNormalAndCoplanarPoint(camFwd, restTip);
         ray.setFromCamera(ndc.set(pointer.x, pointer.y), camera);
-        if (ray.ray.intersectPlane(plane, hit)) aim.copy(hit);
+        if (ray.ray.intersectPlane(plane, hit)) {
+          // A cursor over the body would ask the tail to hide behind it; slide the aim out to the tail's side.
+          for (let n = 0; n < 40 && covered(hit); n++) hit.addScaledVector(camRight, -reach * .03);
+          aim.copy(hit);
+        }
       }
       simulate(now / 1000, dt);
       pose();
