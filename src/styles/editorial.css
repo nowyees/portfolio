@@ -182,3 +182,10 @@
   .editorial-site * { scroll-behavior:auto!important; transition-duration:0s!important; }
 }
 
+
+/* Hidden /lab page: hairline robot arm */
+.robot-lab { position:relative; height:100dvh; overflow:hidden; }
+.robot-lab-canvas { position:absolute; inset:0; cursor:crosshair; touch-action:none; }
+.robot-lab-canvas canvas { display:block; }
+.robot-lab-caption { position:absolute; left:50%; bottom:28px; transform:translateX(-50%); font:13px/1.2 var(--sans); color:#555; pointer-events:none; white-space:nowrap; }
+.robot-lab-caption em { font:14px/1.2 var(--serif); color:#111; }

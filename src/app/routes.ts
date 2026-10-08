@@ -13,4 +13,6 @@ export const router = createBrowserRouter([
   { path: "/project/:category/:id", Component: ProjectDetail },
   { path: "/admin", Component: AdminPage },
   { path: "/freedive", Component: FreeDive },
+  // three.js only loads when this route is visited
+  { path: "/lab", lazy: async () => ({ Component: (await import("./components/RobotLab")).default }) },
 ]);
