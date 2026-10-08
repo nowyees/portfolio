@@ -7,9 +7,9 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
  * Graduation piece: the astronaut held at frame 135 of the Blender scene, its robotic tail alive.
  * Geometry (public/lab/astro-tail.glb): one static mesh for the body + fixed tail mount, and one rigid
  *   mesh per tail bone in rest pose (the skinned hoses are split onto their dominant bones in Blender). Normals are split at 38° in Blender so only real creases draw.
- * Motion: no velocities are integrated, so nothing can spring or bounce. The tip's offset from its rest
- *   place is eased through two low-pass stages; each joint aims at the frame-135 shape shifted by that
- *   offset (more toward the tip), positions are smoothed over time and lengths restored root-to-tip.
+ * Motion: three parameters (curl, two smooth swings) shape the whole tail; a small Gauss-Newton solve each
+ *   frame brings the tip to an eased target while keeping the tail out of capsules around the body.
+ *   Nothing is integrated, so it cannot bounce, and the shape is a smooth curve, so it cannot kink.
  * Framing: the scene camera at frame 135, rolled so the astronaut stands upright and fitted to the view.
  * Look: view normals + depth rendered at 2× resolution, an edge pass keeps creases and silhouettes only.
  */
@@ -84,18 +84,107 @@ export default function AstroTail({ className }: { className?: string }) {
     };
     const observer = new ResizeObserver(resize);
 
-    // Tail state
+    // Tail state. The tail is described by five numbers instead of free joint positions:
+    //   swing about the view axis and about the screen's vertical, each for the near and the far half
+    //   (two overlapping smooth bands), plus curl (x rest curvature).
+    // Each segment's frame = extra bend * previous frame * (rest relative bend)^curl, so the chain is always a
+    // smooth curve; it cannot kink at one joint, whatever the target.
     let segments: Array<{ group: THREE.Group; length: number }> = [];
-    let P: THREE.Vector3[] = [], shape: THREE.Vector3[] = [], want: THREE.Vector3[] = [];
-    let follow: number[] = [];
+    let P: THREE.Vector3[] = [], F: THREE.Quaternion[] = [], trialP: THREE.Vector3[] = [];
+    let restFrames: THREE.Quaternion[] = [], localRest: THREE.Quaternion[] = [], nearBand: number[] = [], farBand: number[] = [];
+    let restPenalty: number[] = [];
     let reach = 1;
+    const restTip = new THREE.Vector3();
+    let capsules: Array<{ a: THREE.Vector3; b: THREE.Vector3; r: number }> = [];
+    // [near swing (view axis), near swing (screen up), far swing (view axis), far swing (screen up), curl]
+    const NP = 5, HOME = [0, 0, 0, 0, 1];
+    const LO = [-2.4, -1.2, -2.4, -1.2, .15], HI = [2.4, 1.2, 2.4, 1.2, 1.25], PULL = [.02, .03, .02, .03, .08];
+    const params = HOME.slice(), smooth = HOME.slice(), trial = HOME.slice();
 
-    const restDir = new THREE.Vector3(), baseQ = new THREE.Quaternion(), baseDir = new THREE.Vector3();
+    const restDir = new THREE.Vector3();
     const camRight = new THREE.Vector3(), camUp = new THREE.Vector3(), camFwd = new THREE.Vector3();
-    const aim = new THREE.Vector3(), goal = new THREE.Vector3();
-    const ease1 = new THREE.Vector3(), ease2 = new THREE.Vector3(); // two-stage eased tip offset
+    const aim = new THREE.Vector3(), goal = new THREE.Vector3(), ease1 = new THREE.Vector3(), ease2 = new THREE.Vector3();
     const pointer = { x: 0, y: 0, last: -1e9, inside: false };
     let pointerWeight = 0;
+
+    const qa = new THREE.Quaternion(), qb = new THREE.Quaternion(), ql = new THREE.Quaternion(), qf = new THREE.Quaternion(), ID = new THREE.Quaternion();
+    const step = new THREE.Vector3();
+    // Forward kinematics for a parameter set; frames are written only when `frames` is given.
+    const shapeOf = (p: number[], out: THREE.Vector3[], frames?: THREE.Quaternion[]) => {
+      qf.copy(restFrames[0]);
+      for (let i = 0; i < segments.length; i++) {
+        if (i > 0) {
+          qa.setFromAxisAngle(camFwd, p[0] * nearBand[i] + p[2] * farBand[i]);
+          qb.setFromAxisAngle(camUp, p[1] * nearBand[i] + p[3] * farBand[i]);
+          ql.slerpQuaternions(ID, localRest[i], p[4]);
+          qf.premultiply(qb).premultiply(qa).multiply(ql);
+        }
+        if (frames) frames[i].copy(qf);
+        step.copy(restDir).applyQuaternion(qf);
+        out[i + 1].copy(out[i]).addScaledVector(step, segments[i].length);
+      }
+    };
+    const seg = new THREE.Vector3(), rel = new THREE.Vector3();
+    const intrusion = (p: THREE.Vector3) => {
+      let worst = 0;
+      for (const c of capsules) {
+        seg.subVectors(c.b, c.a); rel.subVectors(p, c.a);
+        const t = THREE.MathUtils.clamp(rel.dot(seg) / seg.lengthSq(), 0, 1);
+        worst = Math.max(worst, c.r - rel.addScaledVector(seg, -t).length());
+      }
+      return worst;
+    };
+    // Residuals: tip-to-target, body intrusion beyond what the rest pose already has, and a gentle pull home.
+    const residuals = (p: number[], target: THREE.Vector3, out: number[]) => {
+      shapeOf(p, trialP);
+      const tip = trialP[trialP.length - 1];
+      out[0] = tip.x - target.x; out[1] = tip.y - target.y; out[2] = tip.z - target.z;
+      let k = 3;
+      for (let i = 1; i < trialP.length; i++) out[k++] = 6 * Math.max(0, intrusion(trialP[i]) - restPenalty[i]);
+      for (let j = 0; j < NP; j++) out[k++] = PULL[j] * (p[j] - HOME[j]) * reach;
+      return out;
+    };
+    let r0: number[] = [], r1: number[] = [];
+    let cols: number[][] = [];
+    const A: number[][] = Array.from({ length: NP }, () => new Array(NP + 1).fill(0));
+    // A few damped Gauss-Newton steps per frame, warm-started from the last solution.
+    const solve = (target: THREE.Vector3) => {
+      for (let iter = 0; iter < 6; iter++) {
+        residuals(params, target, r0);
+        for (let c = 0; c < NP; c++) {
+          for (let j = 0; j < NP; j++) trial[j] = params[j];
+          trial[c] += 1e-3;
+          residuals(trial, target, r1);
+          for (let i = 0; i < r0.length; i++) cols[c][i] = (r1[i] - r0[i]) / 1e-3;
+        }
+        // Normal equations (JtJ + damping) x = -Jt r, solved by Gaussian elimination.
+        for (let a = 0; a < NP; a++) {
+          let g = 0;
+          for (let i = 0; i < r0.length; i++) g += cols[a][i] * r0[i];
+          A[a][NP] = -g;
+          for (let b = 0; b < NP; b++) {
+            let sum = 0;
+            for (let i = 0; i < r0.length; i++) sum += cols[a][i] * cols[b][i];
+            A[a][b] = sum;
+          }
+          A[a][a] += 1e-4 + A[a][a] * .05;
+        }
+        for (let c = 0; c < NP; c++) {
+          for (let r = c + 1; r < NP; r++) {
+            const f = A[r][c] / A[c][c];
+            for (let k = c; k <= NP; k++) A[r][k] -= f * A[c][k];
+          }
+        }
+        let norm = 0;
+        for (let r = NP - 1; r >= 0; r--) {
+          let x = A[r][NP];
+          for (let k = r + 1; k < NP; k++) x -= A[r][k] * trial[k];
+          trial[r] = x / A[r][r]; norm += trial[r] * trial[r];
+        }
+        const scale = Math.min(1, .3 / Math.sqrt(norm || 1));
+        for (let j = 0; j < NP; j++) params[j] = THREE.MathUtils.clamp(params[j] + trial[j] * scale, LO[j], HI[j]);
+      }
+    };
 
     const setup = (gltf: { scene: THREE.Group }, data: SceneData) => {
       const v = (a: number[]) => new THREE.Vector3(a[0], a[1], a[2]);
@@ -112,7 +201,7 @@ export default function AstroTail({ className }: { className?: string }) {
         name = Object.keys(data.rest).find(k => data.rest[k].parent === parent && !controllers.has(k));
       }
       P = [...order.map(n => v(data.posed[n].head)), v(data.posed[order[order.length - 1]].tail)];
-      shape = P.map(p => p.clone()); want = P.map(p => p.clone());
+      trialP = P.map(p => p.clone());
       segments = order.map((n, i) => {
         const group = new THREE.Group();
         const mesh = meshes.get('seg_' + n.replace('.', '_'));
@@ -121,32 +210,58 @@ export default function AstroTail({ className }: { className?: string }) {
         return { group, length: P[i].distanceTo(P[i + 1]) };
       });
       reach = segments.reduce((sum, s) => sum + s.length, 0);
-      // How freely each joint follows the tip: the root stays in its socket, the tip is free.
-      follow = P.map((_, i) => Math.pow(i / (P.length - 1), 1.6));
+      restTip.copy(P[P.length - 1]);
       restDir.subVectors(v(data.rest['Bone.002'].tail), v(data.rest['Bone.002'].head)).normalize();
-      baseQ.fromArray(data.baseDelta);
-      baseDir.subVectors(v(data.posed['Bone.001'].tail), v(data.posed['Bone.001'].head)).normalize();
-      aim.copy(shape[shape.length - 1]);
+      // Rest frames by parallel transport along the frame-135 curve, starting from the mount's orientation.
+      const q = new THREE.Quaternion().fromArray(data.baseDelta), prev = restDir.clone().applyQuaternion(q), dir = new THREE.Vector3();
+      restFrames = segments.map((_, i) => {
+        dir.subVectors(P[i + 1], P[i]).normalize();
+        q.premultiply(new THREE.Quaternion().setFromUnitVectors(prev, dir)); prev.copy(dir);
+        return q.clone();
+      });
+      localRest = restFrames.map((f, i) => i === 0 ? new THREE.Quaternion() : restFrames[i - 1].clone().invert().multiply(f));
+      F = restFrames.map(f => f.clone());
+      // Extra bend lives in two smooth, overlapping bands (near half, far half); nothing bends at the mount.
+      const n = segments.length;
+      const band = (centre: number, width: number) => {
+        const w = segments.map((_, i) => i < 2 ? 0 : Math.exp(-Math.pow((i / (n - 1) - centre) / width, 2)));
+        const total = w.reduce((a, b) => a + b, 0);
+        return w.map(x => x * 2 / total);
+      };
+      nearBand = band(.3, .22); farBand = band(.72, .22);
+
+      // Body as capsules (torso, head, legs, arms); the tail is kept out of them.
+      const b = (k: string) => v(data.body[k]);
+      capsules = [
+        { a: b('Hips'), b: b('Spine2'), r: .17 }, { a: b('Spine2'), b: b('Head'), r: .15 }, { a: b('Head'), b: b('HeadTop_End'), r: .13 },
+        { a: b('Hips'), b: b('LeftFoot'), r: .1 }, { a: b('Hips'), b: b('RightFoot'), r: .1 },
+        { a: b('Spine2'), b: b('LeftHand'), r: .07 }, { a: b('Spine2'), b: b('RightHand'), r: .07 },
+      ];
+      restPenalty = P.map(p => Math.max(0, intrusion(p)));
+      r0 = new Array(3 + P.length - 1 + NP).fill(0); r1 = r0.slice();
+      cols = Array.from({ length: NP }, () => r0.slice());
+      goal.copy(restTip); aim.copy(restTip); ease1.copy(restTip); ease2.copy(restTip);
 
       const m = new THREE.Matrix4().fromArray(data.camera.matrix);
       m.decompose(camera.position, camera.quaternion, new THREE.Vector3());
       camera.updateMatrixWorld();
-      // Roll the camera about its view axis until the body's feet→head line points straight up.
+      // Roll the camera about its view axis until the body's feet-to-head line points straight up.
       const toView = (p: THREE.Vector3) => p.clone().applyMatrix4(camera.matrixWorldInverse);
-      const feet = v(data.body.LeftFoot).add(v(data.body.RightFoot)).multiplyScalar(.5);
-      const axis = toView(v(data.body.HeadTop_End)).sub(toView(feet));
+      const feet = b('LeftFoot').add(b('RightFoot')).multiplyScalar(.5);
+      const axis = toView(b('HeadTop_End')).sub(toView(feet));
       camera.rotateZ(Math.atan2(axis.y, axis.x) - Math.PI / 2);
       camera.updateMatrixWorld();
-      // Centre the astronaut and the tail's reach, then remember how much view angle they need.
-      const sway = reach * .32;
-      const pts = [...Object.values(data.body).map(v), ...shape].map(toView);
+      // Centre the astronaut and the tail, leaving room for its sweep, then remember the view angle they need.
+      const margin = reach * .3;
+      const pts = [...Object.values(data.body).map(v), ...P].map(toView);
       const box = new THREE.Box3().setFromPoints(pts);
       const shiftX = (box.min.x + box.max.x) / 2, shiftY = (box.min.y + box.max.y) / 2;
       camera.translateX(shiftX); camera.translateY(shiftY); camera.updateMatrixWorld();
       fitX = 0; fitY = 0;
       pts.forEach(p => {
-        const depth = -(p.z), x = Math.abs(p.x - shiftX) + sway * .5, y = Math.abs(p.y - shiftY) + sway * .5;
-        fitX = Math.max(fitX, x / depth); fitY = Math.max(fitY, y / depth);
+        const depth = -(p.z);
+        fitX = Math.max(fitX, (Math.abs(p.x - shiftX) + margin * .5) / depth);
+        fitY = Math.max(fitY, (Math.abs(p.y - shiftY) + margin * .5) / depth);
       });
       camRight.setFromMatrixColumn(camera.matrixWorld, 0);
       camUp.setFromMatrixColumn(camera.matrixWorld, 1);
@@ -154,47 +269,23 @@ export default function AstroTail({ className }: { className?: string }) {
       observer.observe(host); resize();
     };
 
-    const tmp = new THREE.Vector3(), d = new THREE.Vector3(), mid = new THREE.Vector3(), outward = new THREE.Vector3();
-    const restore = () => {
-      // Lengths restored from the root outward; the first link leaves the mount along its socket.
-      for (let i = 0; i < segments.length; i++) {
-        d.subVectors(P[i + 1], P[i]).normalize();
-        if (i === 0) d.lerp(baseDir, .6).normalize();
-        P[i + 1].copy(P[i]).addScaledVector(d, segments[i].length);
-      }
-    };
+    const tmp = new THREE.Vector3();
     const simulate = (t: number, dt: number) => {
-      const n = P.length - 1, rest = shape[n];
-      // Idle: the tip sways side to side on screen; with a pointer it leans toward the cursor.
-      tmp.copy(rest).addScaledVector(camRight, Math.sin(t * .9) * reach * .2).addScaledVector(camUp, Math.sin(t * .55 + 1) * reach * .05);
+      // Idle: a wide side-to-side sway; with a pointer the tip reaches for the cursor.
+      tmp.copy(restTip).addScaledVector(camRight, Math.sin(t * .8) * reach * .38).addScaledVector(camUp, Math.sin(t * .5 + 1) * reach * .14);
       goal.lerpVectors(tmp, aim, pointerWeight);
-      // The tip roams only around its own resting place, so it never crosses the body.
-      d.subVectors(goal, rest);
-      // Pulling the tip back toward the root would only bunch the spine up, so that component is mostly dropped.
-      outward.subVectors(rest, P[0]).normalize();
-      const back = d.dot(outward);
-      if (back < 0) d.addScaledVector(outward, -back * .85);
-      if (d.length() > reach * .32) d.setLength(reach * .32);
-      // Two cascaded low-pass stages: smooth start, smooth stop, no overshoot.
-      const k = 1 - Math.exp(-dt * 4.5);
-      ease1.lerp(d, k); ease2.lerp(ease1, k);
-      for (let i = 1; i <= n; i++) want[i].copy(shape[i]).addScaledVector(ease2, follow[i]);
-      // Joints ease toward their aim (tip slightly slower than the root), giving a soft travelling lag.
-      for (let i = 1; i <= n; i++) P[i].lerp(want[i], 1 - Math.exp(-dt * (14 - 6 * follow[i])));
-      restore();
-      for (let i = 1; i < n; i++) { mid.addVectors(P[i - 1], P[i + 1]).multiplyScalar(.5); P[i].lerp(mid, .12); }
-      restore();
+      tmp.subVectors(goal, restTip);
+      if (tmp.length() > reach * .75) goal.copy(restTip).add(tmp.setLength(reach * .75));
+      // Two cascaded low-pass stages on the target: smooth start, smooth stop, no overshoot.
+      const k = 1 - Math.exp(-dt * 5);
+      ease1.lerp(goal, k); ease2.lerp(ease1, k);
+      solve(ease2);
+      const ks = 1 - Math.exp(-dt * 14);
+      for (let j = 0; j < NP; j++) smooth[j] += (params[j] - smooth[j]) * ks;
+      shapeOf(smooth, P, F);
     };
-    // Parallel transport from the mount's frame keeps segment twist continuous.
-    const q = new THREE.Quaternion(), stepQ = new THREE.Quaternion(), prevDir = new THREE.Vector3(), dir = new THREE.Vector3();
     const pose = () => {
-      q.copy(baseQ); prevDir.copy(restDir).applyQuaternion(baseQ);
-      segments.forEach((seg, i) => {
-        dir.subVectors(P[i + 1], P[i]).normalize();
-        stepQ.setFromUnitVectors(prevDir, dir); q.premultiply(stepQ);
-        seg.group.position.copy(P[i]); seg.group.quaternion.copy(q);
-        prevDir.copy(dir);
-      });
+      segments.forEach((s, i) => { s.group.position.copy(P[i]); s.group.quaternion.copy(F[i]); });
     };
 
     const ray = new THREE.Raycaster(), plane = new THREE.Plane(), ndc = new THREE.Vector2(), hit = new THREE.Vector3();
@@ -206,7 +297,7 @@ export default function AstroTail({ className }: { className?: string }) {
       const active = pointer.inside && now - pointer.last < 3000;
       pointerWeight += ((active ? 1 : 0) - pointerWeight) * (1 - Math.exp(-dt * 2.5));
       if (pointer.inside) {
-        plane.setFromNormalAndCoplanarPoint(camFwd, shape[shape.length - 1]);
+        plane.setFromNormalAndCoplanarPoint(camFwd, restTip);
         ray.setFromCamera(ndc.set(pointer.x, pointer.y), camera);
         if (ray.ray.intersectPlane(plane, hit)) aim.copy(hit);
       }
