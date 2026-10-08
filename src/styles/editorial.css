@@ -41,13 +41,6 @@
 .space-card { position:absolute; left:50%; top:50%; width:72px; aspect-ratio:3/4; padding:0; border:0; background:#f7f7f7; transform:translate(-50%,-50%); cursor:pointer; }
 .space-card img { width:100%; height:100%; display:block; object-fit:cover; pointer-events:none; animation:image-arrive .9s ease both; animation-delay:var(--entry-delay); }
 @keyframes image-arrive { from { opacity:0; scale:.7; } to { opacity:1; scale:1; } }
-.space-glass { position:absolute; left:50%; top:50%; z-index:50; transform:translate(-50%,-50%); border-radius:50%; pointer-events:none;
-  -webkit-backdrop-filter:blur(5px) saturate(.85); backdrop-filter:blur(5px) saturate(.85);
-  background:radial-gradient(circle at 34% 28%, rgba(255,255,255,.42), rgba(255,255,255,.14) 46%, rgba(255,255,255,.08) 70%, rgba(255,255,255,.26));
-  box-shadow:inset 0 0 0 1px rgba(17,17,17,.045), inset 0 -28px 70px rgba(17,17,17,.035), 0 40px 90px -60px rgba(17,17,17,.18);
-  animation:glass-arrive 1.2s ease both .2s; }
-@keyframes glass-arrive { from { opacity:0; } }
-.space-stage.is-leaving .space-glass { opacity:0; transition:opacity .45s ease; }
 .space-card-label { position:absolute; top:calc(100% + 7px); left:50%; transform:translateX(-50%); font:12px/1.2 var(--serif); white-space:nowrap; opacity:0; transition:opacity .2s; pointer-events:none; background:#ffffffb8; padding:2px 4px; }
 .space-card:hover .space-card-label,.space-card:focus-visible .space-card-label { opacity:1; }
 .gallery-intro { height:33.5vh; min-height:245px; display:flex; align-items:center; justify-content:center; gap:5px; padding:13vh 16px 0; font:400 16px/1.35 var(--sans); text-align:center; }
