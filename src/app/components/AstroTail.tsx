@@ -84,14 +84,14 @@ export default function AstroTail({ className }: { className?: string }) {
     };
     const observer = new ResizeObserver(resize);
 
-    // Tail state. The tail is described by five numbers instead of free joint positions:
-    //   swing about the view axis and about the screen's vertical, each for the near and the far half
-    //   (two overlapping smooth bands), curl (x rest curvature), and the plane the rest curl bends in
+    // Tail state. The tail is described by nine numbers instead of free joint positions:
+    //   swing about the view axis and about the screen's vertical, each for the near half, the far half and
+    //   the tip (three overlapping smooth bands), curl (x rest curvature), and the plane the rest curl bends in
     //   (rolled per band). Directions come from these; frames follow by parallel transport, so the chain is
     //   a smooth curve that cannot kink at a joint or twist along its length.
     let segments: Array<{ group: THREE.Group; length: number }> = [];
     let P: THREE.Vector3[] = [], F: THREE.Quaternion[] = [], trialP: THREE.Vector3[] = [];
-    let restFrames: THREE.Quaternion[] = [], nearBand: number[] = [], farBand: number[] = [], nearCover: number[] = [], farCover: number[] = [];
+    let restFrames: THREE.Quaternion[] = [], nearBand: number[] = [], farBand: number[] = [], tipBand: number[] = [], nearCover: number[] = [], farCover: number[] = [];
     let restAxis: THREE.Vector3[] = [], restAngle: number[] = [];
     let restPenalty: number[] = [], restHidden: number[] = [];
     const view = new THREE.Matrix4();
@@ -100,17 +100,18 @@ export default function AstroTail({ className }: { className?: string }) {
     const restTip = new THREE.Vector3();
     let capsules: Array<{ a: THREE.Vector3; b: THREE.Vector3; r: number }> = [];
     // [near swing (view axis), near swing (screen up), far swing (view axis), far swing (screen up), curl,
-    //  near curl-plane roll, far curl-plane roll]
-    const NP = 7, HOME = [0, 0, 0, 0, 1, 0, 0];
-    const LO = [-1.5, -.9, -1.5, -.9, .15, -Math.PI, -Math.PI], HI = [1.5, .9, 1.5, .9, 1.25, Math.PI, Math.PI];
-    const PULL = [.02, .03, .02, .03, .08, .01, .01];
-    const MAX_RATE = [2.2, 1.4, 2.2, 1.4, 1, 2.5, 2.5]; // radians (or curl) per second
+    //  near curl-plane roll, far curl-plane roll,
+    //  tip swing (view axis), tip swing (screen up)]
+    const NP = 9, HOME = [0, 0, 0, 0, 1, 0, 0, 0, 0];
+    const LO = [-2.4, -1.4, -2.4, -1.4, .15, -Math.PI, -Math.PI, -2, -1.2], HI = [2.4, 1.4, 2.4, 1.4, 1.25, Math.PI, Math.PI, 2, 1.2];
+    const PULL = [.02, .03, .02, .03, .08, .01, .01, .03, .04];
+    const MAX_RATE = [2.4, 1.6, 2.4, 1.6, 1, 2.5, 2.5, 2.8, 2]; // radians (or curl) per second
     const params = HOME.slice(), smooth = HOME.slice(), trial = HOME.slice();
 
     const restDir = new THREE.Vector3();
     const camRight = new THREE.Vector3(), camUp = new THREE.Vector3(), camFwd = new THREE.Vector3();
     const aim = new THREE.Vector3(), goal = new THREE.Vector3(), ease1 = new THREE.Vector3(), ease2 = new THREE.Vector3();
-    const pointer = { x: 0, y: 0, last: -1e9, inside: false };
+    const pointer = { x: 0, y: 0, inside: false };
     let pointerWeight = 0;
 
     const qa = new THREE.Quaternion(), qb = new THREE.Quaternion(), ql = new THREE.Quaternion(), qf = new THREE.Quaternion();
@@ -119,8 +120,8 @@ export default function AstroTail({ className }: { className?: string }) {
     const shapeOf = (p: number[], out: THREE.Vector3[], frames?: THREE.Quaternion[]) => {
       qf.copy(restFrames[0]);
       for (let i = 0; i < segments.length; i++) {
-        qa.setFromAxisAngle(camFwd, p[0] * nearBand[i] + p[2] * farBand[i]);
-        qb.setFromAxisAngle(camUp, p[1] * nearBand[i] + p[3] * farBand[i]);
+        qa.setFromAxisAngle(camFwd, p[0] * nearBand[i] + p[2] * farBand[i] + p[7] * tipBand[i]);
+        qb.setFromAxisAngle(camUp, p[1] * nearBand[i] + p[3] * farBand[i] + p[8] * tipBand[i]);
         axisR.copy(restAxis[i]).applyAxisAngle(restDir, p[5] * nearCover[i] + p[6] * farCover[i]);
         ql.setFromAxisAngle(axisR, restAngle[i] * p[4]);
         // Only the segment's direction is computed from curl and bend; the frame is then carried onto it
@@ -230,7 +231,10 @@ export default function AstroTail({ className }: { className?: string }) {
             delta[r] = x / A[r][r];
           }
           for (let j = 0; j < NP; j++) candidate[j] = THREE.MathUtils.clamp(params[j] + delta[j], LO[j], HI[j]);
-          if (cost(residuals(candidate, target, r1)) < c0) {
+          const c1 = cost(residuals(candidate, target, r1));
+          if (c1 < c0) {
+            // Converged: a vanishing gain would only nudge the pose back and forth, so the tail holds still.
+            if (c0 - c1 < c0 * 1e-5 + 1e-10) return;
             for (let j = 0; j < NP; j++) params[j] = candidate[j];
             damping = Math.max(1e-3, damping * .4);
             break;
@@ -290,7 +294,7 @@ export default function AstroTail({ className }: { className?: string }) {
         const total = w.reduce((a, b) => a + b, 0);
         return w.map(x => x * 2 / total);
       };
-      nearBand = band(.08, .22); farBand = band(.6, .3);
+      nearBand = band(.08, .22); farBand = band(.5, .22); tipBand = band(.88, .16);
       nearBand[0] *= 3; // the socket joint swings more freely than any single vertebra
       const peak = (w: number[]) => { const m = Math.max(...w); return w.map(x => x / m); };
       nearCover = peak(nearBand); farCover = peak(farBand);
@@ -340,10 +344,10 @@ export default function AstroTail({ className }: { className?: string }) {
     const tmp = new THREE.Vector3();
     const simulate = (t: number, dt: number) => {
       // Idle: a wide side-to-side sway; with a pointer the tip reaches for the cursor.
-      tmp.copy(restTip).addScaledVector(camRight, Math.sin(t * .8) * reach * .38).addScaledVector(camUp, Math.sin(t * .5 + 1) * reach * .14);
+      tmp.copy(restTip).addScaledVector(camRight, Math.sin(t * .8) * reach * .38).addScaledVector(camUp, Math.sin(t * .5 + 1) * reach * .3);
       goal.lerpVectors(tmp, aim, pointerWeight);
       tmp.subVectors(goal, restTip);
-      if (tmp.length() > reach * .75) goal.copy(restTip).add(tmp.setLength(reach * .75));
+      if (tmp.length() > reach * .95) goal.copy(restTip).add(tmp.setLength(reach * .95));
       // Two cascaded low-pass stages on the target: smooth start, smooth stop, no overshoot.
       const k = 1 - Math.exp(-dt * 5);
       ease1.lerp(goal, k); ease2.lerp(ease1, k);
@@ -366,7 +370,9 @@ export default function AstroTail({ className }: { className?: string }) {
       frame = requestAnimationFrame(tick);
       if (!segments.length) return;
       const dt = Math.min(.05, (now - last) / 1000); last = now;
-      const active = pointer.inside && now - pointer.last < 3000;
+      // The tail keeps following while the cursor is on the scene, even when it rests; it only goes back to
+      // its idle sway once the cursor leaves.
+      const active = pointer.inside;
       pointerWeight += ((active ? 1 : 0) - pointerWeight) * (1 - Math.exp(-dt * 2.5));
       if (pointer.inside) {
         plane.setFromNormalAndCoplanarPoint(camFwd, restTip);
@@ -386,7 +392,7 @@ export default function AstroTail({ className }: { className?: string }) {
     const move = (event: PointerEvent) => {
       const r = host.getBoundingClientRect();
       pointer.x = (event.clientX - r.left) / r.width * 2 - 1; pointer.y = -((event.clientY - r.top) / r.height * 2 - 1);
-      pointer.last = performance.now(); pointer.inside = true;
+      pointer.inside = true;
     };
     const leave = () => { pointer.inside = false; };
     host.addEventListener('pointermove', move); host.addEventListener('pointerdown', move); host.addEventListener('pointerleave', leave);
