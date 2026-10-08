@@ -1,16 +1,19 @@
 import React, { useEffect, useLayoutEffect, useRef } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { usePortfolio, imageUrl } from '../../lib/usePortfolio';
-import { holdPageEnter, makeClone, projectKey, saveGrid, snapshotItem, takeOrb, type SnapshotItem } from '../../lib/orbTransition';
+import { holdPageEnter, makeClone, prefersReducedMotion, projectKey, recedeIntoProject, saveGrid, snapshotItem, takeOrb, type SnapshotItem } from '../../lib/orbTransition';
 import SiteShell from './SiteShell';
 
 const px = (r: { left: number; top: number; width: number; height: number }) => ({ left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px' });
+const pad = (n: number) => String(n).padStart(2, '0');
 
 export default function Projects() {
   const projects = usePortfolio();
+  const navigate = useNavigate();
   const mainRef = useRef<HTMLElement>(null);
   const pendingOrb = useRef<SnapshotItem[] | null | undefined>(undefined);
   const clones = useRef<HTMLElement[]>([]);
+  const leaving = useRef(false);
 
   // Coming from Space: the orb's cards fly out and settle into their tiles.
   useLayoutEffect(() => {
@@ -52,7 +55,7 @@ export default function Projects() {
   useLayoutEffect(() => {
     const main = mainRef.current;
     return () => {
-      if (!main) return;
+      if (!main || leaving.current) return;
       saveGrid(Array.from(main.querySelectorAll<HTMLElement>('.project-tile-image')).flatMap(tile => {
         const r = tile.getBoundingClientRect();
         return r.bottom > -100 && r.top < window.innerHeight + 100 ? [snapshotItem(tile.dataset.key!, tile.dataset.image!, tile)] : [];
@@ -60,22 +63,43 @@ export default function Projects() {
     };
   }, []);
 
+  // Same exit as Space: the index sinks into the clicked work and the project surfaces from depth.
+  const openProject = (event: React.MouseEvent<HTMLAnchorElement>, to: string) => {
+    const main = mainRef.current;
+    if (leaving.current) { event.preventDefault(); return; }
+    if (!main || event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0 || prefersReducedMotion()) return;
+    event.preventDefault();
+    leaving.current = true;
+    const tile = event.currentTarget.closest('.project-tile');
+    tile?.classList.add('is-picked');
+    main.classList.add('is-leaving');
+    const r = (tile?.querySelector('.project-tile-image') ?? event.currentTarget).getBoundingClientRect();
+    recedeIntoProject(main, { x: r.left + r.width / 2, y: r.top + r.height / 2 }, () => navigate(to));
+  };
+
   return (
     <SiteShell active="projects">
-      <main className="projects-page" ref={mainRef}>
+      <main className="projects-page projects-index" ref={mainRef}>
+        <div className="projects-columns" aria-hidden="true">
+          {Array.from({ length: 12 }, (_, i) => <i key={i} style={{ '--i': i } as React.CSSProperties} />)}
+        </div>
         <h1 className="gallery-intro"><span>A Curated Selection of</span> <em>Objects and Visual Experiences</em></h1>
+        <p className="projects-count">Index — {pad(projects.length)} works</p>
         <section className="project-grid" aria-label="Selected projects">
-          {projects.map(project => (
-            <article className="project-tile" key={project.category + '-' + project.id}>
-              <Link className="project-tile-image" to={'/project/' + project.category + '/' + project.id} aria-label={'View ' + project.title}
-                data-key={projectKey(project)} data-image={project.image}>
-                <img src={imageUrl(project.image, 1000)} alt={project.title} loading="lazy" />
-                <span className="project-view">View ↗︎</span>
-              </Link>
-              <h2><Link to={'/project/' + project.category + '/' + project.id}>{project.title}</Link></h2>
-              <p>{project.hashtags?.join(', ') || project.year}</p>
-            </article>
-          ))}
+          {projects.map((project, index) => {
+            const to = '/project/' + project.category + '/' + project.id;
+            return (
+              <article className="project-tile" key={project.category + '-' + project.id}>
+                <Link className="project-tile-image" to={to} aria-label={'View ' + project.title}
+                  data-key={projectKey(project)} data-image={project.image} onClick={event => openProject(event, to)}>
+                  <img src={imageUrl(project.image, 500)} alt={project.title} loading="lazy" />
+                </Link>
+                <span className="project-index">{pad(index + 1)}</span>
+                <h2><Link to={to} onClick={event => openProject(event, to)}>{project.title}</Link></h2>
+                <p>{project.hashtags?.join(', ') || project.year}</p>
+              </article>
+            );
+          })}
         </section>
         <footer className="gallery-footer"><Link to="/about">Lee Jae Woong</Link><Link to="/about#contact">Contact ↗︎</Link></footer>
       </main>

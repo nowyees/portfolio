@@ -48,8 +48,10 @@ export function makeClone(src: string, rect: SnapshotItem['rect']) {
  * animation is applied before its first paint — no flash of the settled page.
  */
 export function recedeIntoProject(scene: HTMLElement, origin: { x: number; y: number }, go: () => void) {
+  // origin is in viewport coordinates; the scene pivots in its own box, the arriving page starts at scroll 0.
+  const box = scene.getBoundingClientRect();
+  scene.style.transformOrigin = (origin.x - box.left) + 'px ' + (origin.y - box.top) + 'px';
   const pivot = origin.x + 'px ' + origin.y + 'px';
-  scene.style.transformOrigin = pivot;
   const recede = scene.animate([
     { transform: 'scale(1)', filter: 'blur(0px)', opacity: 1 },
     { transform: 'scale(.8)', filter: 'blur(14px)', opacity: 0 },
