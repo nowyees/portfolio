@@ -43,38 +43,32 @@ export function makeClone(src: string, rect: SnapshotItem['rect']) {
 }
 
 /**
- * Clicked card rushes forward until it swallows the screen, the page swaps behind it,
- * then the image keeps flying past the camera while the project settles in underneath.
+ * The Space scene sinks away from the camera (smaller, blurrier, fainter), then the project
+ * surfaces from that same depth. The new page is caught by a MutationObserver so its entry
+ * animation is applied before its first paint — no flash of the settled page.
  */
-export function flyIntoProject(img: HTMLImageElement, hiResSrc: string, go: () => void) {
-  const from = img.getBoundingClientRect();
-  const aspect = img.naturalWidth && img.naturalHeight ? img.naturalWidth / img.naturalHeight : from.width / from.height;
-  const vw = window.innerWidth, vh = window.innerHeight;
-  const w = Math.max(vw, vh * aspect), h = w / aspect;
-  const cover = { left: (vw - w) / 2, top: (vh - h) / 2, width: w, height: h };
-  const clone = makeClone(img.currentSrc || img.src, toRect(from));
-  const hi = new Image();
-  hi.onload = () => { const sharp = clone.appendChild(hi); sharp.className = 'orb-clone-sharp'; };
-  hi.src = hiResSrc; hi.alt = '';
-  const px = (r: typeof cover) => ({ left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px' });
-  // Accelerating curve: slow lift-off, then a rush that doesn't stop at the screen edge.
-  const rush = clone.animate([px(toRect(from)), px(cover)], { duration: 720, easing: 'cubic-bezier(.55,0,.85,.25)', fill: 'forwards' });
-  rush.onfinish = () => {
-    go();
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      const passThrough = { duration: 820, easing: 'cubic-bezier(.15,.55,.25,1)', fill: 'forwards' as const };
-      clone.animate([
-        { transform: 'scale(1)', filter: 'blur(0px)', opacity: 1 },
-        { transform: 'scale(1.18)', filter: 'blur(6px)', opacity: .85, offset: .35 },
-        { transform: 'scale(1.4)', filter: 'blur(18px)', opacity: 0 },
-      ], passThrough).onfinish = () => clone.remove();
+export function recedeIntoProject(scene: HTMLElement, origin: { x: number; y: number }, go: () => void) {
+  const pivot = origin.x + 'px ' + origin.y + 'px';
+  scene.style.transformOrigin = pivot;
+  const recede = scene.animate([
+    { transform: 'scale(1)', filter: 'blur(0px)', opacity: 1 },
+    { transform: 'scale(.8)', filter: 'blur(14px)', opacity: 0 },
+  ], { duration: 650, easing: 'cubic-bezier(.55,0,.75,.3)', fill: 'forwards' });
+  recede.onfinish = () => {
+    const previous = document.getElementById('page-content');
+    const watcher = new MutationObserver(() => {
       const page = document.getElementById('page-content');
-      if (page) {
-        holdPageEnter();
-        page.style.transformOrigin = '50% 50vh';
-        page.animate([{ transform: 'scale(1.08)', filter: 'blur(8px)' }, { transform: 'none', filter: 'none' }], passThrough)
-          .onfinish = () => { page.style.transformOrigin = ''; };
-      }
-    }));
+      if (!page || page === previous) return;
+      watcher.disconnect();
+      page.style.animation = 'none';
+      page.style.transformOrigin = pivot;
+      page.animate([
+        { transform: 'scale(.92)', filter: 'blur(12px)', opacity: 0 },
+        { transform: 'none', filter: 'none', opacity: 1 },
+      ], { duration: 900, easing: 'cubic-bezier(.2,.7,.2,1)', fill: 'backwards' }).onfinish = () => { page.style.transformOrigin = ''; };
+    });
+    watcher.observe(document.body, { childList: true, subtree: true });
+    window.setTimeout(() => watcher.disconnect(), 3000);
+    go();
   };
 }

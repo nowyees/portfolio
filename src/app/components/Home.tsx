@@ -2,7 +2,7 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { Link, useNavigate } from 'react-router';
 import SiteShell from './SiteShell';
 import { usePortfolio, imageUrl } from '../../lib/usePortfolio';
-import { easeInOut, flyIntoProject, holdPageEnter, prefersReducedMotion, projectKey, saveOrb, snapshotItem, takeGrid, type SnapshotItem } from '../../lib/orbTransition';
+import { easeInOut, holdPageEnter, prefersReducedMotion, projectKey, recedeIntoProject, saveOrb, snapshotItem, takeGrid, type SnapshotItem } from '../../lib/orbTransition';
 
 type Arrival = { start: number; from: Array<{ x: number; y: number; w: number } | null> };
 
@@ -67,8 +67,8 @@ export default function Home() {
         r.y += r.vy; r.x += r.vx; r.vx *= .94; r.vy *= .94;
       }
       r.x = Math.max(-.8, Math.min(.8, r.x));
-      const burst = r.leaving ? 1 - Math.pow(1 - Math.min(1, (now - r.leaving) / 650), 3) : 0;
-      const radius = Math.min(width * .33, height * .31, 315) * (1 + burst * 2.2);
+      const sink = r.leaving ? easeInOut(Math.min(1, (now - r.leaving) / 650)) : 0;
+      const radius = Math.min(width * .33, height * .31, 315) * (1 - sink * .3);
       const mobile = width < 700;
       const arrive = arrival.current;
       items.forEach((_, i) => {
@@ -104,19 +104,19 @@ export default function Home() {
     return () => { cancelAnimationFrame(frame); observer.disconnect(); stage.removeEventListener('wheel', wheel); };
   }, [items]);
 
-  // Clicked card leaves the orb and grows into the project; the rest of the orb bursts outward.
-  const openProject = (event: React.MouseEvent<HTMLAnchorElement>, image: string, to: string) => {
+  // The orb draws in and sinks away with the clicked card last to fade; the project surfaces from behind.
+  const openProject = (event: React.MouseEvent<HTMLAnchorElement>, to: string) => {
     const r = rotation.current;
     if (r.moved) { event.preventDefault(); return; }
     if (r.leaving) { event.preventDefault(); return; }
-    if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0 || prefersReducedMotion()) return;
-    const img = event.currentTarget.querySelector('img');
-    if (!img) return;
+    const scene = stageRef.current?.parentElement;
+    if (!scene || event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0 || prefersReducedMotion()) return;
     event.preventDefault();
     r.leaving = performance.now(); r.hover = true;
     event.currentTarget.classList.add('is-picked');
     stageRef.current?.classList.add('is-leaving');
-    flyIntoProject(img, imageUrl(image, 1600), () => navigate(to));
+    const card = event.currentTarget.getBoundingClientRect();
+    recedeIntoProject(scene, { x: card.left + card.width / 2, y: card.top + card.height / 2 }, () => navigate(to));
   };
 
   return (
@@ -153,7 +153,7 @@ export default function Home() {
                 onMouseLeave={() => { if (!rotation.current.leaving) rotation.current.hover = false; }}
                 onFocus={() => { rotation.current.hover = true; }}
                 onBlur={() => { if (!rotation.current.leaving) rotation.current.hover = false; }}
-                onClick={event => openProject(event, item.image, to)}
+                onClick={event => openProject(event, to)}
               >
                 <img src={imageUrl(item.image, 300)} alt="" draggable={false} />
                 <span className="space-card-label">{item.project.title}</span>
