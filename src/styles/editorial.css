@@ -62,7 +62,7 @@
 .space-card.from-grid img { animation:none; }
 .space-card.is-picked { visibility:hidden; }
 .space-stage.is-leaving { pointer-events:none; }
-.space-stage.is-leaving .space-card:not(.is-picked) { opacity:0; filter:blur(6px); transition:opacity .55s ease,filter .55s ease; }
+.space-stage.is-leaving .space-card:not(.is-picked) { opacity:0; filter:blur(10px); transition:opacity .5s ease .1s,filter .4s ease; }
 .is-morph-in .project-tile-image:not(.is-landed) { background:transparent; }
 .is-morph-in .project-tile-image img { opacity:0; }
 .is-morph-in .project-tile-image.is-landed img { opacity:1; transition:opacity .3s ease,transform .9s cubic-bezier(.22,1,.36,1); }

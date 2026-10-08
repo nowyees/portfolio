@@ -67,8 +67,8 @@ export default function Home() {
         r.y += r.vy; r.x += r.vx; r.vx *= .94; r.vy *= .94;
       }
       r.x = Math.max(-.8, Math.min(.8, r.x));
-      const burst = r.leaving ? easeInOut(Math.min(1, (now - r.leaving) / 750)) : 0;
-      const radius = Math.min(width * .33, height * .31, 315) * (1 + burst * .9);
+      const burst = r.leaving ? 1 - Math.pow(1 - Math.min(1, (now - r.leaving) / 650), 3) : 0;
+      const radius = Math.min(width * .33, height * .31, 315) * (1 + burst * 2.2);
       const mobile = width < 700;
       const arrive = arrival.current;
       items.forEach((_, i) => {

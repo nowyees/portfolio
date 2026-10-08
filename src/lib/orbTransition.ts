@@ -42,23 +42,39 @@ export function makeClone(src: string, rect: SnapshotItem['rect']) {
   return clone;
 }
 
-/** Clicked card leaves the orb, grows to centre stage, then hands over to the detail page. */
+/**
+ * Clicked card rushes forward until it swallows the screen, the page swaps behind it,
+ * then the image keeps flying past the camera while the project settles in underneath.
+ */
 export function flyIntoProject(img: HTMLImageElement, hiResSrc: string, go: () => void) {
   const from = img.getBoundingClientRect();
   const aspect = img.naturalWidth && img.naturalHeight ? img.naturalWidth / img.naturalHeight : from.width / from.height;
-  const h = Math.min(window.innerHeight * .74, window.innerWidth * .86 / aspect), w = h * aspect;
-  const to = { left: (window.innerWidth - w) / 2, top: (window.innerHeight - h) / 2 + 8, width: w, height: h };
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const w = Math.max(vw, vh * aspect), h = w / aspect;
+  const cover = { left: (vw - w) / 2, top: (vh - h) / 2, width: w, height: h };
   const clone = makeClone(img.currentSrc || img.src, toRect(from));
   const hi = new Image();
   hi.onload = () => { const sharp = clone.appendChild(hi); sharp.className = 'orb-clone-sharp'; };
   hi.src = hiResSrc; hi.alt = '';
-  const px = (r: typeof to) => ({ left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px' });
-  const flight = clone.animate([px(toRect(from)), px(to)], { duration: 950, easing: 'cubic-bezier(.65,0,.35,1)', fill: 'forwards' });
-  flight.onfinish = () => {
+  const px = (r: typeof cover) => ({ left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px' });
+  // Accelerating curve: slow lift-off, then a rush that doesn't stop at the screen edge.
+  const rush = clone.animate([px(toRect(from)), px(cover)], { duration: 720, easing: 'cubic-bezier(.55,0,.85,.25)', fill: 'forwards' });
+  rush.onfinish = () => {
     go();
     requestAnimationFrame(() => requestAnimationFrame(() => {
-      const out = clone.animate([{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(1.015)' }], { duration: 650, delay: 120, easing: 'ease', fill: 'forwards' });
-      out.onfinish = () => clone.remove();
+      const passThrough = { duration: 820, easing: 'cubic-bezier(.15,.55,.25,1)', fill: 'forwards' as const };
+      clone.animate([
+        { transform: 'scale(1)', filter: 'blur(0px)', opacity: 1 },
+        { transform: 'scale(1.18)', filter: 'blur(6px)', opacity: .85, offset: .35 },
+        { transform: 'scale(1.4)', filter: 'blur(18px)', opacity: 0 },
+      ], passThrough).onfinish = () => clone.remove();
+      const page = document.getElementById('page-content');
+      if (page) {
+        holdPageEnter();
+        page.style.transformOrigin = '50% 50vh';
+        page.animate([{ transform: 'scale(1.08)', filter: 'blur(8px)' }, { transform: 'none', filter: 'none' }], passThrough)
+          .onfinish = () => { page.style.transformOrigin = ''; };
+      }
     }));
   };
 }
