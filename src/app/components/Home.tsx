@@ -11,6 +11,7 @@ export default function Home() {
   const navigate = useNavigate();
   const stageRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<Array<HTMLAnchorElement | null>>([]);
+  const glassRef = useRef<HTMLDivElement>(null);
   const rotation = useRef({ x: .12, y: .35, vx: 0, vy: 0, drag: false, moved: false, distance: 0, px: 0, py: 0, hover: false, leaving: 0 });
   const arrival = useRef<Arrival | null>(null);
   const pendingGrid = useRef<SnapshotItem[] | null | undefined>(undefined);
@@ -70,6 +71,9 @@ export default function Home() {
       const sink = r.leaving ? easeInOut(Math.min(1, (now - r.leaving) / 650)) : 0;
       const radius = Math.min(width * .33, height * .31, 315) * (1 - sink * .3);
       const mobile = width < 700;
+      // Glass sits at the orb's equator plane (z-index 50): back-hemisphere cards render beneath it.
+      const glass = glassRef.current;
+      if (glass) glass.style.width = glass.style.height = (radius * 2 + (mobile ? 28 : 40)) + 'px';
       const arrive = arrival.current;
       items.forEach((_, i) => {
         const node = cardsRef.current[i];
@@ -141,6 +145,7 @@ export default function Home() {
           onPointerCancel={() => { rotation.current.drag = false; }}
           onPointerLeave={() => { rotation.current.drag = false; if (!rotation.current.leaving) rotation.current.hover = false; }}
         >
+          <div className="space-glass" ref={glassRef} aria-hidden="true" />
           {items.map((item, index) => {
             const to = '/project/' + item.project.category + '/' + item.project.id;
             return (
