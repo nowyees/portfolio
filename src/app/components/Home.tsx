@@ -1,13 +1,19 @@
-import React, { useEffect, useMemo, useRef } from 'react';
-import { Link } from 'react-router';
+import React, { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { Link, useNavigate } from 'react-router';
 import SiteShell from './SiteShell';
 import { usePortfolio, imageUrl } from '../../lib/usePortfolio';
+import { easeInOut, flyIntoProject, holdPageEnter, prefersReducedMotion, projectKey, saveOrb, snapshotItem, takeGrid, type SnapshotItem } from '../../lib/orbTransition';
+
+type Arrival = { start: number; from: Array<{ x: number; y: number; w: number } | null> };
 
 export default function Home() {
   const projects = usePortfolio();
+  const navigate = useNavigate();
   const stageRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<Array<HTMLAnchorElement | null>>([]);
-  const rotation = useRef({ x: .12, y: .35, vx: 0, vy: 0, drag: false, moved: false, distance: 0, px: 0, py: 0, hover: false });
+  const rotation = useRef({ x: .12, y: .35, vx: 0, vy: 0, drag: false, moved: false, distance: 0, px: 0, py: 0, hover: false, leaving: 0 });
+  const arrival = useRef<Arrival | null>(null);
+  const pendingGrid = useRef<SnapshotItem[] | null | undefined>(undefined);
   const items = useMemo(() => {
     const thumbs = projects.filter(p => p.image).map(project => ({ project, image: project.image }));
     const extras = projects.flatMap(project => {
@@ -16,6 +22,35 @@ export default function Home() {
     }).slice(0, 7);
     return [...thumbs, ...extras];
   }, [projects]);
+
+  // Coming from Projects: each card starts where its tile was and gets pulled into the orb.
+  useLayoutEffect(() => {
+    if (pendingGrid.current === undefined) pendingGrid.current = takeGrid();
+    const tiles = pendingGrid.current, stage = stageRef.current;
+    if (!tiles || !stage || !items.length) return;
+    pendingGrid.current = null;
+    holdPageEnter();
+    const box = stage.getBoundingClientRect(), cx = box.left + box.width / 2, cy = box.top + box.height / 2;
+    const used = new Set<number>();
+    const from = items.map(item => {
+      const index = tiles.findIndex((tile, i) => !used.has(i) && tile.key === projectKey(item.project) && tile.image === item.image);
+      if (index < 0) return null;
+      used.add(index);
+      const r = tiles[index].rect;
+      return { x: r.left + r.width / 2 - cx, y: r.top + r.height / 2 - cy, w: r.width };
+    });
+    from.forEach((start, i) => cardsRef.current[i]?.classList.toggle('from-grid', !!start));
+    arrival.current = { start: performance.now(), from };
+  }, [items]);
+
+  // Leaving Space: remember where every card was so Projects can fly them into the grid.
+  useLayoutEffect(() => () => {
+    if (rotation.current.leaving) return;
+    saveOrb(items.flatMap((item, i) => {
+      const node = cardsRef.current[i];
+      return node ? [snapshotItem(projectKey(item.project), item.image, node)] : [];
+    }));
+  }, [items]);
 
   useEffect(() => {
     const stage = stageRef.current;
@@ -32,8 +67,10 @@ export default function Home() {
         r.y += r.vy; r.x += r.vx; r.vx *= .94; r.vy *= .94;
       }
       r.x = Math.max(-.8, Math.min(.8, r.x));
-      const radius = Math.min(width * .33, height * .31, 315);
+      const burst = r.leaving ? easeInOut(Math.min(1, (now - r.leaving) / 750)) : 0;
+      const radius = Math.min(width * .33, height * .31, 315) * (1 + burst * .9);
       const mobile = width < 700;
+      const arrive = arrival.current;
       items.forEach((_, i) => {
         const node = cardsRef.current[i];
         if (!node) return;
@@ -45,11 +82,17 @@ export default function Home() {
         const y = py * Math.cos(r.x) - pz * Math.sin(r.x);
         const z = py * Math.sin(r.x) + pz * Math.cos(r.x);
         const depth = .76 + (z + 1) * .19;
-        const w = (mobile ? 48 : 69) * depth;
+        let w = (mobile ? 48 : 69) * depth, tx = px * radius, ty = y * radius;
+        const start = arrive?.from[i];
+        if (arrive && start) {
+          const p = easeInOut(Math.max(0, Math.min(1, (now - arrive.start - Math.min(i * 14, 260)) / 1150)));
+          tx = start.x + (tx - start.x) * p; ty = start.y + (ty - start.y) * p; w = start.w + (w - start.w) * p;
+        }
         node.style.width = w + 'px';
-        node.style.transform = 'translate(-50%, -50%) translate3d(' + (px * radius) + 'px,' + (y * radius) + 'px,0)';
+        node.style.transform = 'translate(-50%, -50%) translate3d(' + tx + 'px,' + ty + 'px,0)';
         node.style.zIndex = String(Math.round((z + 1) * 50));
       });
+      if (arrive && now - arrive.start > 1500) arrival.current = null;
       frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
@@ -60,6 +103,21 @@ export default function Home() {
     stage.addEventListener('wheel', wheel, { passive: false });
     return () => { cancelAnimationFrame(frame); observer.disconnect(); stage.removeEventListener('wheel', wheel); };
   }, [items]);
+
+  // Clicked card leaves the orb and grows into the project; the rest of the orb bursts outward.
+  const openProject = (event: React.MouseEvent<HTMLAnchorElement>, image: string, to: string) => {
+    const r = rotation.current;
+    if (r.moved) { event.preventDefault(); return; }
+    if (r.leaving) { event.preventDefault(); return; }
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0 || prefersReducedMotion()) return;
+    const img = event.currentTarget.querySelector('img');
+    if (!img) return;
+    event.preventDefault();
+    r.leaving = performance.now(); r.hover = true;
+    event.currentTarget.classList.add('is-picked');
+    stageRef.current?.classList.add('is-leaving');
+    flyIntoProject(img, imageUrl(image, 1600), () => navigate(to));
+  };
 
   return (
     <SiteShell active="space">
@@ -81,27 +139,29 @@ export default function Home() {
           }}
           onPointerUp={() => { rotation.current.drag = false; }}
           onPointerCancel={() => { rotation.current.drag = false; }}
-          onPointerLeave={() => { rotation.current.drag = false; rotation.current.hover = false; }}
+          onPointerLeave={() => { rotation.current.drag = false; if (!rotation.current.leaving) rotation.current.hover = false; }}
         >
-          {items.map((item, index) => (
-            <Link key={item.project.id + '-' + item.image} className="space-card"
-              to={'/project/' + item.project.category + '/' + item.project.id}
-              ref={node => { cardsRef.current[index] = node; }}
-              style={{ '--entry-delay': Math.min(index * 24, 380) + 'ms' } as React.CSSProperties}
-              aria-label={'Open ' + item.project.title}
-              onMouseEnter={() => { rotation.current.hover = true; }}
-              onMouseLeave={() => { rotation.current.hover = false; }}
-              onFocus={() => { rotation.current.hover = true; }}
-              onBlur={() => { rotation.current.hover = false; }}
-              onClick={event => { if (rotation.current.moved) event.preventDefault(); }}
-            >
-              <img src={imageUrl(item.image, 300)} alt="" draggable={false} />
-              <span className="space-card-label">{item.project.title}</span>
-            </Link>
-          ))}
+          {items.map((item, index) => {
+            const to = '/project/' + item.project.category + '/' + item.project.id;
+            return (
+              <Link key={item.project.id + '-' + item.image} className="space-card"
+                to={to}
+                ref={node => { cardsRef.current[index] = node; }}
+                style={{ '--entry-delay': Math.min(index * 24, 380) + 'ms' } as React.CSSProperties}
+                aria-label={'Open ' + item.project.title}
+                onMouseEnter={() => { rotation.current.hover = true; }}
+                onMouseLeave={() => { if (!rotation.current.leaving) rotation.current.hover = false; }}
+                onFocus={() => { rotation.current.hover = true; }}
+                onBlur={() => { if (!rotation.current.leaving) rotation.current.hover = false; }}
+                onClick={event => openProject(event, item.image, to)}
+              >
+                <img src={imageUrl(item.image, 300)} alt="" draggable={false} />
+                <span className="space-card-label">{item.project.title}</span>
+              </Link>
+            );
+          })}
         </div>
       </main>
     </SiteShell>
   );
 }
-
