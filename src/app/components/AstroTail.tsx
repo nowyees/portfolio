@@ -7,9 +7,9 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
  * Graduation piece: the astronaut held at frame 135 of the Blender scene, its robotic tail alive.
  * Geometry (public/lab/astro-tail.glb): one static mesh for the body + fixed tail mount, and one rigid
  *   mesh per tail bone in rest pose (the skinned hoses are split onto their dominant bones in Blender). Normals are split at 38° in Blender so only real creases draw.
- * Motion: three parameters (curl, two smooth swings) shape the whole tail; a small Gauss-Newton solve each
- *   frame brings the tip to an eased target while keeping the tail out of capsules around the body.
- *   Nothing is integrated, so it cannot bounce, and the shape is a smooth curve, so it cannot kink.
+ * Motion: a spline IK. The tail is laid along a smooth curve from the socket to the eased tip target, so it
+ *   cannot kink, twist, jitter or get stuck, and the curve is kept in front of the socket so it never goes
+ *   behind the body. The link leaving the socket leans down toward the target.
  * Framing: the scene camera at frame 135, rolled so the astronaut stands upright and fitted to the view.
  * Look: view normals + depth rendered at 2× resolution, an edge pass keeps creases and silhouettes only.
  */
@@ -84,91 +84,31 @@ export default function AstroTail({ className }: { className?: string }) {
     };
     const observer = new ResizeObserver(resize);
 
-    // Tail state. The tail is described by nine numbers instead of free joint positions:
-    //   swing about the view axis and about the screen's vertical, each for the near half, the far half and
-    //   the tip (three overlapping smooth bands), curl (x rest curvature), and the plane the rest curl bends in
-    //   (rolled per band). Directions come from these; frames follow by parallel transport, so the chain is
-    //   a smooth curve that cannot kink at a joint or twist along its length.
+    // Tail rig: a spline IK. The tail is laid along one cubic Bezier curve from the backpack socket to the tip
+    // target, segment by segment at their true lengths, with frames carried along the curve by parallel
+    // transport. A curve is smooth, so the tail cannot kink or twist; nothing is solved iteratively, so it
+    // cannot jitter or get stuck; and the curve's handles are kept on the camera side of the socket, so the
+    // tail never goes behind the body.
     let segments: Array<{ group: THREE.Group; length: number }> = [];
-    let P: THREE.Vector3[] = [], F: THREE.Quaternion[] = [], trialP: THREE.Vector3[] = [];
-    let restFrames: THREE.Quaternion[] = [], nearBand: number[] = [], farBand: number[] = [], tipBand: number[] = [], rootBand: number[] = [], nearCover: number[] = [], farCover: number[] = [];
-    let restAxis: THREE.Vector3[] = [], restAngle: number[] = [];
-    let restPenalty: number[] = [], restHidden: number[] = [];
-    const view = new THREE.Matrix4();
-    let viewCapsules: Array<{ a: THREE.Vector3; b: THREE.Vector3; r: number }> = [];
+    let P: THREE.Vector3[] = [], F: THREE.Quaternion[] = [];
     let reach = 1;
-    const restTip = new THREE.Vector3();
+    const restTip = new THREE.Vector3(), restDir = new THREE.Vector3(), restFrame0 = new THREE.Quaternion();
+    const socketOut = new THREE.Vector3();
+    let socketDepth = 1;
     let capsules: Array<{ a: THREE.Vector3; b: THREE.Vector3; r: number }> = [];
-    // [near swing (view axis), near swing (screen up), far swing (view axis), far swing (screen up), curl,
-    //  near curl-plane roll, far curl-plane roll,
-    //  tip swing (view axis), tip swing (screen up), socket swing (view axis), socket swing (screen up)]
-    const NP = 11, HOME = [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0];
-    const LO = [-2.4, -1.4, -2.4, -1.4, .15, -Math.PI, -Math.PI, -2, -1.2, -1.05, -.8];
-    const HI = [2.4, 1.4, 2.4, 1.4, 1.25, Math.PI, Math.PI, 2, 1.2, 1.05, .8];
-    const PULL = [.02, .03, .02, .03, .08, .01, .01, .03, .04, .03, .06];
-    const MAX_RATE = [2.4, 1.6, 2.4, 1.6, 1, 2.5, 2.5, 2.8, 2, 1.8, 1.4]; // radians (or curl) per second
-    const LEAD = .4, LEAD_GAIN = 1.6; // how strongly, and how far, the socket link turns toward the target
-    const params = HOME.slice(), smooth = HOME.slice(), trial = HOME.slice();
-
-    const restDir = new THREE.Vector3(), restRootDir = new THREE.Vector3(), restTipDir = new THREE.Vector3();
-    const lead = new THREE.Vector3(), leadWant = new THREE.Vector3();
+    let viewCapsules: Array<{ a: THREE.Vector3; b: THREE.Vector3; r: number }> = [];
+    const view = new THREE.Matrix4();
     const camRight = new THREE.Vector3(), camUp = new THREE.Vector3(), camFwd = new THREE.Vector3();
     const aim = new THREE.Vector3(), goal = new THREE.Vector3(), ease1 = new THREE.Vector3(), ease2 = new THREE.Vector3();
     const pointer = { x: 0, y: 0, inside: false };
     let pointerWeight = 0;
 
-    const qa = new THREE.Quaternion(), qb = new THREE.Quaternion(), ql = new THREE.Quaternion(), qf = new THREE.Quaternion();
-    const step = new THREE.Vector3(), from = new THREE.Vector3(), to = new THREE.Vector3(), axisR = new THREE.Vector3();
-    // Forward kinematics for a parameter set; frames are written only when `frames` is given.
-    const shapeOf = (p: number[], out: THREE.Vector3[], frames?: THREE.Quaternion[]) => {
-      qf.copy(restFrames[0]);
-      for (let i = 0; i < segments.length; i++) {
-        qa.setFromAxisAngle(camFwd, p[0] * nearBand[i] + p[2] * farBand[i] + p[7] * tipBand[i] + p[9] * rootBand[i]);
-        qb.setFromAxisAngle(camUp, p[1] * nearBand[i] + p[3] * farBand[i] + p[8] * tipBand[i] + p[10] * rootBand[i]);
-        axisR.copy(restAxis[i]).applyAxisAngle(restDir, p[5] * nearCover[i] + p[6] * farCover[i]);
-        ql.setFromAxisAngle(axisR, restAngle[i] * p[4]);
-        // Only the segment's direction is computed from curl and bend; the frame is then carried onto it
-        // by the minimal rotation from the previous segment (parallel transport), so no roll ever builds
-        // up and the vertebrae stay aligned instead of twisting along the tail.
-        from.copy(restDir).applyQuaternion(qf);
-        to.copy(restDir).applyQuaternion(ql.premultiply(qf)).applyQuaternion(qa.multiply(qb));
-        qf.premultiply(qb.setFromUnitVectors(from, to));
-        if (frames) frames[i].copy(qf);
-        step.copy(restDir).applyQuaternion(qf);
-        out[i + 1].copy(out[i]).addScaledVector(step, segments[i].length);
-      }
-    };
-    const seg = new THREE.Vector3(), rel = new THREE.Vector3();
-    const intrusion = (p: THREE.Vector3) => {
-      let worst = 0;
-      for (const c of capsules) {
-        seg.subVectors(c.b, c.a); rel.subVectors(p, c.a);
-        const t = THREE.MathUtils.clamp(rel.dot(seg) / seg.lengthSq(), 0, 1);
-        worst = Math.max(worst, c.r - rel.addScaledVector(seg, -t).length());
-      }
-      return worst;
-    };
-    // How far a point sits behind the body as seen from the camera (world units, 0 when visible).
-    const vp = new THREE.Vector3(), sa = new THREE.Vector2(), sb = new THREE.Vector2(), sp = new THREE.Vector2(), sd = new THREE.Vector2();
-    const hidden = (p: THREE.Vector3) => {
-      vp.copy(p).applyMatrix4(view);
-      const depth = -vp.z; sp.set(vp.x / depth, vp.y / depth);
-      let worst = 0;
-      for (const c of viewCapsules) {
-        sa.set(c.a.x / -c.a.z, c.a.y / -c.a.z); sb.set(c.b.x / -c.b.z, c.b.y / -c.b.z);
-        sd.subVectors(sb, sa);
-        const t = THREE.MathUtils.clamp(sd.dot(sa.clone().subVectors(sp, sa)) / Math.max(sd.lengthSq(), 1e-9), 0, 1);
-        const bodyDepth = -(c.a.z + (c.b.z - c.a.z) * t);
-        const gap = c.r * 1.2 / bodyDepth - sp.distanceTo(sa.addScaledVector(sd, t));
-        if (gap > 0 && depth > bodyDepth - c.r * .6) worst = Math.max(worst, gap * bodyDepth);
-      }
-      return worst;
-    };
-    // Penalties are exactly zero until contact, then rise with a continuous slope (quadratic, then linear),
-    // so the solver never chatters at the edge of the body.
-    const SOFT = .02;
-    const soft = (x: number) => x <= 0 ? 0 : x < SOFT ? x * x / (2 * SOFT) : x - SOFT / 2;
+    const LEAN = .55;   // how much the link leaving the socket turns toward the target
+    const DROOP = .55;  // constant downward lean at the socket, so the tail hangs from the body
+    const TIP_DROOP = .3;
+
     // Whether a point falls inside the body's outline on screen (depth ignored), with a small margin.
+    const vp = new THREE.Vector3(), sa = new THREE.Vector2(), sb = new THREE.Vector2(), sp = new THREE.Vector2(), sd = new THREE.Vector2();
     const covered = (p: THREE.Vector3) => {
       vp.copy(p).applyMatrix4(view);
       const depth = -vp.z; sp.set(vp.x / depth, vp.y / depth);
@@ -179,89 +119,88 @@ export default function AstroTail({ className }: { className?: string }) {
         return sp.distanceTo(sa.addScaledVector(sd, t)) < c.r * 1.6 / bodyDepth;
       });
     };
-    // Residuals: tip-to-target, body intrusion and occlusion beyond the rest pose's, and a gentle pull home.
-    const residuals = (p: number[], target: THREE.Vector3, out: number[]) => {
-      shapeOf(p, trialP);
-      const tip = trialP[trialP.length - 1];
-      out[0] = tip.x - target.x; out[1] = tip.y - target.y; out[2] = tip.z - target.z;
-      let k = 3;
-      for (let i = 1; i < trialP.length; i++) {
-        out[k++] = 12 * soft(intrusion(trialP[i]) - restPenalty[i]);
-        out[k++] = 70 * soft(hidden(trialP[i]) - restHidden[i]);
-      }
-      // The socket link turns further than the target has turned away from the resting tip, so a cursor
-      // below makes the tail bend down right where it leaves the body.
-      leadWant.subVectors(target, trialP[0]).normalize().sub(restTipDir).multiplyScalar(LEAD_GAIN).add(restRootDir).normalize();
-      lead.subVectors(trialP[1], trialP[0]).normalize().sub(leadWant);
-      out[k++] = LEAD * lead.x * reach; out[k++] = LEAD * lead.y * reach; out[k++] = LEAD * lead.z * reach;
-      for (let j = 0; j < NP; j++) out[k++] = PULL[j] * (p[j] - HOME[j]) * reach;
-      return out;
+    // Slide a point along its camera ray so it is no deeper than the socket: same place on screen, in front.
+    const toFront = (p: THREE.Vector3, margin = 1) => {
+      vp.copy(p).applyMatrix4(view);
+      const depth = -vp.z, limit = socketDepth - reach * .04 * margin;
+      if (depth > limit) p.sub(camera.position).multiplyScalar(limit / depth).add(camera.position);
+      return p;
     };
-    let r0: number[] = [], r1: number[] = [];
-    let cols: number[][] = [];
-    const A: number[][] = Array.from({ length: NP }, () => new Array(NP + 1).fill(0));
-    const candidate = HOME.slice(), delta = HOME.slice();
-    let damping = .1;
-    const cost = (r: number[]) => r.reduce((sum, x) => sum + x * x, 0);
-    // Levenberg-Marquardt, warm-started from the last solution. A step is kept only if it lowers the cost,
-    // so for a still target the tail settles into one pose instead of hopping between two.
-    const solve = (target: THREE.Vector3) => {
-      // Escape poor local minima: if the home pose, or halfway home, already fits better, start from there.
-      let best = cost(residuals(params, target, r0));
-      for (const blend of [0, .5]) {
-        for (let j = 0; j < NP; j++) candidate[j] = HOME[j] + (params[j] - HOME[j]) * blend;
-        const c = cost(residuals(candidate, target, r1));
-        if (c < best) { best = c; for (let j = 0; j < NP; j++) params[j] = candidate[j]; damping = .05; }
+
+    // The curve: two Hermite pieces, socket -> middle -> tip, smooth through the middle. Any length the tail has
+    // beyond the straight socket-to-tip distance is taken up by letting the middle sag downward, so slack
+    // becomes a hanging arc rather than a loop or a cusp.
+    const M = new THREE.Vector3(), T = new THREE.Vector3(), chord = new THREE.Vector3(), sag = new THREE.Vector3();
+    const out = new THREE.Vector3(), arrive = new THREE.Vector3(), down = new THREE.Vector3();
+    const m0 = new THREE.Vector3(), m1 = new THREE.Vector3(), m2 = new THREE.Vector3();
+    const HALF = 110, SAMPLES = HALF * 2;
+    const curve = Array.from({ length: SAMPLES + 1 }, () => new THREE.Vector3());
+    const arc = new Float64Array(SAMPLES + 1);
+    const tmpA = new THREE.Vector3(), tmpB = new THREE.Vector3();
+    const hermite = (a: THREE.Vector3, b: THREE.Vector3, ta: THREE.Vector3, tb: THREE.Vector3, t: number, o: THREE.Vector3) => {
+      const t2 = t * t, t3 = t2 * t;
+      return o.copy(a).multiplyScalar(2 * t3 - 3 * t2 + 1).addScaledVector(ta, t3 - 2 * t2 + t)
+        .addScaledVector(b, -2 * t3 + 3 * t2).addScaledVector(tb, t3 - t2);
+    };
+    // Sample the whole curve for a given sag, pushed in front of the body; returns its length.
+    const build = (amount: number) => {
+      M.copy(P[0]).add(T).multiplyScalar(.5).addScaledVector(sag, amount);
+      const l1 = M.distanceTo(P[0]), l2 = T.distanceTo(M);
+      m0.copy(out).multiplyScalar(l1 * .8);
+      m1.subVectors(T, P[0]).normalize();
+      m2.copy(arrive).multiplyScalar(l2 * 1.2);
+      let total = 0;
+      for (let i = 0; i <= SAMPLES; i++) {
+        if (i <= HALF) hermite(P[0], M, m0, tmpA.copy(m1).multiplyScalar(l1), i / HALF, curve[i]);
+        else hermite(M, T, tmpA.copy(m1).multiplyScalar(l2), m2, (i - HALF) / HALF, curve[i]);
+        // The clearance grows from zero at the socket, so the curve still starts exactly at the socket.
+        toFront(curve[i], Math.min(1, i / (SAMPLES * .2)));
+        if (i > 0) total += curve[i].distanceTo(curve[i - 1]);
+        arc[i] = total;
       }
-      for (let iter = 0; iter < 10; iter++) {
-        const c0 = cost(residuals(params, target, r0));
-        for (let c = 0; c < NP; c++) {
-          for (let j = 0; j < NP; j++) trial[j] = params[j];
-          trial[c] += 1e-3;
-          residuals(trial, target, r1);
-          for (let i = 0; i < r0.length; i++) cols[c][i] = (r1[i] - r0[i]) / 1e-3;
-        }
-        for (let attempt = 0; attempt < 4; attempt++) {
-          // Normal equations (JtJ + damping * diag) x = -Jt r, solved by Gaussian elimination.
-          for (let a = 0; a < NP; a++) {
-            let g = 0;
-            for (let i = 0; i < r0.length; i++) g += cols[a][i] * r0[i];
-            A[a][NP] = -g;
-            for (let b = 0; b < NP; b++) {
-              let sum = 0;
-              for (let i = 0; i < r0.length; i++) sum += cols[a][i] * cols[b][i];
-              A[a][b] = sum;
-            }
-            A[a][a] = A[a][a] * (1 + damping) + 1e-6;
-          }
-          for (let c = 0; c < NP; c++) {
-            for (let r = c + 1; r < NP; r++) {
-              const f = A[r][c] / A[c][c];
-              for (let k = c; k <= NP; k++) A[r][k] -= f * A[c][k];
-            }
-          }
-          for (let r = NP - 1; r >= 0; r--) {
-            let x = A[r][NP];
-            for (let k = r + 1; k < NP; k++) x -= A[r][k] * delta[k];
-            delta[r] = x / A[r][r];
-          }
-          for (let j = 0; j < NP; j++) candidate[j] = THREE.MathUtils.clamp(params[j] + delta[j], LO[j], HI[j]);
-          const c1 = cost(residuals(candidate, target, r1));
-          if (c1 < c0) {
-            if (c0 - c1 < c0 * 1e-5 + 1e-10) {
-              // A vanishing gain with heavy damping only means the steps got too timid: loosen and retry.
-              if (damping > .05) { damping = .05; continue; }
-              // Converged: further steps would only nudge the pose back and forth, so the tail holds still.
-              return;
-            }
-            for (let j = 0; j < NP; j++) params[j] = candidate[j];
-            damping = Math.max(1e-3, damping * .4);
-            break;
-          }
-          damping = Math.min(1e4, damping * 5);
+      return total;
+    };
+    const layOut = (tip: THREE.Vector3) => {
+      T.copy(tip);
+      chord.subVectors(T, P[0]);
+      down.copy(camUp).negate();
+      const toTip = tmpB.copy(chord).normalize();
+      // Leave the socket leaning toward the target and down, and never rising more than a little.
+      out.copy(socketOut).multiplyScalar(1 - LEAN).addScaledVector(toTip, LEAN).addScaledVector(down, DROOP).normalize();
+      const rise = out.dot(camUp);
+      if (rise > .15) out.addScaledVector(camUp, .15 - rise).normalize();
+      arrive.copy(toTip).addScaledVector(down, TIP_DROOP).normalize();
+      // Sag direction: perpendicular to the chord on screen, on the downward side.
+      sag.crossVectors(camFwd, chord).normalize();
+      if (sag.dot(down) < 0) sag.negate();
+      let lo = 0, hi = reach;
+      if (build(0) < reach) {
+        for (let i = 0; i < 16; i++) { const mid = (lo + hi) / 2; if (build(mid) < reach) lo = mid; else hi = mid; }
+      }
+      build(lo);
+      // Joints at their true distances along the curve; any length left over continues along the end tangent.
+      let along = 0, k = 1;
+      for (let j = 1; j < P.length; j++) {
+        along += segments[j - 1].length;
+        while (k < SAMPLES && arc[k] < along) k++;
+        if (along <= arc[SAMPLES]) {
+          const f = (along - arc[k - 1]) / Math.max(1e-9, arc[k] - arc[k - 1]);
+          P[j].lerpVectors(curve[k - 1], curve[k], f);
+        } else {
+          tmpA.subVectors(curve[SAMPLES], curve[SAMPLES - 1]).normalize();
+          P[j].copy(curve[SAMPLES]).addScaledVector(tmpA, along - arc[SAMPLES]);
         }
       }
+      // Frames by parallel transport from the socket's rest orientation: no roll ever builds up.
+      const q = qf.copy(restFrame0);
+      tmpB.copy(restDir).applyQuaternion(q);
+      for (let i = 0; i < segments.length; i++) {
+        tmpA.subVectors(P[i + 1], P[i]).normalize();
+        q.premultiply(qs.setFromUnitVectors(tmpB, tmpA));
+        F[i].copy(q); tmpB.copy(tmpA);
+      }
     };
+    const qf = new THREE.Quaternion(), qs = new THREE.Quaternion();
 
     const setup = (gltf: { scene: THREE.Group }, data: SceneData) => {
       const v = (a: number[]) => new THREE.Vector3(a[0], a[1], a[2]);
@@ -279,7 +218,6 @@ export default function AstroTail({ className }: { className?: string }) {
         name = Object.keys(data.rest).find(k => data.rest[k].parent === parent && !controllers.has(k));
       }
       P = [...order.map(n => v(data.posed[n].head)), v(data.posed[order[order.length - 1]].tail)];
-      trialP = P.map(p => p.clone());
       segments = order.map((n, i) => {
         const group = new THREE.Group();
         const mesh = meshes.get('seg_' + n.replace('.', '_'));
@@ -287,49 +225,20 @@ export default function AstroTail({ className }: { className?: string }) {
         scene.add(group);
         return { group, length: P[i].distanceTo(P[i + 1]) };
       });
+      F = segments.map(() => new THREE.Quaternion());
       reach = segments.reduce((sum, s) => sum + s.length, 0);
       restTip.copy(P[P.length - 1]);
       restDir.subVectors(v(data.rest['Bone.001'].tail), v(data.rest['Bone.001'].head)).normalize();
-      // Rest frames by parallel transport along the frame-135 curve, starting from the mount's orientation.
-      const q = new THREE.Quaternion().fromArray(data.baseDelta), prev = restDir.clone().applyQuaternion(q), dir = new THREE.Vector3();
-      restFrames = segments.map((_, i) => {
-        dir.subVectors(P[i + 1], P[i]).normalize();
-        q.premultiply(new THREE.Quaternion().setFromUnitVectors(prev, dir)); prev.copy(dir);
-        return q.clone();
-      });
-      // Each rest bend as axis + angle in the segment's own frame (axis is perpendicular to the segment).
-      restAxis = []; restAngle = [];
-      restFrames.forEach((f, i) => {
-        const local = i === 0 ? new THREE.Quaternion() : restFrames[i - 1].clone().invert().multiply(f);
-        const angle = 2 * Math.acos(THREE.MathUtils.clamp(local.w, -1, 1)), s = Math.sqrt(Math.max(1e-12, 1 - local.w * local.w));
-        restAxis.push(angle > 1e-6 ? new THREE.Vector3(local.x / s, local.y / s, local.z / s) : new THREE.Vector3(1, 0, 0));
-        restAngle.push(angle);
-      });
-      F = restFrames.map(f => f.clone());
-      // Extra bend lives in two smooth, overlapping bands (near half, far half), starting at the socket.
-      const n = segments.length;
-      const band = (centre: number, width: number) => {
-        const w = segments.map((_, i) => Math.exp(-Math.pow((i / (n - 1) - centre) / width, 2)));
-        const total = w.reduce((a, b) => a + b, 0);
-        return w.map(x => x * 2 / total);
-      };
-      nearBand = band(.08, .22); farBand = band(.5, .22); tipBand = band(.88, .16);
-      rootBand = segments.map((_, i) => [.8, .55, .35, .2, .1][i] ?? 0); // the socket joint, easing over the next links
-      restRootDir.subVectors(P[1], P[0]).normalize(); restTipDir.subVectors(restTip, P[0]).normalize();
-      nearBand[0] *= 3; // the socket joint swings more freely than any single vertebra
-      const peak = (w: number[]) => { const m = Math.max(...w); return w.map(x => x / m); };
-      nearCover = peak(nearBand); farCover = peak(farBand);
+      restFrame0.fromArray(data.baseDelta);
+      socketOut.subVectors(P[1], P[0]).normalize();
 
-      // Body as capsules (torso, head, legs, arms); the tail is kept out of them.
+      // Body as capsules (torso, head, legs, arms), used to keep the cursor target off the body.
       const b = (k: string) => v(data.body[k]);
       capsules = [
         { a: b('Hips'), b: b('Spine2'), r: .17 }, { a: b('Spine2'), b: b('Head'), r: .15 }, { a: b('Head'), b: b('HeadTop_End'), r: .13 },
         { a: b('Hips'), b: b('LeftFoot'), r: .1 }, { a: b('Hips'), b: b('RightFoot'), r: .1 },
         { a: b('Spine2'), b: b('LeftHand'), r: .07 }, { a: b('Spine2'), b: b('RightHand'), r: .07 },
       ];
-      restPenalty = P.map(p => Math.max(0, intrusion(p)));
-      r0 = new Array(3 + 2 * (P.length - 1) + 3 + NP).fill(0); r1 = r0.slice();
-      cols = Array.from({ length: NP }, () => r0.slice());
       goal.copy(restTip); aim.copy(restTip); ease1.copy(restTip); ease2.copy(restTip);
 
       const m = new THREE.Matrix4().fromArray(data.camera.matrix);
@@ -358,28 +267,24 @@ export default function AstroTail({ className }: { className?: string }) {
       camera.getWorldDirection(camFwd);
       view.copy(camera.matrixWorldInverse);
       viewCapsules = capsules.map(c => ({ a: c.a.clone().applyMatrix4(view), b: c.b.clone().applyMatrix4(view), r: c.r }));
-      restHidden = P.map(p => hidden(p));
+      socketDepth = -P[0].clone().applyMatrix4(view).z;
+      layOut(ease2);
       observer.observe(host); resize();
     };
 
     const tmp = new THREE.Vector3();
     const simulate = (t: number, dt: number) => {
-      // Idle: a wide side-to-side sway; with a pointer the tip reaches for the cursor.
-      tmp.copy(restTip).addScaledVector(camRight, Math.sin(t * .8) * reach * .38).addScaledVector(camUp, Math.sin(t * .5 + 1) * reach * .3);
+      // Idle: the tail hangs down and out to the side and sways slowly; with a pointer the tip goes to the cursor.
+      tmp.copy(P[0]).addScaledVector(camRight, -reach * (.42 + Math.sin(t * .8) * .22)).addScaledVector(camUp, -reach * (.5 + Math.sin(t * .5 + 1) * .12));
       goal.lerpVectors(tmp, aim, pointerWeight);
-      tmp.subVectors(goal, restTip);
-      if (tmp.length() > reach * .95) goal.copy(restTip).add(tmp.setLength(reach * .95));
+      // Keep the tip within the tail's comfortable reach from the socket, and in front of the body.
+      tmp.subVectors(goal, P[0]);
+      goal.copy(P[0]).add(tmp.setLength(THREE.MathUtils.clamp(tmp.length(), reach * .5, reach * .9)));
+      toFront(goal);
       // Two cascaded low-pass stages on the target: smooth start, smooth stop, no overshoot.
-      const k = 1 - Math.exp(-dt * 5);
+      const k = 1 - Math.exp(-dt * 4);
       ease1.lerp(goal, k); ease2.lerp(ease1, k);
-      solve(ease2);
-      // Ease toward the solved pose with a speed cap, so even a change of pose glides rather than pops.
-      const ks = 1 - Math.exp(-dt * 14);
-      for (let j = 0; j < NP; j++) {
-        const cap = MAX_RATE[j] * dt;
-        smooth[j] += THREE.MathUtils.clamp((params[j] - smooth[j]) * ks, -cap, cap);
-      }
-      shapeOf(smooth, P, F);
+      layOut(ease2);
     };
     const pose = () => {
       segments.forEach((s, i) => { s.group.position.copy(P[i]); s.group.quaternion.copy(F[i]); });
