@@ -91,6 +91,10 @@ export default function Home() {
         node.style.width = w + 'px';
         node.style.transform = 'translate(-50%, -50%) translate3d(' + tx + 'px,' + ty + 'px,0)';
         node.style.zIndex = String(Math.round((z + 1) * 50));
+        // Cards turning onto the far side of the orb soften as if seen through frosted glass.
+        const back = r.leaving ? 0 : Math.max(0, Math.min(1, (-z - .05) / .75));
+        node.style.filter = back > .01 ? 'blur(' + (back * 3.5).toFixed(2) + 'px)' : '';
+        node.style.opacity = r.leaving ? '' : String(1 - back * .18);
       });
       if (arrive && now - arrive.start > 1500) arrival.current = null;
       frame = requestAnimationFrame(tick);

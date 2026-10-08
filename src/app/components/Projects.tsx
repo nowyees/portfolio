@@ -5,7 +5,6 @@ import { holdPageEnter, makeClone, prefersReducedMotion, projectKey, recedeIntoP
 import SiteShell from './SiteShell';
 
 const px = (r: { left: number; top: number; width: number; height: number }) => ({ left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px' });
-const pad = (n: number) => String(n).padStart(2, '0');
 
 export default function Projects() {
   const projects = usePortfolio();
@@ -80,23 +79,20 @@ export default function Projects() {
   return (
     <SiteShell active="projects">
       <main className="projects-page projects-index" ref={mainRef}>
-        <div className="projects-columns" aria-hidden="true">
-          {Array.from({ length: 12 }, (_, i) => <i key={i} style={{ '--i': i } as React.CSSProperties} />)}
-        </div>
         <h1 className="gallery-intro"><span>A Curated Selection of</span> <em>Objects and Visual Experiences</em></h1>
-        <p className="projects-count">Index — {pad(projects.length)} works</p>
         <section className="project-grid" aria-label="Selected projects">
-          {projects.map((project, index) => {
+          {projects.map(project => {
             const to = '/project/' + project.category + '/' + project.id;
             return (
               <article className="project-tile" key={project.category + '-' + project.id}>
                 <Link className="project-tile-image" to={to} aria-label={'View ' + project.title}
                   data-key={projectKey(project)} data-image={project.image} onClick={event => openProject(event, to)}>
-                  <img src={imageUrl(project.image, 500)} alt={project.title} loading="lazy" />
+                  <img src={imageUrl(project.image, 700)} alt={project.title} loading="lazy" />
                 </Link>
-                <span className="project-index">{pad(index + 1)}</span>
-                <h2><Link to={to} onClick={event => openProject(event, to)}>{project.title}</Link></h2>
-                <p>{project.hashtags?.join(', ') || project.year}</p>
+                <div className="project-meta">
+                  <h2><Link to={to} onClick={event => openProject(event, to)}>{project.title}</Link></h2>
+                  <p>{project.year}</p>
+                </div>
               </article>
             );
           })}
