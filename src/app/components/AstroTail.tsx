@@ -106,6 +106,10 @@ export default function AstroTail({ className }: { className?: string }) {
     const pointer = { x: 0, y: 0, inside: false };
     let lastTime = -1, goalFrame = START, frameEase = START, current = START, lean = 0, leanEase = 0;
     let tips: THREE.Vector3[] = [];                    // tip position of each pose, unleaned
+    // Follow-through: each joint follows the film frame at its own pace, quick at the socket and slower toward
+    // the tip, so a moving tail trails and curls behind its root and settles into one pose when it stops.
+    const TRAIL = { root: 16, tip: 3.5 };              // per-second catch-up rates at the socket and at the tip
+    let jointFrames: number[] = [];
 
     const qb = new THREE.Quaternion(), qv = new THREE.Quaternion();
     const step = new THREE.Vector3(), socketScreen = new THREE.Vector3();
@@ -116,22 +120,36 @@ export default function AstroTail({ className }: { className?: string }) {
     const SOFT = { strong: { knee: 35, keep: .15 }, mild: { knee: 60, keep: .2 }, fromFrame: 44, toFrame: 58 };
     const ID = new THREE.Quaternion();
     const softness = (f: number) => 1 - THREE.MathUtils.smoothstep(f, SOFT.fromFrame, SOFT.toFrame);
+    // Returns the bend taken out (radians) and leaves its axis in `removedAxis`, so it can be spread downstream.
+    const removedAxis = new THREE.Vector3();
     const soften = (q: THREE.Quaternion, s: number) => {
       if (q.w < 0) q.set(-q.x, -q.y, -q.z, -q.w);
       const angle = 2 * Math.acos(Math.min(1, q.w));
       const knee = THREE.MathUtils.degToRad(THREE.MathUtils.lerp(SOFT.mild.knee, SOFT.strong.knee, s));
       const keep = THREE.MathUtils.lerp(SOFT.mild.keep, SOFT.strong.keep, s);
-      if (angle > knee) q.slerpQuaternions(ID, qs.copy(q), (knee + (angle - knee) * keep) / angle);
-      return q;
+      if (angle <= knee) return 0;
+      const kept = knee + (angle - knee) * keep, sin = Math.sqrt(1 - q.w * q.w);
+      removedAxis.set(q.x / sin, q.y / sin, q.z / sin);
+      q.slerpQuaternions(ID, qs.copy(q), kept / angle);
+      return angle - kept;
     };
+    // The bend taken out of a fold is not discarded: it is handed on to the next CURL_SPREAD joints as a gentle
+    // curl about the same axis, so the tail still curves where the film folds it, just without the kink.
+    const CURL_SPREAD = 10, CURL_SHARE = .8;
+    const curlAxis = new THREE.Vector3(), qcurl = new THREE.Quaternion();
     const qs = new THREE.Quaternion();
     // Pose the chain from relative rotations, leaned about the view axis; positions follow from the socket.
     const chain = (rotations: (i: number, out: THREE.Quaternion) => THREE.Quaternion, lean: number, frame: number) => {
       qv.setFromAxisAngle(viewAxis, lean);
       const s = softness(frame);
+      let curl = 0, curlLeft = 0;
       for (let i = 0; i < segments.length; i++) {
         rotations(i, qb);
-        if (i > 0) soften(qb, s);
+        if (i > 0) {
+          const removed = soften(qb, s);
+          if (removed > 0) { curl = removed * CURL_SHARE / CURL_SPREAD; curlLeft = CURL_SPREAD; curlAxis.copy(removedAxis); }
+          else if (curlLeft > 0) { qb.multiply(qcurl.setFromAxisAngle(curlAxis, curl)); curlLeft--; }
+        }
         if (i === 0) F[0].multiplyQuaternions(qv, qb); else F[i].multiplyQuaternions(F[i - 1], qb);
         step.copy(restDir).applyQuaternion(F[i]);
         P[i + 1].copy(P[i]).addScaledVector(step, segments[i].length);
@@ -193,6 +211,7 @@ export default function AstroTail({ className }: { className?: string }) {
       }
       tips = clip.map((row, f) => { chain((i, out) => out.copy(row[i]), 0, f); return P[P.length - 1].clone(); });
       chain((i, out) => out.copy(clip[START][i]), 0, START);
+      jointFrames = segments.map(() => START);
 
       // Centre the astronaut and everything the tail sweeps through, then remember the view angle they need.
       const pts = [...Object.values(data.body).map(v), ...reachPoints].map(toView);
@@ -235,7 +254,11 @@ export default function AstroTail({ className }: { className?: string }) {
         want = THREE.MathUtils.clamp(Math.atan2(Math.sin(turn), Math.cos(turn)), -FOLLOW.lean, FOLLOW.lean);
       }
       leanEase += (want - leanEase) * k; lean += (leanEase - lean) * k;
-      chain((i, out) => frameAt(current, i, out), lean, current);
+      const n = jointFrames.length;
+      jointFrames.forEach((f, i) => {
+        jointFrames[i] = f + (current - f) * (1 - Math.exp(-dt * THREE.MathUtils.lerp(TRAIL.root, TRAIL.tip, i / (n - 1))));
+      });
+      chain((i, out) => frameAt(jointFrames[i], i, out), lean, current);
     };
     const pose = () => {
       segments.forEach((s, i) => { s.group.position.copy(P[i]); s.group.quaternion.copy(F[i]); });
