@@ -160,7 +160,8 @@ export default function Home() {
                 onClick={event => openProject(event, to)}
               >
                 <img src={imageUrl(item.image, 300)} alt="" draggable={false} />
-                <span className="space-card-label">{item.project.title}</span>
+                <span className="card-tab" aria-hidden="true" />
+                <span className="space-card-label"><span className="card-number">{String(projects.indexOf(item.project) + 1).padStart(2, '0')}</span>{item.project.title}</span>
               </Link>
             );
           })}

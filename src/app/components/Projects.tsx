@@ -81,7 +81,7 @@ export default function Projects() {
       <main className="projects-page projects-index" ref={mainRef}>
         <h1 className="gallery-intro"><span>A Curated Selection of</span> <em>Objects and Visual Experiences</em></h1>
         <section className="project-grid" aria-label="Selected projects">
-          {projects.map(project => {
+          {projects.map((project, index) => {
             const to = '/project/' + project.category + '/' + project.id;
             return (
               <article className="project-tile" key={project.category + '-' + project.id}>
@@ -89,7 +89,9 @@ export default function Projects() {
                   data-key={projectKey(project)} data-image={project.image} onClick={event => openProject(event, to)}>
                   <img src={imageUrl(project.image, 700)} alt={project.title} loading="lazy" />
                 </Link>
+                <span className="card-tab" aria-hidden="true" />
                 <div className="project-meta">
+                  <span className="card-number">{String(index + 1).padStart(2, '0')}</span>
                   <h2><Link to={to} onClick={event => openProject(event, to)}>{project.title}</Link></h2>
                   <p>{project.year}</p>
                 </div>
