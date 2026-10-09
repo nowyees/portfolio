@@ -120,7 +120,7 @@ export default function AstroTail({ className }: { className?: string }) {
       downsampleMaterial.uniforms.pixel.value.set(1 / (w * dpr), 1 / (h * dpr));
       edgeMaterial.uniforms.texel.value.set(1 / (w * ratio), 1 / (h * ratio));
       camera.aspect = w / h;
-      camera.fov = THREE.MathUtils.radToDeg(2 * Math.atan(Math.max(fitY, fitX / camera.aspect) / .8));
+      camera.fov = THREE.MathUtils.radToDeg(2 * Math.atan(Math.max(fitY, fitX / camera.aspect) / .94));
       camera.updateProjectionMatrix();
     };
     const observer = new ResizeObserver(resize);
@@ -300,10 +300,10 @@ export default function AstroTail({ className }: { className?: string }) {
         holdable.push(sharpest() <= HOLDABLE_BEND);
         return P[P.length - 1].clone();
       });
-      // Where the tail can rest (poses it may stop on, either side, leaned either way), so
+      // Where the tail can rest (poses it may stop on, either side; a full lean may brush the edge), so
       // framing leaves room for it. Frames it only passes through may brush the edge; they don't shrink the figure.
       const reachPoints: THREE.Vector3[] = [];
-      for (const lean of [-FOLLOW.lean, 0, FOLLOW.lean]) for (const mirrored of [0, 1]) {
+      for (const lean of [0]) for (const mirrored of [0, 1]) {
         clip.forEach((row, f) => {
           if (!holdable[f]) return;
           chain((i, out) => out.copy(row[i]), lean, f, mirrored); P.forEach(p => reachPoints.push(p.clone()));
