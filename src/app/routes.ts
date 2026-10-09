@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router";
+import { createBrowserRouter, redirect } from "react-router";
 import Home from "./components/Home";
 import Projects from "./components/Projects";
 import About from "./components/About";
@@ -14,5 +14,6 @@ export const router = createBrowserRouter([
   { path: "/admin", Component: AdminPage },
   { path: "/freedive", Component: FreeDive },
   // three.js only loads when this route is visited
-  { path: "/lab", lazy: async () => ({ Component: (await import("./components/RobotLab")).default }) },
+  { path: "/motion/:id?", lazy: async () => ({ Component: (await import("./components/MotionGallery")).default }) },
+  { path: "/lab", loader: () => redirect("/motion") },
 ]);

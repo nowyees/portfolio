@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 
-type ActivePage = 'space' | 'projects' | 'about';
+type ActivePage = 'space' | 'projects' | 'motion' | 'about';
 const items: Array<{ key: ActivePage; label: string; index: string; to: string }> = [
   { key: 'space', label: 'Space', index: '1', to: '/' },
   { key: 'projects', label: 'Projects', index: '2', to: '/projects' },
-  { key: 'about', label: 'About', index: '3', to: '/about' },
+  { key: 'motion', label: 'Motion', index: '3', to: '/motion' },
+  { key: 'about', label: 'About', index: '4', to: '/about' },
 ];
 const typedLabels = new Set<ActivePage>();
 const typingCadence = [82, 148, 66, 116, 91, 164, 74, 132];
@@ -55,7 +56,7 @@ export default function SiteShell({ active, children }: { active: ActivePage; ch
   const location = useLocation(), navigate = useNavigate();
   const [soundOn, setSoundOn] = useState(soundEnabled);
   useEffect(() => {
-    document.title = (active === 'space' ? 'Creative Space' : active === 'projects' ? 'Projects' : 'About') + ' — Lee Jae Woong';
+    document.title = (active === 'space' ? 'Creative Space' : active === 'projects' ? 'Projects' : active === 'motion' ? 'Motion Gallery' : 'About') + ' — Lee Jae Woong';
     const keydown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement;
       if (target.closest('input, textarea, select, [contenteditable="true"], [role="dialog"]') || event.metaKey || event.ctrlKey || event.altKey) return;
