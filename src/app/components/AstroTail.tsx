@@ -11,7 +11,8 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
  *   1-77), moving between them via the film's own in-between frames; on the left it shows the right side's poses mirrored; it holds still without a cursor.
  * Framing: squarely behind the astronaut (as in the film) at the scene camera's distance, upright, fitted to the view,
  *   with room for everything the tail sweeps through at its widest.
- * Look: view normals + depth rendered at 2× resolution, an edge pass keeps creases and silhouettes only.
+ * Look: view normals + depth rendered at 2× resolution, an edge pass keeps creases and silhouettes as one-texel
+ *   lines, and a box filter brings them down to the screen as thin antialiased hairlines.
  */
 
 type BoneData = { head: number[]; tail: number[]; parent?: string | null };
@@ -33,9 +34,9 @@ const edgeShader = {
     void main(){
       vec4 c = texture2D(tNormal, vUv); float z = viewZ(texture2D(tDepth, vUv).x);
       float depthEdge = 0., normalEdge = 0., coverage = c.a;
-      for (int i = 0; i < 8; i++) {
-        vec2 o = i == 0 ? vec2(1., 0.) : i == 1 ? vec2(-1., 0.) : i == 2 ? vec2(0., 1.) : i == 3 ? vec2(0., -1.)
-               : i == 4 ? vec2(.7, .7) : i == 5 ? vec2(-.7, -.7) : i == 6 ? vec2(.7, -.7) : vec2(-.7, .7);
+      // Forward neighbours only, so each edge is marked on one side of it: lines one texel wide.
+      for (int i = 0; i < 4; i++) {
+        vec2 o = i == 0 ? vec2(1., 0.) : i == 1 ? vec2(0., 1.) : i == 2 ? vec2(.7, .7) : vec2(.7, -.7);
         vec2 uv = vUv + o * texel;
         vec4 cn = texture2D(tNormal, uv); float zn = viewZ(texture2D(tDepth, uv).x);
         coverage = max(coverage, cn.a);
@@ -44,8 +45,29 @@ const edgeShader = {
           normalEdge = max(normalEdge, 1. - dot(c.xyz * 2. - 1., cn.xyz * 2. - 1.));
         } else if (c.a > .5 || cn.a > .5) depthEdge = 1.;
       }
-      float edge = max(smoothstep(.012, .03, depthEdge), smoothstep(.12, .3, normalEdge)) * coverage;
+      float edge = max(smoothstep(.008, .03, depthEdge), smoothstep(.1, .3, normalEdge)) * coverage;
       gl_FragColor = vec4(mix(vec3(1.), vec3(.067), edge), max(edge, c.a));
+    }`,
+};
+
+// Box-filters the supersampled line image down to the screen: each screen pixel averages the 4×4 grid of samples
+// covering it, so one-texel lines become thin, continuous, antialiased hairlines. The ink is then darkened a
+// little, since averaging a thin line pales it.
+const downsampleShader = {
+  vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0., 1.); }',
+  fragmentShader: `
+    uniform sampler2D tLines; uniform vec2 pixel; varying vec2 vUv;
+    void main(){
+      vec4 sum = vec4(0.);
+      for (int x = 0; x < 4; x++) for (int y = 0; y < 4; y++) {
+        vec4 c = texture2D(tLines, vUv + (vec2(float(x), float(y)) - 1.5) / 4. * pixel);
+        sum += vec4(c.rgb * c.a, c.a);
+      }
+      sum /= 16.;
+      if (sum.a < .001) { gl_FragColor = vec4(0.); return; }
+      float ink = 1. - sum.r / sum.a;
+      ink = 1. - (1. - ink) * (1. - ink);
+      gl_FragColor = vec4(vec3(1. - ink * .933), sum.a);
     }`,
 };
 
@@ -70,15 +92,23 @@ export default function AstroTail({ className }: { className?: string }) {
       uniforms: { tNormal: { value: target.texture }, tDepth: { value: target.depthTexture }, texel: { value: new THREE.Vector2() }, near: { value: camera.near }, far: { value: camera.far } },
     });
     const quadScene = new THREE.Scene(); quadScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), edgeMaterial));
+    const lines = new THREE.WebGLRenderTarget(1, 1, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });
+    const downsampleMaterial = new THREE.ShaderMaterial({
+      ...downsampleShader, transparent: true,
+      uniforms: { tLines: { value: lines.texture }, pixel: { value: new THREE.Vector2() } },
+    });
+    const screenScene = new THREE.Scene(); screenScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), downsampleMaterial));
     const quadCamera = new THREE.Camera();
     let fitX = .3, fitY = .3; // half-extents of the subject as tangents of the view angle
 
     const resize = () => {
       const w = host.clientWidth, h = host.clientHeight;
-      // Supersample: lines are drawn at ~2 device px then scaled down, which smooths them.
-      const ratio = Math.min(3, (window.devicePixelRatio || 1) * 2);
-      renderer.setPixelRatio(ratio); renderer.setSize(w, h);
+      // Supersample: lines are drawn one texel wide at 2× the device resolution, then box-filtered down.
+      const dpr = Math.min(2, window.devicePixelRatio || 1), ratio = dpr * 2;
+      renderer.setPixelRatio(dpr); renderer.setSize(w, h);
       target.setSize(Math.round(w * ratio), Math.round(h * ratio));
+      lines.setSize(Math.round(w * ratio), Math.round(h * ratio));
+      downsampleMaterial.uniforms.pixel.value.set(1 / (w * dpr), 1 / (h * dpr));
       edgeMaterial.uniforms.texel.value.set(1 / (w * ratio), 1 / (h * ratio));
       camera.aspect = w / h;
       camera.fov = THREE.MathUtils.radToDeg(2 * Math.atan(Math.max(fitY, fitX / camera.aspect) / .8));
@@ -250,13 +280,6 @@ export default function AstroTail({ className }: { className?: string }) {
       mirrorNormal.setFromMatrixColumn(camera.matrixWorld, 0).normalize();
       const toView = (p: THREE.Vector3) => p.clone().applyMatrix4(camera.matrixWorldInverse);
 
-      // Everything the tail sweeps through over the loop, leaned either way, so framing leaves room for it.
-      const reachPoints: THREE.Vector3[] = [];
-      for (const lean of [-FOLLOW.lean, 0, FOLLOW.lean]) {
-        for (const mirrored of [0, 1]) for (const relaxed of [0, 1]) {
-          clip.forEach((row, f) => { chain((i, out) => out.copy(row[i]), lean, f, mirrored, relaxed); P.forEach(p => reachPoints.push(p.clone())); });
-        }
-      }
       const sharpest = () => {
         let m = 0;
         for (let i = 1; i < P.length - 1; i++) m = Math.max(m, step.subVectors(P[i], P[i - 1]).normalize().angleTo(tmpDir.subVectors(P[i + 1], P[i]).normalize()));
@@ -268,6 +291,15 @@ export default function AstroTail({ className }: { className?: string }) {
         holdable.push(sharpest() <= HOLDABLE_BEND);
         return P[P.length - 1].clone();
       });
+      // Where the tail can rest (poses it may stop on, either side, leaned either way), so
+      // framing leaves room for it. Frames it only passes through may brush the edge; they don't shrink the figure.
+      const reachPoints: THREE.Vector3[] = [];
+      for (const lean of [-FOLLOW.lean, 0, FOLLOW.lean]) for (const mirrored of [0, 1]) {
+        clip.forEach((row, f) => {
+          if (!holdable[f]) return;
+          chain((i, out) => out.copy(row[i]), lean, f, mirrored); P.forEach(p => reachPoints.push(p.clone()));
+        });
+      }
       chain((i, out) => out.copy(clip[START][i]), 0, START);
       jointFrames = segments.map(() => START);
 
@@ -356,7 +388,8 @@ export default function AstroTail({ className }: { className?: string }) {
       simulate(now / 1000);
       pose();
       renderer.setRenderTarget(target); renderer.clear(); renderer.render(scene, camera);
-      renderer.setRenderTarget(null); renderer.clear(); renderer.render(quadScene, quadCamera);
+      renderer.setRenderTarget(lines); renderer.clear(); renderer.render(quadScene, quadCamera);
+      renderer.setRenderTarget(null); renderer.clear(); renderer.render(screenScene, quadCamera);
     };
 
     const move = (event: PointerEvent) => {
@@ -380,7 +413,7 @@ export default function AstroTail({ className }: { className?: string }) {
       disposed = true; cancelAnimationFrame(frame); observer.disconnect();
       host.removeEventListener('pointerdown', move); host.removeEventListener('pointermove', move); host.removeEventListener('pointerleave', leave);
       scene.traverse(o => { const m = o as THREE.Mesh; if (m.isMesh) m.geometry.dispose(); });
-      target.dispose(); edgeMaterial.dispose(); normalMaterial.dispose(); draco.dispose(); renderer.dispose();
+      target.dispose(); lines.dispose(); edgeMaterial.dispose(); downsampleMaterial.dispose(); normalMaterial.dispose(); draco.dispose(); renderer.dispose();
       renderer.domElement.remove();
     };
   }, []);
