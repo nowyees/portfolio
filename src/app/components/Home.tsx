@@ -11,6 +11,8 @@ export default function Home() {
   const navigate = useNavigate();
   const stageRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<Array<HTMLAnchorElement | null>>([]);
+  // The hovered card grows about its own centre; the others dim, as on Projects.
+  const focus = useRef({ index: -1, scale: [] as number[], dim: 0 });
   const rotation = useRef({ x: .12, y: .35, vx: 0, vy: 0, drag: false, moved: false, distance: 0, px: 0, py: 0, hover: false, leaving: 0 });
   const arrival = useRef<Arrival | null>(null);
   const pendingGrid = useRef<SnapshotItem[] | null | undefined>(undefined);
@@ -59,7 +61,10 @@ export default function Home() {
     let frame = 0, last = 0, width = stage.clientWidth, height = stage.clientHeight;
     const observer = new ResizeObserver(() => { width = stage.clientWidth; height = stage.clientHeight; });
     observer.observe(stage);
+    const FOCUS = { scale: 1.4, dim: .3, rate: .18 };   // hovered card's size, the others' opacity, easing per frame
     const tick = (now: number) => {
+      const f = focus.current;
+      f.dim += ((f.index >= 0 ? 1 : 0) - f.dim) * FOCUS.rate;
       const dt = Math.min(now - (last || now), 32); last = now;
       const r = rotation.current;
       if (!r.drag) {
@@ -90,12 +95,15 @@ export default function Home() {
         }
         node.style.width = w + 'px';
         node.style.fontSize = (w * .075).toFixed(2) + 'px'; // the spec text scales with the card
-        node.style.transform = 'translate(-50%, -50%) translate3d(' + tx + 'px,' + ty + 'px,0)';
+        f.scale[i] = (f.scale[i] ?? 1) + ((f.index === i ? FOCUS.scale : 1) - (f.scale[i] ?? 1)) * FOCUS.rate;
+        node.style.transform = 'translate(-50%, -50%) translate3d(' + tx + 'px,' + ty + 'px,0) scale(' + f.scale[i].toFixed(4) + ')';
         node.style.zIndex = String(Math.round((z + 1) * 50));
         // Cards turning onto the far side of the orb soften as if seen through frosted glass.
         const back = r.leaving ? 0 : Math.max(0, Math.min(1, (-z - .05) / .75));
         node.style.filter = back > .01 ? 'blur(' + (back * 3.5).toFixed(2) + 'px)' : '';
-        node.style.opacity = r.leaving ? '' : String(1 - back * .18);
+        const dimmed = f.index === i ? 0 : f.dim * (1 - FOCUS.dim);
+        node.style.opacity = r.leaving ? '' : String((1 - back * .18) * (1 - dimmed));
+        if (f.index === i) node.style.filter = '';
       });
       if (arrive && now - arrive.start > 1500) arrival.current = null;
       frame = requestAnimationFrame(tick);
@@ -154,10 +162,10 @@ export default function Home() {
                 ref={node => { cardsRef.current[index] = node; }}
                 style={{ '--entry-delay': Math.min(index * 24, 380) + 'ms' } as React.CSSProperties}
                 aria-label={'Open ' + item.project.title}
-                onMouseEnter={() => { rotation.current.hover = true; }}
-                onMouseLeave={() => { if (!rotation.current.leaving) rotation.current.hover = false; }}
-                onFocus={() => { rotation.current.hover = true; }}
-                onBlur={() => { if (!rotation.current.leaving) rotation.current.hover = false; }}
+                onMouseEnter={() => { rotation.current.hover = true; focus.current.index = index; }}
+                onMouseLeave={() => { if (!rotation.current.leaving) { rotation.current.hover = false; focus.current.index = -1; } }}
+                onFocus={() => { rotation.current.hover = true; focus.current.index = index; }}
+                onBlur={() => { if (!rotation.current.leaving) { rotation.current.hover = false; focus.current.index = -1; } }}
                 onClick={event => openProject(event, to)}
               >
                 {/* The same spec sheet as a Projects card, in miniature: name, year and field, image. */}
