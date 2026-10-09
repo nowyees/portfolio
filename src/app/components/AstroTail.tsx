@@ -108,12 +108,16 @@ export default function AstroTail({ className }: { className?: string }) {
     // To change sides the tail first swings back to the film's middle frame (the right swing's start, hanging
     // down), where a pose and its mirror image nearly agree, and flips there; blending two curled poses with their
     // mirror images would crumple the tail.
-    const MIRROR = { deadZone: .03, rate: 10, near: 1.5 };  // cursor must cross the socket by `deadZone` to switch
+    // Straight below the socket a curled pose from either side can put its tip near the cursor, so tiny cursor
+    // moves there would whip the tail from one side to the other. Within `band` of the socket (aspect-corrected
+    // screen units) the side never changes and the tail is drawn toward the middle frame, hanging down and leaning
+    // after the cursor; the pull fades out by `band * fade`.
+    const MIRROR = { band: .15, fade: 2.5, pull: 3, loose: .6, steady: .6, rate: 10, near: 1.5 };
     // The film's frames on the way back to the middle coil the tail tightly; while crossing, every bend is eased
     // off by up to `relax` and the tail moves more slowly, so it swings loosely over instead of whipping.
     const CROSS = { relax: .55, rate: 3, speed: .6 };
     let crossEase = 0, cross = 0;
-    let side = 1, shown = 1, mirror = 0, middle = 50;  // cursor's side, side shown (1 right, -1 left), mirror weight, middle frame
+    let side = 1, shown = 1, mirror = 0, middle = 50, centred = 0;  // cursor's side, side shown (1 right, -1 left), mirror weight, middle frame
     const reflect = (v: THREE.Vector3) => v.addScaledVector(mirrorNormal, -2 * v.dot(mirrorNormal));
 
     const LOOP = { first: 1, last: 77 };               // the film frames used as poses
@@ -300,7 +304,8 @@ export default function AstroTail({ className }: { className?: string }) {
         socketScreen.copy(P[0]).project(camera);
         cursorOffset.set((pointer.x - socketScreen.x) * camera.aspect, pointer.y - socketScreen.y);
         // On the left, chase the mirror image of the cursor with the right side's poses; they are shown mirrored.
-        if (cursorOffset.x > MIRROR.deadZone) side = 1; else if (cursorOffset.x < -MIRROR.deadZone) side = -1;
+        if (cursorOffset.x > MIRROR.band) side = 1; else if (cursorOffset.x < -MIRROR.band) side = -1;
+        centred = 1 - THREE.MathUtils.smoothstep(Math.abs(cursorOffset.x), MIRROR.band, MIRROR.band * MIRROR.fade);
         cursorOffset.x *= shown;
       }
       const crossing = side !== shown;
@@ -313,7 +318,8 @@ export default function AstroTail({ className }: { className?: string }) {
         let best = goalFrame, bestCost = Infinity;
         tips.forEach((tip, f) => {
           if (!holdable[f]) return;
-          const cost = screenOffset(tip, tipOffset).distanceTo(cursorOffset) + FOLLOW.stickiness * Math.abs(f - current) / clip.length;
+          const cost = screenOffset(tip, tipOffset).distanceTo(cursorOffset) + FOLLOW.stickiness * Math.abs(f - current) / clip.length
+            + MIRROR.pull * centred * Math.abs(f - middle) / clip.length;
           if (cost < bestCost) { bestCost = cost; best = f; }
         });
         goalFrame = best;
@@ -322,7 +328,9 @@ export default function AstroTail({ className }: { className?: string }) {
       const k = 1 - Math.exp(-dt * FOLLOW.rate);
       frameEase += (goalFrame - frameEase) * k;
       const ck = 1 - Math.exp(-dt * CROSS.rate);
-      crossEase += ((crossing ? 1 : 0) - crossEase) * ck; cross += (crossEase - cross) * ck;
+      // Below the socket the tail also hangs loosely, as it does while crossing.
+      const loose = Math.max(crossing ? 1 : 0, (pointer.inside ? centred : 0) * MIRROR.loose);
+      crossEase += (loose - crossEase) * ck; cross += (crossEase - cross) * ck;
       const maxStep = FOLLOW.maxSpeed * dt * (1 - (1 - CROSS.speed) * cross);
       current += THREE.MathUtils.clamp((frameEase - current) * k, -maxStep, maxStep);
       // Lean the whole tail about the socket so its tip points at the cursor (clockwise on screen is positive).
@@ -332,6 +340,8 @@ export default function AstroTail({ className }: { className?: string }) {
         screenOffset(P[P.length - 1], tipOffset);
         const turn = Math.atan2(tipOffset.y, tipOffset.x) - Math.atan2(cursorOffset.y, cursorOffset.x);
         want = THREE.MathUtils.clamp(Math.atan2(Math.sin(turn), Math.cos(turn)), -FOLLOW.lean, FOLLOW.lean);
+        // Near the tip a small cursor move is a large change of angle; lean less there so it doesn't swing over.
+        want *= 1 - MIRROR.steady * centred;
       }
       leanEase += (want - leanEase) * k; lean += (leanEase - lean) * k;
       mirror += ((shown < 0 ? 1 : 0) - mirror) * (1 - Math.exp(-dt * MIRROR.rate));
