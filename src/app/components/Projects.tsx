@@ -89,11 +89,13 @@ export default function Projects() {
                   data-key={projectKey(project)} data-image={project.image} onClick={event => openProject(event, to)}>
                   <img src={imageUrl(project.image, 700)} alt={project.title} loading="lazy" />
                 </Link>
+                <span className="card-frame" aria-hidden="true" />
                 <span className="card-tab" aria-hidden="true" />
+                <span className="card-annot" aria-hidden="true">FIG.{String(index + 1).padStart(2, '0')} — 3:4</span>
                 <div className="project-meta">
                   <span className="card-number">{String(index + 1).padStart(2, '0')}</span>
                   <h2><Link to={to} onClick={event => openProject(event, to)}>{project.title}</Link></h2>
-                  <p>{project.year}</p>
+                  <p>Y.{project.year}</p>
                 </div>
               </article>
             );

@@ -41,12 +41,22 @@
 .space-card { position:absolute; left:50%; top:50%; width:72px; aspect-ratio:3/4; padding:0; border:0; background:#f7f7f7; transform:translate(-50%,-50%); cursor:pointer; }
 .space-card img { width:100%; height:100%; display:block; object-fit:cover; pointer-events:none; animation:image-arrive .9s ease both; animation-delay:var(--entry-delay); }
 @keyframes image-arrive { from { opacity:0; scale:.7; } to { opacity:1; scale:1; } }
-/* Specimen cards: 1px frame, a square tab centred on the top-right corner, number + name beside the tab */
+/* Specimen cards, drawn like an unfinished wireframe: construction lines that run past the corners (and draw
+   themselves in), a square tab on the top-right corner, a monospaced figure note under the frame. */
+.editorial-site { --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace; }
+.card-frame { position:absolute; left:0; top:0; width:100%; aspect-ratio:3/4; pointer-events:none; --over:14px; }
+.card-frame::before,.card-frame::after { content:''; position:absolute; border:0 solid var(--ink); }
+.card-frame::before { inset:0 calc(var(--over) * -1); border-width:1px 0; animation:draw-h .7s cubic-bezier(.65,0,.35,1) both; }
+.card-frame::after { inset:calc(var(--over) * -1) 0; border-width:0 1px; animation:draw-v .7s .12s cubic-bezier(.65,0,.35,1) both; }
+@keyframes draw-h { from { transform:scaleX(0); } }
+@keyframes draw-v { from { transform:scaleY(0); } }
+.card-annot { position:absolute; left:8px; top:calc(100% + 6px); font:400 9px/1 var(--mono); letter-spacing:.04em; color:#999; white-space:nowrap; pointer-events:none; }
 .card-tab { position:absolute; top:calc(var(--tab) / -2); right:calc(var(--tab) / -2); z-index:1; width:var(--tab); height:var(--tab); border:1px solid var(--ink); background:var(--paper); pointer-events:none; transition:background .25s; }
 .card-number { margin-right:.5em; }
-.space-card { --tab:9px; outline:1px solid var(--ink); }
+.space-card { --tab:8px; }
+.space-card .card-frame { --over:6px; height:100%; aspect-ratio:auto; }
 .space-card:is(:hover,:focus-visible) .card-tab { background:var(--ink); }
-.space-card-label { position:absolute; top:calc(var(--tab) / -2 - 1px); left:calc(100% + var(--tab) / 2 + 6px); font:300 12px/1 var(--sans); letter-spacing:-.02em; white-space:nowrap; opacity:0; transition:opacity .2s; pointer-events:none; background:#ffffffb8; padding:0 2px; }
+.space-card-label { position:absolute; top:calc(var(--tab) / -2 - 1px); left:calc(100% + var(--tab) / 2 + 9px); font:400 10px/1 var(--mono); letter-spacing:.02em; text-transform:uppercase; white-space:nowrap; opacity:0; transition:opacity .2s; pointer-events:none; background:#ffffffb8; padding:0 2px; }
 .space-card:hover .space-card-label,.space-card:focus-visible .space-card-label { opacity:1; }
 .gallery-intro { height:33.5vh; min-height:245px; display:flex; align-items:center; justify-content:center; gap:5px; padding:13vh 16px 0; font:400 16px/1.35 var(--sans); text-align:center; }
 .gallery-intro em { font:400 17px/1.35 var(--serif); }
@@ -65,7 +75,7 @@
 .projects-index .gallery-intro { height:auto; min-height:0; padding:18vh 16px 0; }
 .projects-index .project-grid { flex:1; width:100%; max-width:1200px; margin:0 auto; padding:10vh 16px; display:grid; grid-template-columns:repeat(auto-fill,220px); justify-content:center; align-content:center; gap:96px 150px; }
 .projects-index .project-tile { --tab:16px; position:relative; transition:opacity .35s ease,filter .35s ease; }
-.projects-index .project-tile-image { outline:1px solid var(--ink); background:var(--paper); }
+.projects-index .project-tile-image { background:var(--paper); }
 .projects-index .project-tile:hover .card-tab { background:var(--ink); }
 .projects-index .project-grid:has(.project-tile:hover) .project-tile:not(:hover) { opacity:.3; }
 .projects-index .project-tile-image img { transition:transform .7s cubic-bezier(.22,1,.36,1),opacity .3s ease; }
@@ -74,13 +84,15 @@
 .projects-index .project-meta { position:absolute; top:calc(var(--tab) / -2 - 1px); left:calc(100% + var(--tab) / 2 + 10px); width:126px; margin:0; display:block; }
 .projects-index .project-meta .card-number { float:left; }
 .projects-index .project-meta h2 { margin:0; font:300 15px/1.1 var(--sans); letter-spacing:-.03em; }
-.projects-index .project-meta .card-number { font:300 15px/1.1 var(--sans); letter-spacing:-.03em; }
-.projects-index .project-meta p { margin:6px 0 0; font:400 11px/1.2 var(--sans); color:#888; }
+.projects-index .project-meta .card-number { font:400 11px/15px var(--mono); letter-spacing:.02em; color:#888; }
+.projects-index .project-meta p { margin:8px 0 0; font:400 10px/1.2 var(--mono); letter-spacing:.04em; color:#999; }
 .projects-index .gallery-footer { padding-top:40px; }
 @media (max-width:600px) {
   .projects-index .gallery-intro { padding-top:14vh; }
   .projects-index .project-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:56px 24px; padding:8vh 20px; }
   .projects-index .project-tile { --tab:12px; }
+  .projects-index .card-annot { display:none; }
+  .projects-index .card-frame { --over:8px; }
   .projects-index .project-meta { position:static; width:auto; margin-top:14px; }
   .projects-index .project-meta h2,.projects-index .project-meta .card-number { font-size:13px; }
 }
@@ -89,7 +101,11 @@
 
 /* Space ⇄ Projects morph and the card-into-project zoom (see lib/orbTransition.ts) */
 .orb-clone { position:fixed; z-index:90; overflow:hidden; background:#f7f7f7; pointer-events:none; will-change:left,top,width,height; }
+.orb-clone { overflow:visible; outline:1px solid var(--ink); }
 .orb-clone img { position:absolute; inset:0; width:100%; height:100%; display:block; object-fit:cover; }
+.orb-clone-tab { position:absolute; top:-6px; right:-6px; width:12px; height:12px; border:1px solid var(--ink); background:var(--paper); }
+/* Until its image lands, a tile shows no frame of its own; then its construction lines draw in. */
+.is-morph-in .project-tile-image:not(.is-landed) ~ :is(.card-frame,.card-tab,.card-annot) { display:none; }
 .space-card.from-grid img { animation:none; }
 .space-card.is-picked { z-index:1000!important; }
 .space-stage.is-leaving { pointer-events:none; }
