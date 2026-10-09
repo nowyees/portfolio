@@ -89,7 +89,7 @@ export default function Home() {
           tx = start.x + (tx - start.x) * p; ty = start.y + (ty - start.y) * p; w = start.w + (w - start.w) * p;
         }
         node.style.width = w + 'px';
-        node.style.fontSize = (w * .1).toFixed(2) + 'px'; // the spec text scales with the card
+        node.style.fontSize = (w * .075).toFixed(2) + 'px'; // the spec text scales with the card
         node.style.transform = 'translate(-50%, -50%) translate3d(' + tx + 'px,' + ty + 'px,0)';
         node.style.zIndex = String(Math.round((z + 1) * 50));
         // Cards turning onto the far side of the orb soften as if seen through frosted glass.
