@@ -150,8 +150,8 @@ export default function AstroTail({ className }: { className?: string }) {
     // The film's frames on the way back to the middle coil the tail tightly; while crossing, every bend is eased
     // off by up to `relax` and the tail moves more slowly, so it swings loosely over instead of whipping.
     const CROSS = { relax: .55, rate: 3, speed: .6 };
-    let crossEase = 0, cross = 0;
-    let side = 1, shown = 1, mirror = 0, middle = 50, centred = 0;  // cursor's side, side shown (1 right, -1 left), mirror weight, middle frame
+    let crossEase = MIRROR.loose, cross = MIRROR.loose;
+    let side = -1, shown = -1, mirror = 1, middle = 50, centred = 1;  // cursor's side, side shown (1 right, -1 left), mirror weight, middle frame
     const reflect = (v: THREE.Vector3) => v.addScaledVector(mirrorNormal, -2 * v.dot(mirrorNormal));
 
     const LOOP = { first: 1, last: 77 };               // the film frames used as poses
@@ -324,6 +324,11 @@ export default function AstroTail({ className }: { className?: string }) {
         const q = toView(tip), x = Math.abs(q.x / -q.z - socketView.x / -socketView.z);
         if (f >= SOFT.fromFrame && q.y < socketView.y && x < bestMiddle) { bestMiddle = x; middle = f; }
       });
+      // Open on the middle frame, mirrored (out to the right, curling back left), hanging loosely as if the cursor
+      // were just below the socket.
+      goalFrame = frameEase = current = middle;
+      jointFrames = segments.map(() => middle);
+      chain((i, out) => out.copy(clip[middle][i]), 0, middle, mirror, cross);
       fitX = 0; fitY = 0;
       pts.forEach(p => {
         const depth = -(p.z);
@@ -365,7 +370,7 @@ export default function AstroTail({ className }: { className?: string }) {
       frameEase += (goalFrame - frameEase) * k;
       const ck = 1 - Math.exp(-dt * CROSS.rate);
       // Below the socket the tail also hangs loosely, as it does while crossing.
-      const loose = Math.max(crossing ? 1 : 0, (pointer.inside ? centred : 0) * MIRROR.loose);
+      const loose = Math.max(crossing ? 1 : 0, centred * MIRROR.loose);
       crossEase += (loose - crossEase) * ck; cross += (crossEase - cross) * ck;
       const maxStep = FOLLOW.maxSpeed * dt * (1 - (1 - CROSS.speed) * cross);
       current += THREE.MathUtils.clamp((frameEase - current) * k, -maxStep, maxStep);
