@@ -48,7 +48,7 @@ export default function Home() {
     if (rotation.current.leaving) return;
     saveOrb(items.flatMap((item, i) => {
       const node = cardsRef.current[i];
-      return node ? [snapshotItem(projectKey(item.project), item.image, node)] : [];
+      return node ? [snapshotItem(projectKey(item.project), item.image, node.querySelector('img') ?? node)] : [];
     }));
   }, [items]);
 
@@ -89,6 +89,7 @@ export default function Home() {
           tx = start.x + (tx - start.x) * p; ty = start.y + (ty - start.y) * p; w = start.w + (w - start.w) * p;
         }
         node.style.width = w + 'px';
+        node.style.fontSize = (w * .1).toFixed(2) + 'px'; // the spec text scales with the card
         node.style.transform = 'translate(-50%, -50%) translate3d(' + tx + 'px,' + ty + 'px,0)';
         node.style.zIndex = String(Math.round((z + 1) * 50));
         // Cards turning onto the far side of the orb soften as if seen through frosted glass.
@@ -159,10 +160,10 @@ export default function Home() {
                 onBlur={() => { if (!rotation.current.leaving) rotation.current.hover = false; }}
                 onClick={event => openProject(event, to)}
               >
+                {/* The same spec sheet as a Projects card, in miniature: name, year / field, image. */}
+                <span className="spec-name">{item.project.title}</span>
+                <span className="spec-rows"><span><b>{item.project.year}</b><i aria-hidden="true">/</i><em>{item.project.hashtags?.[0] ?? '—'}</em></span></span>
                 <img src={imageUrl(item.image, 300)} alt="" draggable={false} />
-                <span className="card-frame" aria-hidden="true" />
-                <span className="card-tab" aria-hidden="true" />
-                <span className="space-card-label"><span className="card-number">{String(projects.indexOf(item.project) + 1).padStart(2, '0')}</span>{item.project.title}</span>
               </Link>
             );
           })}

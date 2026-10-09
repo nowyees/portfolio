@@ -32,10 +32,8 @@ export default function Projects() {
       used.add(index);
       const clone = makeClone(imageUrl(cards[index].image, 300), cards[index].rect);
       clones.current.push(clone);
-      // The orb card's wireframe fades on the way: grid tiles are spec sheets, not frames.
-      const timing = { duration: 1100, delay: Math.min(i * 28, 340), easing: 'cubic-bezier(.76,0,.24,1)', fill: 'forwards' as const };
-      const flight = clone.animate([{ ...px(cards[index].rect), outlineColor: '#111' }, { ...px(tile.getBoundingClientRect()), outlineColor: 'transparent' }], timing);
-      clone.querySelector('.orb-clone-tab')?.animate([{ opacity: 1 }, { opacity: 0 }], timing);
+      const flight = clone.animate([px(cards[index].rect), px(tile.getBoundingClientRect())],
+        { duration: 1100, delay: Math.min(i * 28, 340), easing: 'cubic-bezier(.76,0,.24,1)', fill: 'forwards' });
       flight.onfinish = () => {
         tile.classList.add('is-landed');
         clone.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 320, fill: 'forwards' }).onfinish = () => clone.remove();
@@ -82,21 +80,15 @@ export default function Projects() {
     <SiteShell active="projects">
       <main className="projects-page projects-index" ref={mainRef}>
         <h1 className="gallery-intro"><span>A Curated Selection of</span> <em>Objects and Visual Experiences</em></h1>
-        <header className="spec-index-head">
-          <h2>Index <span>{projects.length} items</span></h2>
-          <span className="spec-index-mark" aria-hidden="true" />
-        </header>
         <section className="project-grid" aria-label="Selected projects">
-          {projects.map((project, index) => {
+          {projects.map(project => {
             const to = '/project/' + project.category + '/' + project.id;
             return (
               // A spec sheet: name, then a table of facts, then the image.
               <article className="project-tile spec-card" key={project.category + '-' + project.id}>
                 <h3 className="spec-name"><Link to={to} onClick={event => openProject(event, to)}>{project.title}</Link></h3>
                 <dl className="spec-rows">
-                  {[['No.', String(index + 1).padStart(2, '0')], ['Year', project.year], ['Field', project.hashtags?.length ? project.hashtags.join(', ') : '—']].map(([label, value]) => (
-                    <div key={label}><dt>{label}</dt><span aria-hidden="true">/</span><dd>{value}</dd></div>
-                  ))}
+                  <div><dt>{project.year}</dt><span aria-hidden="true">/</span><dd>{project.hashtags?.[0] ?? '—'}</dd></div>
                 </dl>
                 <Link className="project-tile-image" to={to} aria-label={'View ' + project.title}
                   data-key={projectKey(project)} data-image={project.image} onClick={event => openProject(event, to)}>

@@ -37,10 +37,7 @@ export function makeClone(src: string, rect: SnapshotItem['rect']) {
   Object.assign(clone.style, { left: rect.left + 'px', top: rect.top + 'px', width: rect.width + 'px', height: rect.height + 'px' });
   const img = document.createElement('img');
   img.src = src; img.alt = ''; img.draggable = false;
-  // The card's frame and corner tab travel with it, so frames never sit still while images fly.
-  const tab = document.createElement('span');
-  tab.className = 'orb-clone-tab';
-  clone.append(img, tab);
+  clone.appendChild(img);
   document.body.appendChild(clone);
   return clone;
 }
