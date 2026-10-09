@@ -8,7 +8,7 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
  * Geometry (public/lab/astro-tail.glb): one static mesh for the body + fixed tail mount, and one rigid
  *   mesh per tail bone in rest pose (the skinned hoses are split onto their dominant bones in Blender). Normals are split at 38° in Blender so only real creases draw.
  * Motion: the tail follows the cursor through the poses of its swing in the graduation film (Blender frames
- *   1-77), moving between them via the film's own in-between frames; it holds still without a cursor.
+ *   1-77), moving between them via the film's own in-between frames; on the left it shows the right side's poses mirrored; it holds still without a cursor.
  * Framing: squarely behind the astronaut (as in the film) at the scene camera's distance, upright, fitted to the view,
  *   with room for everything the tail sweeps through at its widest.
  * Look: view normals + depth rendered at 2× resolution, an edge pass keeps creases and silhouettes only.
@@ -96,6 +96,16 @@ export default function AstroTail({ className }: { className?: string }) {
     let clip: THREE.Quaternion[][] = [];  // per frame: segment 0's world rotation, then each relative to the previous
     const restDir = new THREE.Vector3();
     const viewAxis = new THREE.Vector3(); // the camera's line of sight: turning about it leans the tail across the screen
+    // The film curls the tail beautifully out to the right; out to the left it folds. So the left side shows the
+    // right side's poses mirrored across the body's centre plane (normal: the camera's right axis). A mirrored
+    // rotation keeps its angle and flips its axis: (x, y, z, w) -> (-M(x, y, z), w) with M the reflection.
+    const mirrorNormal = new THREE.Vector3();
+    // To change sides the tail first swings back to the film's middle frame (the right swing's start, hanging
+    // down), where a pose and its mirror image nearly agree, and flips there; blending two curled poses with their
+    // mirror images would crumple the tail.
+    const MIRROR = { deadZone: .03, rate: 10, near: 1.5 };  // cursor must cross the socket by `deadZone` to switch
+    let side = 1, shown = 1, mirror = 0, middle = 50;  // cursor's side, side shown (1 right, -1 left), mirror weight, middle frame
+    const reflect = (v: THREE.Vector3) => v.addScaledVector(mirrorNormal, -2 * v.dot(mirrorNormal));
 
     const LOOP = { first: 1, last: 77 };               // the film frames used as poses
     const START = 7;                                   // resting pose: the tail hanging straight down
@@ -150,7 +160,7 @@ export default function AstroTail({ className }: { className?: string }) {
       return angle < 1e-9 ? out.identity() : out.setFromAxisAngle(tmpDir.copy(v).divideScalar(angle), angle);
     };
     // Pose the chain from relative rotations, leaned about the view axis; positions follow from the socket.
-    const chain = (rotations: (i: number, out: THREE.Quaternion) => THREE.Quaternion, lean: number, frame: number) => {
+    const chain = (rotations: (i: number, out: THREE.Quaternion) => THREE.Quaternion, lean: number, frame: number, mirrored = 0) => {
       const n = segments.length, s = softness(frame);
       if (bends.length !== n) { bends = segments.map(() => new THREE.Vector3()); spread = segments.map(() => new THREE.Vector3()); }
       for (let i = 0; i < n; i++) {
@@ -167,6 +177,12 @@ export default function AstroTail({ className }: { className?: string }) {
           spread[i].divideScalar(total).multiplyScalar(1 - SMOOTH.flatten);
         }
         for (let i = 1; i < n; i++) bends[i].lerp(spread[i], s);
+      }
+      if (mirrored > 0) {
+        for (let i = 1; i < n; i++) bends[i].lerp(reflect(tmpDir.copy(bends[i])).negate(), mirrored);
+        reflect(tmpDir.set(firstRot.x, firstRot.y, firstRot.z)).negate();
+        firstRot.slerp(qs.set(tmpDir.x, tmpDir.y, tmpDir.z, firstRot.w), mirrored);
+        lean *= 1 - 2 * mirrored; // a lean about the view axis mirrors to the opposite lean
       }
       qv.setFromAxisAngle(viewAxis, lean);
       for (let i = 0; i < n; i++) {
@@ -222,12 +238,15 @@ export default function AstroTail({ className }: { className?: string }) {
       camera.up.copy(upAxis); camera.lookAt(centre);
       camera.updateMatrixWorld(); camera.updateProjectionMatrix();
       camera.getWorldDirection(viewAxis);
+      mirrorNormal.setFromMatrixColumn(camera.matrixWorld, 0).normalize();
       const toView = (p: THREE.Vector3) => p.clone().applyMatrix4(camera.matrixWorldInverse);
 
       // Everything the tail sweeps through over the loop, leaned either way, so framing leaves room for it.
       const reachPoints: THREE.Vector3[] = [];
       for (const lean of [-FOLLOW.lean, 0, FOLLOW.lean]) {
-        clip.forEach((row, f) => { chain((i, out) => out.copy(row[i]), lean, f); P.forEach(p => reachPoints.push(p.clone())); });
+        for (const mirrored of [0, 1]) {
+          clip.forEach((row, f) => { chain((i, out) => out.copy(row[i]), lean, f, mirrored); P.forEach(p => reachPoints.push(p.clone())); });
+        }
       }
       const sharpest = () => {
         let m = 0;
@@ -248,6 +267,13 @@ export default function AstroTail({ className }: { className?: string }) {
       const box = new THREE.Box3().setFromPoints(pts);
       const shiftX = (box.min.x + box.max.x) / 2, shiftY = (box.min.y + box.max.y) / 2;
       camera.translateX(shiftX); camera.translateY(shiftY); camera.updateMatrixWorld();
+      // The middle frame: after the left swing, the one whose tip hangs closest below the socket on screen.
+      const socketView = toView(P[0]);
+      let bestMiddle = Infinity;
+      tips.forEach((tip, f) => {
+        const q = toView(tip), x = Math.abs(q.x / -q.z - socketView.x / -socketView.z);
+        if (f >= SOFT.fromFrame && q.y < socketView.y && x < bestMiddle) { bestMiddle = x; middle = f; }
+      });
       fitX = 0; fitY = 0;
       pts.forEach(p => {
         const depth = -(p.z);
@@ -263,6 +289,16 @@ export default function AstroTail({ className }: { className?: string }) {
       if (pointer.inside) {
         socketScreen.copy(P[0]).project(camera);
         cursorOffset.set((pointer.x - socketScreen.x) * camera.aspect, pointer.y - socketScreen.y);
+        // On the left, chase the mirror image of the cursor with the right side's poses; they are shown mirrored.
+        if (cursorOffset.x > MIRROR.deadZone) side = 1; else if (cursorOffset.x < -MIRROR.deadZone) side = -1;
+        cursorOffset.x *= shown;
+      }
+      const crossing = side !== shown;
+      if (crossing) {
+        // (or, if it is still nearer the resting pose, which hangs straight down too, to that)
+        goalFrame = Math.abs(current - START) < Math.abs(current - middle) ? START : middle;
+        if (Math.abs(current - goalFrame) < MIRROR.near && jointFrames.every(f => Math.abs(f - goalFrame) < MIRROR.near * 2)) shown = side;
+      } else if (pointer.inside) {
         // The film pose whose tip is nearest the cursor, preferring poses close to the current one.
         let best = goalFrame, bestCost = Infinity;
         tips.forEach((tip, f) => {
@@ -278,18 +314,19 @@ export default function AstroTail({ className }: { className?: string }) {
       current += THREE.MathUtils.clamp((frameEase - current) * k, -FOLLOW.maxSpeed * dt, FOLLOW.maxSpeed * dt);
       // Lean the whole tail about the socket so its tip points at the cursor (clockwise on screen is positive).
       let want = 0;
-      if (pointer.inside) {
+      if (pointer.inside && !crossing) {
         chain((i, out) => frameAt(current, i, out), 0, current);
         screenOffset(P[P.length - 1], tipOffset);
         const turn = Math.atan2(tipOffset.y, tipOffset.x) - Math.atan2(cursorOffset.y, cursorOffset.x);
         want = THREE.MathUtils.clamp(Math.atan2(Math.sin(turn), Math.cos(turn)), -FOLLOW.lean, FOLLOW.lean);
       }
       leanEase += (want - leanEase) * k; lean += (leanEase - lean) * k;
+      mirror += ((shown < 0 ? 1 : 0) - mirror) * (1 - Math.exp(-dt * MIRROR.rate));
       const n = jointFrames.length;
       jointFrames.forEach((f, i) => {
         jointFrames[i] = f + (current - f) * (1 - Math.exp(-dt * THREE.MathUtils.lerp(TRAIL.root, TRAIL.tip, i / (n - 1))));
       });
-      chain((i, out) => frameAt(jointFrames[i], i, out), lean, current);
+      chain((i, out) => frameAt(jointFrames[i], i, out), lean, current, THREE.MathUtils.smoothstep(mirror, 0, 1));
     };
     const pose = () => {
       segments.forEach((s, i) => { s.group.position.copy(P[i]); s.group.quaternion.copy(F[i]); });
