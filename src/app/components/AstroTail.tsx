@@ -81,6 +81,15 @@ export default function AstroTail({ className }: { className?: string }) {
     const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
     renderer.setClearColor(0x000000, 0);
     host.appendChild(renderer.domElement);
+    // Hint beside the tail tip inviting the visitor to move the cursor: it fades once they do, and comes back a
+    // while after the cursor leaves.
+    const hint = document.createElement('div');
+    hint.className = 'astro-hint';
+    hint.innerHTML = '<span class="astro-hint-mark"><i></i></span><span class="astro-hint-label">Move</span>';
+    host.appendChild(hint);
+    const HINT = { hideAfter: .6, returnAfter: 2.5 };     // seconds of moving before it hides; of absence before it returns
+    let movedFor = 0, awayFor = 0, hintShown = true;
+    const hintPoint = new THREE.Vector3();
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(30, 1, .05, 60);
@@ -382,11 +391,24 @@ export default function AstroTail({ className }: { className?: string }) {
       segments.forEach((s, i) => { s.group.position.copy(P[i]); s.group.quaternion.copy(F[i]); });
     };
 
+    let hintTime = -1;
+    const placeHint = (now: number) => {
+      const dt = hintTime < 0 ? 0 : Math.min(.1, Math.max(0, now - hintTime)); hintTime = now;
+      if (pointer.inside) { movedFor += dt; awayFor = 0; } else { awayFor += dt; movedFor = 0; }
+      if (hintShown && movedFor > HINT.hideAfter) hintShown = false;
+      else if (!hintShown && awayFor > HINT.returnAfter) hintShown = true;
+      hint.classList.toggle('is-shown', hintShown);
+      if (!hintShown) return;
+      hintPoint.copy(P[P.length - 1]).project(camera);
+      const x = (hintPoint.x + 1) / 2 * host.clientWidth, y = (1 - hintPoint.y) / 2 * host.clientHeight;
+      hint.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
+    };
     const tick = (now: number) => {
       frame = requestAnimationFrame(tick);
       if (!segments.length) return;
       simulate(now / 1000);
       pose();
+      placeHint(now / 1000);
       renderer.setRenderTarget(target); renderer.clear(); renderer.render(scene, camera);
       renderer.setRenderTarget(lines); renderer.clear(); renderer.render(quadScene, quadCamera);
       renderer.setRenderTarget(null); renderer.clear(); renderer.render(screenScene, quadCamera);
@@ -414,7 +436,7 @@ export default function AstroTail({ className }: { className?: string }) {
       host.removeEventListener('pointerdown', move); host.removeEventListener('pointermove', move); host.removeEventListener('pointerleave', leave);
       scene.traverse(o => { const m = o as THREE.Mesh; if (m.isMesh) m.geometry.dispose(); });
       target.dispose(); lines.dispose(); edgeMaterial.dispose(); downsampleMaterial.dispose(); normalMaterial.dispose(); draco.dispose(); renderer.dispose();
-      renderer.domElement.remove();
+      renderer.domElement.remove(); hint.remove();
     };
   }, []);
 

@@ -189,3 +189,11 @@
 .robot-lab-canvas canvas { display:block; }
 .robot-lab-caption { position:absolute; left:50%; bottom:28px; transform:translateX(-50%); font:13px/1.2 var(--sans); color:#555; pointer-events:none; white-space:nowrap; }
 .robot-lab-caption em { font:14px/1.2 var(--serif); color:#111; }
+.astro-hint { position:absolute; left:0; top:0; display:flex; align-items:center; gap:8px; margin:-7px 0 0 26px; pointer-events:none; opacity:0; transition:opacity .5s ease; will-change:transform; }
+.astro-hint.is-shown { opacity:1; transition-delay:.4s; }
+.astro-hint-mark { position:relative; width:34px; height:14px; }
+.astro-hint-mark::before { content:''; position:absolute; left:0; right:0; top:50%; border-top:1px dotted #999; }
+.astro-hint-mark i { position:absolute; top:50%; left:50%; width:9px; height:9px; margin:-5px 0 0 -5px; border:1px solid var(--ink); border-radius:50%; background:var(--paper); animation:astro-hint-swing 1.8s cubic-bezier(.45,0,.55,1) infinite alternate; }
+.astro-hint-label { font:500 10px/1 var(--sans); text-transform:uppercase; letter-spacing:.075em; color:var(--ink); }
+@keyframes astro-hint-swing { from { transform:translateX(-13px); } to { transform:translateX(13px); } }
+@media (prefers-reduced-motion: reduce) { .astro-hint-mark i { animation:none; } }
