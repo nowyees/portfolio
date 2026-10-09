@@ -7,10 +7,11 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
  * Graduation piece: the astronaut held at frame 135 of the Blender scene, its robotic tail alive.
  * Geometry (public/lab/astro-tail.glb): one static mesh for the body + fixed tail mount, and one rigid
  *   mesh per tail bone in rest pose (the skinned hoses are split onto their dominant bones in Blender). Normals are split at 38° in Blender so only real creases draw.
- * Motion: the tail rests in its frame-135 pose; a click swings it through the tail animation authored in
- *   Blender (public/lab/astro-tail-anim.json, frames 99-135) and back. Positions are chained from the socket.
+ * Motion: around its authored frame-135 pose the tail wags side to side as a travelling wave (socket first,
+ *   tip last and widest); a click whips it harder and faster before it settles. Joints bend only across their
+ *   own segment, so it never twists; positions are chained from the socket.
  * Framing: the scene camera at frame 135, rolled so the astronaut stands upright and fitted to the view,
- *   with room for everything the tail sweeps through in the clip.
+ *   with room for everything the tail sweeps through at its widest.
  * Look: view normals + depth rendered at 2× resolution, an edge pass keeps creases and silhouettes only.
  */
 
@@ -20,7 +21,7 @@ type SceneData = {
   ik: Array<{ bone: string; target: string }>; camera: { matrix: number[]; lens: number; sensor: number };
   body: Record<string, number[]>;
 };
-// Tail animation baked from Blender: per frame, each chain bone's rest-to-posed rotation (x, y, z, w).
+// Tail pose baked from Blender: per frame, each chain bone's rest-to-posed rotation (x, y, z, w); `hold` is used.
 type TailClip = { fps: number; frames: number[]; bones: string[]; hold: number; quats: number[][] };
 
 
@@ -86,22 +87,27 @@ export default function AstroTail({ className }: { className?: string }) {
     };
     const observer = new ResizeObserver(resize);
 
-    // Tail: held in its frame-135 pose. A click swings it through the tail animation authored in Blender —
-    // from frame 135 back to the start of the clip (frame 99) and forward again — on a sine of time, so it eases
-    // out of rest, turns softly and settles exactly where it started. Frames after ~140 are not used: there the
-    // authored tail passes behind the body for this camera. Rotations are interpolated per joint relative to the
-    // previous segment and positions are chained from the socket, so the tail always moves as one piece.
+    // Tail: always alive. Seen from behind the astronaut, a wag is the whole tail swinging left and right about
+    // the body's vertical axis: the socket leads with the big swing and every vertebra adds a little more, a beat
+    // later, so the tip follows through like a real tail. A slower second wave and a drifting amplitude keep it
+    // from looking mechanical. A click whips it wider and faster, then it settles back to its easy wag.
+    // Rotations about one shared axis simply add up along the chain, so the authored shape is kept and nothing
+    // twists; positions are chained from the socket, so it never comes apart.
     let segments: Array<{ group: THREE.Group; length: number }> = [];
     let P: THREE.Vector3[] = [], F: THREE.Quaternion[] = [];
-    // Per frame, segment 0's world rotation followed by each segment's rotation relative to the one before it.
-    let clip: THREE.Quaternion[][] = [], hold: THREE.Quaternion[] = [];
-    let fps = 25, holdFrame = 0;
-    const SWING_TO = 0; // index of frame 99, the far end of the swing
+    let hold: THREE.Quaternion[] = [];   // segment 0's world rotation, then each segment relative to the previous
+    let holdWorld: THREE.Quaternion[] = [];
+    let weight: number[] = [];           // per joint share of the follow-through, growing toward the tip
+    const upAxis = new THREE.Vector3();  // the body's vertical, which the tail swings around
     const restDir = new THREE.Vector3();
-    let playing = -1; // start time of the current play, or -1 when resting
-    const SWING_PACE = 1.1; // slower than authored by this factor, since the sine eases both ends
 
-    const qb = new THREE.Quaternion(), step = new THREE.Vector3();
+    // socket swing (radians), follow-through per joint (radians), speed (radians/second), phase lag per joint,
+    // and the centre of the swing (radians, toward the camera so the tail stays in front of the body)
+    const WAG = { root: .4, follow: .012, speed: 2.2, lag: .06, centre: .6 };
+    const KICK = { gain: .8, speed: 2.2, decay: 1.6 };    // a click widens the wag by `gain` and speeds it up
+    let phase = 0, slowPhase = 0, kick = 0, kickTarget = 0, lastTime = -1;
+
+    const qb = new THREE.Quaternion(), qw = new THREE.Quaternion(), step = new THREE.Vector3();
     // Pose the chain from relative rotations: frames and positions follow from the socket outward.
     const chain = (rotations: (i: number, out: THREE.Quaternion) => THREE.Quaternion) => {
       for (let i = 0; i < segments.length; i++) {
@@ -111,9 +117,16 @@ export default function AstroTail({ className }: { className?: string }) {
         P[i + 1].copy(P[i]).addScaledVector(step, segments[i].length);
       }
     };
-    const clipAt = (frameIndex: number, i: number, out: THREE.Quaternion) => {
-      const f = THREE.MathUtils.clamp(frameIndex, 0, clip.length - 1), k = Math.floor(f);
-      return out.slerpQuaternions(clip[k][i], clip[Math.min(k + 1, clip.length - 1)][i], f - k);
+    // The wag for a given size and phases: accumulated swing about the body's vertical, applied to the held pose.
+    const wag = (size: number, ph: number, slow: number) => {
+      let total = WAG.centre;
+      for (let i = 0; i < segments.length; i++) {
+        const wave = Math.sin(ph - WAG.lag * i) + .3 * Math.sin(slow - WAG.lag * .7 * i + 1.3);
+        total += size * (i === 0 ? WAG.root : WAG.follow * weight[i]) * wave;
+        F[i].multiplyQuaternions(qw.setFromAxisAngle(upAxis, total), holdWorld[i]);
+        step.copy(restDir).applyQuaternion(F[i]);
+        P[i + 1].copy(P[i]).addScaledVector(step, segments[i].length);
+      }
     };
 
     const setup = (gltf: { scene: THREE.Group }, data: SceneData, anim: TailClip) => {
@@ -133,23 +146,30 @@ export default function AstroTail({ className }: { className?: string }) {
       });
       F = segments.map(() => new THREE.Quaternion());
       restDir.subVectors(v(data.rest[order[0]].tail), v(data.rest[order[0]].head)).normalize();
-      fps = anim.fps;
-      clip = anim.quats.map(row => {
-        const world = order.map((_, i) => new THREE.Quaternion(row[i * 4], row[i * 4 + 1], row[i * 4 + 2], row[i * 4 + 3]));
-        return world.map((q, i) => i === 0 ? q : world[i - 1].clone().invert().multiply(q));
-      });
-      holdFrame = anim.frames.indexOf(anim.hold);
-      hold = clip[holdFrame].map(q => q.clone());
-
-      // Everything the tail reaches during the swing, so framing leaves room for the whole motion.
-      const reachPoints: THREE.Vector3[] = [];
-      clip.slice(SWING_TO, holdFrame + 1).forEach(row => { chain((i, out) => out.copy(row[i])); P.forEach(p => reachPoints.push(p.clone())); });
+      const row = anim.quats[anim.frames.indexOf(anim.hold)];
+      const world = order.map((_, i) => new THREE.Quaternion(row[i * 4], row[i * 4 + 1], row[i * 4 + 2], row[i * 4 + 3]));
+      hold = world.map((q, i) => i === 0 ? q : world[i - 1].clone().invert().multiply(q));
       chain((i, out) => out.copy(hold[i]));
 
-      const b = (k: string) => v(data.body[k]);
       const m = new THREE.Matrix4().fromArray(data.camera.matrix);
       m.decompose(camera.position, camera.quaternion, new THREE.Vector3());
       camera.updateMatrixWorld();
+      holdWorld = F.map(f => f.clone());
+      // The body's vertical: from the feet to the top of the head.
+      upAxis.subVectors(v(data.body.HeadTop_End), v(data.body.LeftFoot).add(v(data.body.RightFoot)).multiplyScalar(.5)).normalize();
+      const n = segments.length;
+      weight = segments.map((_, i) => .35 + .65 * i / (n - 1));
+
+      // Everything the tail sweeps through at its widest (a fresh click), so framing leaves room for it.
+      const reachPoints: THREE.Vector3[] = [];
+      for (let k = 0; k < 48; k++) {
+        const ph = k / 48 * Math.PI * 2;
+        wag(1 + KICK.gain, ph, ph * .53);
+        P.forEach(p => reachPoints.push(p.clone()));
+      }
+      chain((i, out) => out.copy(hold[i]));
+
+      const b = (k: string) => v(data.body[k]);
       // Roll the camera about its view axis until the body's feet-to-head line points straight up.
       const toView = (p: THREE.Vector3) => p.clone().applyMatrix4(camera.matrixWorldInverse);
       const feet = b('LeftFoot').add(b('RightFoot')).multiplyScalar(.5);
@@ -171,11 +191,14 @@ export default function AstroTail({ className }: { className?: string }) {
     };
 
     const simulate = (now: number) => {
-      if (playing < 0) { chain((i, out) => out.copy(hold[i])); return; }
-      const span = SWING_TO - holdFrame, duration = 2 * Math.abs(span) / fps * SWING_PACE, u = (now - playing) / duration;
-      if (u >= 1) { playing = -1; chain((i, out) => out.copy(hold[i])); return; }
-      const f = holdFrame + span * Math.sin(Math.PI * u);
-      chain((i, out) => clipAt(f, i, out));
+      const dt = lastTime < 0 ? 0 : Math.min(.05, now - lastTime); lastTime = now;
+      // A click's kick eases in over a moment rather than jumping, then fades.
+      if (kickTarget > 0) { kick += (kickTarget - kick) * (1 - Math.exp(-dt * 4)); if (kickTarget - kick < .02) kickTarget = 0; }
+      else kick *= Math.exp(-dt / KICK.decay);
+      // Phases advance by speed, so a click speeds the wag up without a jump in its position.
+      phase += dt * (WAG.speed + KICK.speed * kick);
+      slowPhase += dt * WAG.speed * .53;
+      wag(1 + .2 * Math.sin(now * .21) + KICK.gain * kick, phase, slowPhase);
     };
     const pose = () => {
       segments.forEach((s, i) => { s.group.position.copy(P[i]); s.group.quaternion.copy(F[i]); });
@@ -190,8 +213,8 @@ export default function AstroTail({ className }: { className?: string }) {
       renderer.setRenderTarget(null); renderer.clear(); renderer.render(quadScene, quadCamera);
     };
 
-    // A click sets the tail moving; clicks while it is already moving are ignored so the motion plays through.
-    const click = () => { if (playing < 0 && clip.length) playing = performance.now() / 1000; };
+    // A click whips the tail; repeated clicks stack a little.
+    const click = () => { kickTarget = Math.min(1.6, kick + 1); };
     host.addEventListener('pointerdown', click);
 
     const draco = new DRACOLoader().setDecoderPath('/draco/');
