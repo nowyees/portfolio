@@ -104,6 +104,10 @@ export default function AstroTail({ className }: { className?: string }) {
     // down), where a pose and its mirror image nearly agree, and flips there; blending two curled poses with their
     // mirror images would crumple the tail.
     const MIRROR = { deadZone: .03, rate: 10, near: 1.5 };  // cursor must cross the socket by `deadZone` to switch
+    // The film's frames on the way back to the middle coil the tail tightly; while crossing, every bend is eased
+    // off by up to `relax` and the tail moves more slowly, so it swings loosely over instead of whipping.
+    const CROSS = { relax: .55, rate: 3, speed: .6 };
+    let crossEase = 0, cross = 0;
     let side = 1, shown = 1, mirror = 0, middle = 50;  // cursor's side, side shown (1 right, -1 left), mirror weight, middle frame
     const reflect = (v: THREE.Vector3) => v.addScaledVector(mirrorNormal, -2 * v.dot(mirrorNormal));
 
@@ -160,7 +164,7 @@ export default function AstroTail({ className }: { className?: string }) {
       return angle < 1e-9 ? out.identity() : out.setFromAxisAngle(tmpDir.copy(v).divideScalar(angle), angle);
     };
     // Pose the chain from relative rotations, leaned about the view axis; positions follow from the socket.
-    const chain = (rotations: (i: number, out: THREE.Quaternion) => THREE.Quaternion, lean: number, frame: number, mirrored = 0) => {
+    const chain = (rotations: (i: number, out: THREE.Quaternion) => THREE.Quaternion, lean: number, frame: number, mirrored = 0, relaxed = 0) => {
       const n = segments.length, s = softness(frame);
       if (bends.length !== n) { bends = segments.map(() => new THREE.Vector3()); spread = segments.map(() => new THREE.Vector3()); }
       for (let i = 0; i < n; i++) {
@@ -178,6 +182,7 @@ export default function AstroTail({ className }: { className?: string }) {
         }
         for (let i = 1; i < n; i++) bends[i].lerp(spread[i], s);
       }
+      if (relaxed > 0) for (let i = 1; i < n; i++) bends[i].multiplyScalar(1 - CROSS.relax * relaxed);
       if (mirrored > 0) {
         for (let i = 1; i < n; i++) bends[i].lerp(reflect(tmpDir.copy(bends[i])).negate(), mirrored);
         reflect(tmpDir.set(firstRot.x, firstRot.y, firstRot.z)).negate();
@@ -244,8 +249,8 @@ export default function AstroTail({ className }: { className?: string }) {
       // Everything the tail sweeps through over the loop, leaned either way, so framing leaves room for it.
       const reachPoints: THREE.Vector3[] = [];
       for (const lean of [-FOLLOW.lean, 0, FOLLOW.lean]) {
-        for (const mirrored of [0, 1]) {
-          clip.forEach((row, f) => { chain((i, out) => out.copy(row[i]), lean, f, mirrored); P.forEach(p => reachPoints.push(p.clone())); });
+        for (const mirrored of [0, 1]) for (const relaxed of [0, 1]) {
+          clip.forEach((row, f) => { chain((i, out) => out.copy(row[i]), lean, f, mirrored, relaxed); P.forEach(p => reachPoints.push(p.clone())); });
         }
       }
       const sharpest = () => {
@@ -311,7 +316,10 @@ export default function AstroTail({ className }: { className?: string }) {
       // Two easing stages: the tail sets off and arrives softly, passing through the film's in-between frames.
       const k = 1 - Math.exp(-dt * FOLLOW.rate);
       frameEase += (goalFrame - frameEase) * k;
-      current += THREE.MathUtils.clamp((frameEase - current) * k, -FOLLOW.maxSpeed * dt, FOLLOW.maxSpeed * dt);
+      const ck = 1 - Math.exp(-dt * CROSS.rate);
+      crossEase += ((crossing ? 1 : 0) - crossEase) * ck; cross += (crossEase - cross) * ck;
+      const maxStep = FOLLOW.maxSpeed * dt * (1 - (1 - CROSS.speed) * cross);
+      current += THREE.MathUtils.clamp((frameEase - current) * k, -maxStep, maxStep);
       // Lean the whole tail about the socket so its tip points at the cursor (clockwise on screen is positive).
       let want = 0;
       if (pointer.inside && !crossing) {
@@ -326,7 +334,7 @@ export default function AstroTail({ className }: { className?: string }) {
       jointFrames.forEach((f, i) => {
         jointFrames[i] = f + (current - f) * (1 - Math.exp(-dt * THREE.MathUtils.lerp(TRAIL.root, TRAIL.tip, i / (n - 1))));
       });
-      chain((i, out) => frameAt(jointFrames[i], i, out), lean, current, THREE.MathUtils.smoothstep(mirror, 0, 1));
+      chain((i, out) => frameAt(jointFrames[i], i, out), lean, current, THREE.MathUtils.smoothstep(mirror, 0, 1), cross);
     };
     const pose = () => {
       segments.forEach((s, i) => { s.group.position.copy(P[i]); s.group.quaternion.copy(F[i]); });
