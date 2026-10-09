@@ -88,7 +88,7 @@ export default function Projects() {
               <article className="project-tile spec-card" key={project.category + '-' + project.id}>
                 <h3 className="spec-name"><Link to={to} onClick={event => openProject(event, to)}>{project.title}</Link></h3>
                 <dl className="spec-rows">
-                  <div><dt>{project.year}</dt><span aria-hidden="true">/</span><dd>{project.hashtags?.[0] ?? '—'}</dd></div>
+                  <div><dt>{project.year}</dt><dd>{project.hashtags?.[0] ?? '—'}</dd></div>
                 </dl>
                 <Link className="project-tile-image" to={to} aria-label={'View ' + project.title}
                   data-key={projectKey(project)} data-image={project.image} onClick={event => openProject(event, to)}>

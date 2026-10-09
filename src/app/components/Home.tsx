@@ -160,9 +160,9 @@ export default function Home() {
                 onBlur={() => { if (!rotation.current.leaving) rotation.current.hover = false; }}
                 onClick={event => openProject(event, to)}
               >
-                {/* The same spec sheet as a Projects card, in miniature: name, year / field, image. */}
+                {/* The same spec sheet as a Projects card, in miniature: name, year and field, image. */}
                 <span className="spec-name">{item.project.title}</span>
-                <span className="spec-rows"><span><b>{item.project.year}</b><i aria-hidden="true">/</i><em>{item.project.hashtags?.[0] ?? '—'}</em></span></span>
+                <span className="spec-rows"><span><b>{item.project.year}</b><em>{item.project.hashtags?.[0] ?? '—'}</em></span></span>
                 <img src={imageUrl(item.image, 300)} alt="" draggable={false} />
               </Link>
             );

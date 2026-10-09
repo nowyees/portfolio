@@ -64,16 +64,15 @@
 .projects-index .project-tile-image { margin-top:.8em; background:#ececec; }
 .projects-index .project-tile-image img { transition:transform .7s cubic-bezier(.22,1,.36,1),opacity .3s ease; }
 .projects-index .project-tile-image:hover img { transform:scale(1.04); }
-/* Spec-sheet cards (Projects and the Space orb): name, one ruled row of year / field, then the image.
+/* Spec-sheet cards (Projects and the Space orb): name, one ruled row of year and field, then the image.
    Sizes are in em, so the orb's miniature cards scale the same sheet. */
 .editorial-site { --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace; }
 .projects-index .spec-card { font-size:13px; }
 .spec-name { display:block; min-width:0; overflow:hidden; text-overflow:ellipsis; padding-bottom:.6em; border-bottom:1px solid #d4d4d4; font:500 1em/1.2 var(--sans); letter-spacing:-.02em; white-space:nowrap; }
 .spec-rows { display:block; margin:0; }
-.spec-rows > * { display:grid; grid-template-columns:auto 1fr auto; gap:.8em; align-items:center; min-height:1.7em; border-bottom:1px solid #d4d4d4; }
-.spec-rows > * > :is(dt,b) { font:400 .75em/1 var(--mono); letter-spacing:.04em; }
-.spec-rows > * > :is(span,i) { justify-self:center; font:400 .75em/1 var(--sans); font-style:normal; color:#bbb; }
-.spec-rows > * > :is(dd,em) { margin:0; justify-self:end; font:400 .7em/1.2 var(--mono); font-style:normal; letter-spacing:.06em; text-transform:uppercase; color:#555; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+.spec-rows > * { display:flex; justify-content:space-between; align-items:center; gap:1em; min-height:1.7em; border-bottom:1px solid #d4d4d4; }
+.spec-rows > * > :is(dt,b) { flex:none; font:400 .78em/1 var(--sans); letter-spacing:-.03em; }
+.spec-rows > * > :is(dd,em) { margin:0; min-width:0; font:400 .78em/1.2 var(--sans); font-style:normal; letter-spacing:-.03em; color:#666; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .projects-index .gallery-footer { padding-top:40px; }
 @media (max-width:600px) {
   .projects-index .gallery-intro { padding-top:14vh; }
