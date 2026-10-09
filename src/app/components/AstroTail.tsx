@@ -7,8 +7,8 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
  * Graduation piece: the astronaut held at frame 135 of the Blender scene, its robotic tail alive.
  * Geometry (public/lab/astro-tail.glb): one static mesh for the body + fixed tail mount, and one rigid
  *   mesh per tail bone in rest pose (the skinned hoses are split onto their dominant bones in Blender). Normals are split at 38° in Blender so only real creases draw.
- * Motion: the tail plays its swing from the graduation film (Blender frames 1-77) forward and back; the
- *   cursor leans the swing toward its side and a click plays it faster for a moment.
+ * Motion: the tail follows the cursor through the poses of its swing in the graduation film (Blender frames
+ *   1-77), moving between them via the film's own in-between frames; it holds still without a cursor.
  * Framing: squarely behind the astronaut (as in the film) at the scene camera's distance, upright, fitted to the view,
  *   with room for everything the tail sweeps through at its widest.
  * Look: view normals + depth rendered at 2× resolution, an edge pass keeps creases and silhouettes only.
@@ -86,23 +86,26 @@ export default function AstroTail({ className }: { className?: string }) {
     };
     const observer = new ResizeObserver(resize);
 
-    // Tail: plays the swing from the graduation film — frames 1–77 of the Blender tail animation — forward and
-    // back on a loop, so there is never a jump between its end and its start. The cursor leans the whole swing
-    // toward its side; a click plays it faster for a moment. Rotations are interpolated per joint relative to
-    // the previous segment and positions are chained from the socket, so the tail always moves as one piece.
+    // Tail: follows the cursor using the poses of the graduation film's swing (Blender frames 1-77). The film
+    // frame whose tip lies nearest the cursor becomes the target, and the tail moves there through the film's
+    // own in-between frames, so every shape is an authored one. A small lean about the socket makes up the rest.
+    // Without a cursor it holds still. Rotations are interpolated per joint relative to the previous segment and
+    // positions are chained from the socket, so the tail always moves as one piece.
     let segments: Array<{ group: THREE.Group; length: number }> = [];
     let P: THREE.Vector3[] = [], F: THREE.Quaternion[] = [];
     let clip: THREE.Quaternion[][] = [];  // per frame: segment 0's world rotation, then each relative to the previous
     const restDir = new THREE.Vector3();
     const viewAxis = new THREE.Vector3(); // the camera's line of sight: turning about it leans the tail across the screen
 
-    // film frames, and the film's frame rate (it was exported at 30 fps)
-    const LOOP = { first: 1, last: 77, fps: 30 };
-    const KICK = { speed: 1.2, decay: 1.5 };           // a click adds this much playback speed, fading over `decay` s
-    const AIM = { range: .45, rate: 4 };               // how far (radians) the cursor can lean the tail, and how fast
+    const LOOP = { first: 1, last: 77 };               // the film frames used as poses
+    const START = 7;                                   // resting pose: the tail hanging straight down
+    // how fast the tail eases between poses (per second), its top speed through the film (frames per second, about
+    // the film's own pace), how much nearby frames are preferred over distant ones (so it doesn't scrub through the
+    // whole swing for a slightly closer tip), and how far it may lean (radians)
+    const FOLLOW = { rate: 5, maxSpeed: 36, stickiness: .6, lean: .35 };
     const pointer = { x: 0, y: 0, inside: false };
-    let time = 0, kick = 0, kickTarget = 0, lastTime = -1;
-    let aim = 0, aimEase = 0;
+    let lastTime = -1, goalFrame = START, frameEase = START, current = START, lean = 0, leanEase = 0;
+    let tips: THREE.Vector3[] = [];                    // tip position of each pose, unleaned
 
     const qb = new THREE.Quaternion(), qv = new THREE.Quaternion();
     const step = new THREE.Vector3(), socketScreen = new THREE.Vector3();
@@ -120,13 +123,12 @@ export default function AstroTail({ className }: { className?: string }) {
       const k = Math.floor(f), next = Math.min(k + 1, clip.length - 1);
       return out.slerpQuaternions(clip[k][i], clip[next][i], f - k);
     };
-    // Loop time (in frames) to a pose. The film's swing never returns to its first pose, so instead of jumping
-    // back the clip plays forward and then in reverse, easing to a stop at each end like a pendulum turning.
-    const loopPose = (t: number, i: number, out: THREE.Quaternion) => {
-      const span = clip.length - 1, u = t / (2 * span * PACE);
-      return frameAt(span * (1 - Math.cos(Math.PI * 2 * u)) / 2, i, out);
+    // Aspect-corrected screen offset of a world point from the socket.
+    const screenOffset = (p: THREE.Vector3, out: THREE.Vector2) => {
+      socketScreen.copy(P[0]).project(camera); pointScreen.copy(p).project(camera);
+      return out.set((pointScreen.x - socketScreen.x) * camera.aspect, pointScreen.y - socketScreen.y);
     };
-    const PACE = 1.25; // eased turns need a little more time than the film's straight run
+    const pointScreen = new THREE.Vector3(), tipOffset = new THREE.Vector2(), cursorOffset = new THREE.Vector2();
 
     const setup = (gltf: { scene: THREE.Group }, data: SceneData, anim: TailClip) => {
       const v = (a: number[]) => new THREE.Vector3(a[0], a[1], a[2]);
@@ -168,10 +170,11 @@ export default function AstroTail({ className }: { className?: string }) {
 
       // Everything the tail sweeps through over the loop, leaned either way, so framing leaves room for it.
       const reachPoints: THREE.Vector3[] = [];
-      for (const lean of [-AIM.range, 0, AIM.range]) {
+      for (const lean of [-FOLLOW.lean, 0, FOLLOW.lean]) {
         clip.forEach(row => { chain((i, out) => out.copy(row[i]), lean); P.forEach(p => reachPoints.push(p.clone())); });
       }
-      chain((i, out) => loopPose(0, i, out), 0);
+      tips = clip.map(row => { chain((i, out) => out.copy(row[i]), 0); return P[P.length - 1].clone(); });
+      chain((i, out) => out.copy(clip[START][i]), 0);
 
       // Centre the astronaut and everything the tail sweeps through, then remember the view angle they need.
       const pts = [...Object.values(data.body).map(v), ...reachPoints].map(toView);
@@ -190,21 +193,31 @@ export default function AstroTail({ className }: { className?: string }) {
     const simulate = (now: number) => {
       // Never step backwards or by more than a frame's worth, whatever the clock does (tab switches, etc.).
       const dt = lastTime < 0 ? 0 : THREE.MathUtils.clamp(now - lastTime, 0, .05); lastTime = now;
-      // A click's speed-up eases in over a moment rather than jumping, then fades.
-      if (kickTarget > 0) { kick += (kickTarget - kick) * (1 - Math.exp(-dt * 4)); if (kickTarget - kick < .02) kickTarget = 0; }
-      else kick *= Math.exp(-dt / KICK.decay);
-      time += dt * LOOP.fps * (1 + KICK.speed * kick);
-      // The cursor's side of the socket leans the swing toward it (clockwise on screen is positive).
-      let want = 0;
       if (pointer.inside) {
         socketScreen.copy(P[0]).project(camera);
-        const side = THREE.MathUtils.clamp((pointer.x - socketScreen.x) * camera.aspect, -1, 1);
-        want = -side * AIM.range;
+        cursorOffset.set((pointer.x - socketScreen.x) * camera.aspect, pointer.y - socketScreen.y);
+        // The film pose whose tip is nearest the cursor, preferring poses close to the current one.
+        let best = goalFrame, bestCost = Infinity;
+        tips.forEach((tip, f) => {
+          const cost = screenOffset(tip, tipOffset).distanceTo(cursorOffset) + FOLLOW.stickiness * Math.abs(f - current) / clip.length;
+          if (cost < bestCost) { bestCost = cost; best = f; }
+        });
+        goalFrame = best;
       }
-      // Two easing stages: the lean starts and stops softly, with no jolt.
-      const k = 1 - Math.exp(-dt * AIM.rate);
-      aimEase += (want - aimEase) * k; aim += (aimEase - aim) * k;
-      chain((i, out) => loopPose(time, i, out), aim);
+      // Two easing stages: the tail sets off and arrives softly, passing through the film's in-between frames.
+      const k = 1 - Math.exp(-dt * FOLLOW.rate);
+      frameEase += (goalFrame - frameEase) * k;
+      current += THREE.MathUtils.clamp((frameEase - current) * k, -FOLLOW.maxSpeed * dt, FOLLOW.maxSpeed * dt);
+      // Lean the whole tail about the socket so its tip points at the cursor (clockwise on screen is positive).
+      let want = 0;
+      if (pointer.inside) {
+        chain((i, out) => frameAt(current, i, out), 0);
+        screenOffset(P[P.length - 1], tipOffset);
+        const turn = Math.atan2(tipOffset.y, tipOffset.x) - Math.atan2(cursorOffset.y, cursorOffset.x);
+        want = THREE.MathUtils.clamp(Math.atan2(Math.sin(turn), Math.cos(turn)), -FOLLOW.lean, FOLLOW.lean);
+      }
+      leanEase += (want - leanEase) * k; lean += (leanEase - lean) * k;
+      chain((i, out) => frameAt(current, i, out), lean);
     };
     const pose = () => {
       segments.forEach((s, i) => { s.group.position.copy(P[i]); s.group.quaternion.copy(F[i]); });
@@ -219,15 +232,13 @@ export default function AstroTail({ className }: { className?: string }) {
       renderer.setRenderTarget(null); renderer.clear(); renderer.render(quadScene, quadCamera);
     };
 
-    // A click speeds the swing up for a moment; repeated clicks stack a little.
-    const click = () => { kickTarget = Math.min(1.6, kick + 1); };
     const move = (event: PointerEvent) => {
       const r = host.getBoundingClientRect();
       pointer.x = (event.clientX - r.left) / r.width * 2 - 1; pointer.y = -((event.clientY - r.top) / r.height * 2 - 1);
       pointer.inside = true;
     };
     const leave = () => { pointer.inside = false; };
-    host.addEventListener('pointerdown', click); host.addEventListener('pointermove', move); host.addEventListener('pointerleave', leave);
+    host.addEventListener('pointerdown', move); host.addEventListener('pointermove', move); host.addEventListener('pointerleave', leave);
 
     const draco = new DRACOLoader().setDecoderPath('/draco/');
     const loader = new GLTFLoader().setDRACOLoader(draco);
@@ -240,7 +251,7 @@ export default function AstroTail({ className }: { className?: string }) {
 
     return () => {
       disposed = true; cancelAnimationFrame(frame); observer.disconnect();
-      host.removeEventListener('pointerdown', click); host.removeEventListener('pointermove', move); host.removeEventListener('pointerleave', leave);
+      host.removeEventListener('pointerdown', move); host.removeEventListener('pointermove', move); host.removeEventListener('pointerleave', leave);
       scene.traverse(o => { const m = o as THREE.Mesh; if (m.isMesh) m.geometry.dispose(); });
       target.dispose(); edgeMaterial.dispose(); normalMaterial.dispose(); draco.dispose(); renderer.dispose();
       renderer.domElement.remove();

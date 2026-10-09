@@ -8,7 +8,7 @@ export default function RobotLab() {
     <SiteShell active="space">
       <main className="robot-lab">
         <AstroTail className="robot-lab-canvas" />
-        <p className="robot-lab-caption"><em>Graduation work</em> — click to move the tail</p>
+        <p className="robot-lab-caption"><em>Graduation work</em> — move your cursor</p>
       </main>
     </SiteShell>
   );
