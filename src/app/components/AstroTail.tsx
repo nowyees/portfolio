@@ -7,8 +7,8 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
  * Graduation piece: the astronaut held at frame 135 of the Blender scene, its robotic tail alive.
  * Geometry (public/lab/astro-tail.glb): one static mesh for the body + fixed tail mount, and one rigid
  *   mesh per tail bone in rest pose (the skinned hoses are split onto their dominant bones in Blender). Normals are split at 38° in Blender so only real creases draw.
- * Motion: the tail hangs from the backpack and swings left and right like a pendulum with a whip-like tip,
- *   as in the graduation film; the cursor shifts the swing's centre and a click whips it harder.
+ * Motion: the tail plays its swing from the graduation film (Blender frames 1-77) forward and back; the
+ *   cursor leans the swing toward its side and a click plays it faster for a moment.
  * Framing: squarely behind the astronaut (as in the film) at the scene camera's distance, upright, fitted to the view,
  *   with room for everything the tail sweeps through at its widest.
  * Look: view normals + depth rendered at 2× resolution, an edge pass keeps creases and silhouettes only.
@@ -20,7 +20,7 @@ type SceneData = {
   ik: Array<{ bone: string; target: string }>; camera: { matrix: number[]; lens: number; sensor: number };
   body: Record<string, number[]>;
 };
-// Tail pose baked from Blender: per frame, each chain bone's rest-to-posed rotation (x, y, z, w); `hold` is used.
+// Tail animation baked from Blender: per frame, each chain bone's rest-to-posed rotation (x, y, z, w).
 type TailClip = { fps: number; frames: number[]; bones: string[]; hold: number; quats: number[][] };
 
 
@@ -86,47 +86,47 @@ export default function AstroTail({ className }: { className?: string }) {
     };
     const observer = new ResizeObserver(resize);
 
-    // Tail: hangs down from the backpack and swings left and right across the screen like a pendulum, the way
-    // it does in the graduation film. The socket leads the swing; each vertebra bends a little further a beat
-    // later, so at every turn the tip lags and curls before whipping across. A slower second wave and a
-    // drifting amplitude keep it from looking mechanical. The cursor shifts where the swing is centred; a click
-    // whips it wider and faster before it settles. All turning is about the camera's line of sight, so the
-    // authored segment shapes are kept and nothing twists; positions are chained from the socket.
+    // Tail: plays the swing from the graduation film — frames 1–77 of the Blender tail animation — forward and
+    // back on a loop, so there is never a jump between its end and its start. The cursor leans the whole swing
+    // toward its side; a click plays it faster for a moment. Rotations are interpolated per joint relative to
+    // the previous segment and positions are chained from the socket, so the tail always moves as one piece.
     let segments: Array<{ group: THREE.Group; length: number }> = [];
     let P: THREE.Vector3[] = [], F: THREE.Quaternion[] = [];
-    let holdWorld: THREE.Quaternion[] = [];
-    let weight: number[] = [];            // per joint share of the follow-through, growing toward the tip
-    const upAxis = new THREE.Vector3();   // the body's vertical
-    const viewAxis = new THREE.Vector3(); // the camera's line of sight: turning about it swings the tail across the screen
+    let clip: THREE.Quaternion[][] = [];  // per frame: segment 0's world rotation, then each relative to the previous
     const restDir = new THREE.Vector3();
-    let hang = 0;                         // turn that brings the authored tail to hang straight down on screen
-    const toCamera = new THREE.Quaternion(); // small turn about the vertical that keeps the hanging tail in front of the legs
+    const viewAxis = new THREE.Vector3(); // the camera's line of sight: turning about it leans the tail across the screen
 
-    // socket swing and per-joint follow-through (radians), speed (radians/second), phase lag per joint
-    const SWING = { root: .75, follow: .03, speed: 4, lag: .09, front: .3 };
-    const KICK = { gain: .6, speed: 2.5, decay: 1.5 };   // a click widens the swing by `gain` and speeds it up
-    const AIM = { range: .7, rate: 4 };                 // how far the cursor can shift the swing's centre, and how fast
+    // film frames, and the film's frame rate (it was exported at 30 fps)
+    const LOOP = { first: 1, last: 77, fps: 30 };
+    const KICK = { speed: 1.2, decay: 1.5 };           // a click adds this much playback speed, fading over `decay` s
+    const AIM = { range: .45, rate: 4 };               // how far (radians) the cursor can lean the tail, and how fast
     const pointer = { x: 0, y: 0, inside: false };
-    let phase = 0, slowPhase = 0, kick = 0, kickTarget = 0, lastTime = -1;
+    let time = 0, kick = 0, kickTarget = 0, lastTime = -1;
     let aim = 0, aimEase = 0;
 
-    const qw = new THREE.Quaternion(), step = new THREE.Vector3();
-    const socketScreen = new THREE.Vector3(), screenPoint = new THREE.Vector3();
-    const swing = (size: number, ph: number, slow: number, centre: number) => {
-      let total = hang + centre;
+    const qb = new THREE.Quaternion(), qv = new THREE.Quaternion();
+    const step = new THREE.Vector3(), socketScreen = new THREE.Vector3();
+    // Pose the chain from relative rotations, leaned about the view axis; positions follow from the socket.
+    const chain = (rotations: (i: number, out: THREE.Quaternion) => THREE.Quaternion, lean: number) => {
+      qv.setFromAxisAngle(viewAxis, lean);
       for (let i = 0; i < segments.length; i++) {
-        const wave = Math.sin(ph - SWING.lag * i) + .25 * Math.sin(slow - SWING.lag * .7 * i + 1.3);
-        total += size * (i === 0 ? SWING.root : SWING.follow * weight[i]) * wave;
-        F[i].multiplyQuaternions(qw.setFromAxisAngle(viewAxis, total), toCamera).multiply(holdWorld[i]);
+        rotations(i, qb);
+        if (i === 0) F[0].multiplyQuaternions(qv, qb); else F[i].multiplyQuaternions(F[i - 1], qb);
         step.copy(restDir).applyQuaternion(F[i]);
         P[i + 1].copy(P[i]).addScaledVector(step, segments[i].length);
       }
     };
-    // On-screen angle (aspect-corrected) of a point seen from the socket.
-    const screenAngle = (p: THREE.Vector3) => {
-      socketScreen.copy(P[0]).project(camera); screenPoint.copy(p).project(camera);
-      return Math.atan2(screenPoint.y - socketScreen.y, (screenPoint.x - socketScreen.x) * camera.aspect);
+    const frameAt = (f: number, i: number, out: THREE.Quaternion) => {
+      const k = Math.floor(f), next = Math.min(k + 1, clip.length - 1);
+      return out.slerpQuaternions(clip[k][i], clip[next][i], f - k);
     };
+    // Loop time (in frames) to a pose. The film's swing never returns to its first pose, so instead of jumping
+    // back the clip plays forward and then in reverse, easing to a stop at each end like a pendulum turning.
+    const loopPose = (t: number, i: number, out: THREE.Quaternion) => {
+      const span = clip.length - 1, u = t / (2 * span * PACE);
+      return frameAt(span * (1 - Math.cos(Math.PI * 2 * u)) / 2, i, out);
+    };
+    const PACE = 1.25; // eased turns need a little more time than the film's straight run
 
     const setup = (gltf: { scene: THREE.Group }, data: SceneData, anim: TailClip) => {
       const v = (a: number[]) => new THREE.Vector3(a[0], a[1], a[2]);
@@ -145,15 +145,16 @@ export default function AstroTail({ className }: { className?: string }) {
       });
       F = segments.map(() => new THREE.Quaternion());
       restDir.subVectors(v(data.rest[order[0]].tail), v(data.rest[order[0]].head)).normalize();
-      const row = anim.quats[anim.frames.indexOf(anim.hold)];
-      holdWorld = order.map((_, i) => new THREE.Quaternion(row[i * 4], row[i * 4 + 1], row[i * 4 + 2], row[i * 4 + 3]));
-      const n = segments.length;
-      weight = segments.map((_, i) => .3 + .7 * i / (n - 1));
+      // Clip frames are indexed from the film's frame 1.
+      const firstFrame = anim.frames[0];
+      clip = anim.quats.slice(LOOP.first - firstFrame, LOOP.last - firstFrame + 1).map(row => {
+        const world = order.map((_, i) => new THREE.Quaternion(row[i * 4], row[i * 4 + 1], row[i * 4 + 2], row[i * 4 + 3]));
+        return world.map((q, i) => i === 0 ? q : world[i - 1].clone().invert().multiply(q));
+      });
 
       const b = (k: string) => v(data.body[k]);
-      upAxis.subVectors(b('HeadTop_End'), b('LeftFoot').add(b('RightFoot')).multiplyScalar(.5)).normalize();
-      // Look at the astronaut squarely from behind, as in the film, so the hanging tail swings in front of the
-      // legs. Same distance as the Blender scene camera; the body stands upright on screen.
+      const upAxis = new THREE.Vector3().subVectors(b('HeadTop_End'), b('LeftFoot').add(b('RightFoot')).multiplyScalar(.5)).normalize();
+      // Look at the astronaut squarely from behind, as in the film, at the Blender scene camera's distance.
       const m = new THREE.Matrix4().fromArray(data.camera.matrix);
       const sceneCamera = new THREE.Vector3().setFromMatrixPosition(m);
       const centre = b('Hips').add(b('Spine2')).multiplyScalar(.5);
@@ -162,25 +163,15 @@ export default function AstroTail({ className }: { className?: string }) {
       camera.position.copy(centre).addScaledVector(back, sceneCamera.distanceTo(centre));
       camera.up.copy(upAxis); camera.lookAt(centre);
       camera.updateMatrixWorld(); camera.updateProjectionMatrix();
-      const toView = (p: THREE.Vector3) => p.clone().applyMatrix4(camera.matrixWorldInverse);
       camera.getWorldDirection(viewAxis);
-      toCamera.setFromAxisAngle(upAxis, SWING.front);
+      const toView = (p: THREE.Vector3) => p.clone().applyMatrix4(camera.matrixWorldInverse);
 
-      // Turn the authored tail (seen from the socket) until its tip hangs straight down on screen.
-      hang = 0; swing(0, 0, 0, 0);
-      hang = screenAngle(P[P.length - 1]) + Math.PI / 2;
-
-      // Everything the tail sweeps through at its widest (a fresh click, centred anywhere the cursor can put it),
-      // so framing leaves room for it.
+      // Everything the tail sweeps through over the loop, leaned either way, so framing leaves room for it.
       const reachPoints: THREE.Vector3[] = [];
-      for (const centre of [-AIM.range, 0, AIM.range]) {
-        for (let k = 0; k < 48; k++) {
-          const ph = k / 48 * Math.PI * 2;
-          swing(1 + KICK.gain, ph, ph * .5, centre);
-          P.forEach(p => reachPoints.push(p.clone()));
-        }
+      for (const lean of [-AIM.range, 0, AIM.range]) {
+        clip.forEach(row => { chain((i, out) => out.copy(row[i]), lean); P.forEach(p => reachPoints.push(p.clone())); });
       }
-      swing(1, 0, 0, 0);
+      chain((i, out) => loopPose(0, i, out), 0);
 
       // Centre the astronaut and everything the tail sweeps through, then remember the view angle they need.
       const pts = [...Object.values(data.body).map(v), ...reachPoints].map(toView);
@@ -199,24 +190,21 @@ export default function AstroTail({ className }: { className?: string }) {
     const simulate = (now: number) => {
       // Never step backwards or by more than a frame's worth, whatever the clock does (tab switches, etc.).
       const dt = lastTime < 0 ? 0 : THREE.MathUtils.clamp(now - lastTime, 0, .05); lastTime = now;
-      // A click's kick eases in over a moment rather than jumping, then fades.
+      // A click's speed-up eases in over a moment rather than jumping, then fades.
       if (kickTarget > 0) { kick += (kickTarget - kick) * (1 - Math.exp(-dt * 4)); if (kickTarget - kick < .02) kickTarget = 0; }
       else kick *= Math.exp(-dt / KICK.decay);
-      // Phases advance by speed, so a click speeds the swing up without a jump in its position.
-      phase += dt * (SWING.speed + KICK.speed * kick);
-      slowPhase += dt * SWING.speed * .5;
-      // The cursor's side of the socket shifts the swing's centre toward it (clockwise turns are positive).
+      time += dt * LOOP.fps * (1 + KICK.speed * kick);
+      // The cursor's side of the socket leans the swing toward it (clockwise on screen is positive).
       let want = 0;
       if (pointer.inside) {
-        const cursor = Math.atan2(pointer.y - socketScreen.y, (pointer.x - socketScreen.x) * camera.aspect);
-        want = THREE.MathUtils.clamp(-Math.PI / 2 - cursor, -Math.PI, Math.PI);
-        want = THREE.MathUtils.clamp(want > Math.PI / 2 ? Math.PI - want : want < -Math.PI / 2 ? -Math.PI - want : want, -AIM.range, AIM.range);
+        socketScreen.copy(P[0]).project(camera);
+        const side = THREE.MathUtils.clamp((pointer.x - socketScreen.x) * camera.aspect, -1, 1);
+        want = -side * AIM.range;
       }
-      // Two easing stages: the centre starts and stops moving softly, with no jolt.
+      // Two easing stages: the lean starts and stops softly, with no jolt.
       const k = 1 - Math.exp(-dt * AIM.rate);
       aimEase += (want - aimEase) * k; aim += (aimEase - aim) * k;
-      swing(1 + .15 * Math.sin(now * .23) + KICK.gain * kick, phase, slowPhase, aim);
-      socketScreen.copy(P[0]).project(camera);
+      chain((i, out) => loopPose(time, i, out), aim);
     };
     const pose = () => {
       segments.forEach((s, i) => { s.group.position.copy(P[i]); s.group.quaternion.copy(F[i]); });
@@ -231,7 +219,7 @@ export default function AstroTail({ className }: { className?: string }) {
       renderer.setRenderTarget(null); renderer.clear(); renderer.render(quadScene, quadCamera);
     };
 
-    // A click whips the tail; repeated clicks stack a little.
+    // A click speeds the swing up for a moment; repeated clicks stack a little.
     const click = () => { kickTarget = Math.min(1.6, kick + 1); };
     const move = (event: PointerEvent) => {
       const r = host.getBoundingClientRect();
