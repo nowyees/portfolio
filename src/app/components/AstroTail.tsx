@@ -73,10 +73,15 @@ export default function AstroTail({ className }: { className?: string }) {
     const quadCamera = new THREE.Camera();
     let fitX = .3, fitY = .3; // half-extents of the subject as tangents of the view angle
 
+    // Supersample: lines are drawn at ~2 device px then scaled down, which smooths them. The edge pass reads nine
+    // texels per pixel of a large target, so on slower GPUs (or large windows) that alone can drop the page to
+    // ~10 fps; `quality` scales the supersampling down while frames run slow and back up when there's headroom.
+    const QUALITY = { maxPixels: 5e6, slow: 1 / 40, fast: 1 / 55, step: .1, min: .6 };
+    let quality = 1, frameTime = 1 / 60, lastRender = -1, slowFor = 0, fastFor = 0;
     const resize = () => {
-      const w = host.clientWidth, h = host.clientHeight;
-      // Supersample: lines are drawn at ~2 device px then scaled down, which smooths them.
-      const ratio = Math.min(3, (window.devicePixelRatio || 1) * 2);
+      const w = host.clientWidth, h = host.clientHeight, dpr = window.devicePixelRatio || 1;
+      const full = Math.min(3, dpr * 2, Math.sqrt(QUALITY.maxPixels / Math.max(1, w * h)));
+      const ratio = Math.max(Math.min(dpr * 1.5, full), full * quality);
       renderer.setPixelRatio(ratio); renderer.setSize(w, h);
       target.setSize(Math.round(w * ratio), Math.round(h * ratio));
       edgeMaterial.uniforms.texel.value.set(1 / (w * ratio), 1 / (h * ratio));
@@ -340,10 +345,22 @@ export default function AstroTail({ className }: { className?: string }) {
       segments.forEach((s, i) => { s.group.position.copy(P[i]); s.group.quaternion.copy(F[i]); });
     };
 
+    const adapt = (now: number) => {
+      // Long gaps are a hidden tab or a hitch, not the GPU's pace; leave them out.
+      const gap = now - lastRender; lastRender = now;
+      if (gap <= 0 || gap > .5) return;
+      frameTime += (gap - frameTime) * .1;
+      slowFor = frameTime > QUALITY.slow ? slowFor + frameTime : 0;
+      fastFor = frameTime < QUALITY.fast ? fastFor + frameTime : 0;
+      // Step down after half a second of slow frames; step back up only after a few seconds of fast ones.
+      if (slowFor > .5 && quality > QUALITY.min) { quality = Math.max(QUALITY.min, quality - QUALITY.step); slowFor = 0; resize(); }
+      else if (fastFor > 4 && quality < 1) { quality = Math.min(1, quality + QUALITY.step); fastFor = 0; resize(); }
+    };
     const tick = (now: number) => {
       frame = requestAnimationFrame(tick);
       if (!segments.length) return;
       simulate(now / 1000);
+      adapt(now / 1000);
       pose();
       renderer.setRenderTarget(target); renderer.clear(); renderer.render(scene, camera);
       renderer.setRenderTarget(null); renderer.clear(); renderer.render(quadScene, quadCamera);
