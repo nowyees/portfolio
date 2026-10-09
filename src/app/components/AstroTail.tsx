@@ -109,11 +109,29 @@ export default function AstroTail({ className }: { className?: string }) {
 
     const qb = new THREE.Quaternion(), qv = new THREE.Quaternion();
     const step = new THREE.Vector3(), socketScreen = new THREE.Vector3();
+    // The film folds one joint back on itself (up to ~150°) while the tail is out to the left; held still under
+    // the cursor that reads as a kink. Bends up to a knee pass untouched; beyond it only a small share of the extra
+    // bend is kept. On the left the softening is strong (fold ~50°); it relaxes over the frames where the tail
+    // crosses to the right, because there a straighter tail would pass behind the legs.
+    const SOFT = { strong: { knee: 35, keep: .15 }, mild: { knee: 60, keep: .2 }, fromFrame: 44, toFrame: 58 };
+    const ID = new THREE.Quaternion();
+    const softness = (f: number) => 1 - THREE.MathUtils.smoothstep(f, SOFT.fromFrame, SOFT.toFrame);
+    const soften = (q: THREE.Quaternion, s: number) => {
+      if (q.w < 0) q.set(-q.x, -q.y, -q.z, -q.w);
+      const angle = 2 * Math.acos(Math.min(1, q.w));
+      const knee = THREE.MathUtils.degToRad(THREE.MathUtils.lerp(SOFT.mild.knee, SOFT.strong.knee, s));
+      const keep = THREE.MathUtils.lerp(SOFT.mild.keep, SOFT.strong.keep, s);
+      if (angle > knee) q.slerpQuaternions(ID, qs.copy(q), (knee + (angle - knee) * keep) / angle);
+      return q;
+    };
+    const qs = new THREE.Quaternion();
     // Pose the chain from relative rotations, leaned about the view axis; positions follow from the socket.
-    const chain = (rotations: (i: number, out: THREE.Quaternion) => THREE.Quaternion, lean: number) => {
+    const chain = (rotations: (i: number, out: THREE.Quaternion) => THREE.Quaternion, lean: number, frame: number) => {
       qv.setFromAxisAngle(viewAxis, lean);
+      const s = softness(frame);
       for (let i = 0; i < segments.length; i++) {
         rotations(i, qb);
+        if (i > 0) soften(qb, s);
         if (i === 0) F[0].multiplyQuaternions(qv, qb); else F[i].multiplyQuaternions(F[i - 1], qb);
         step.copy(restDir).applyQuaternion(F[i]);
         P[i + 1].copy(P[i]).addScaledVector(step, segments[i].length);
@@ -171,10 +189,10 @@ export default function AstroTail({ className }: { className?: string }) {
       // Everything the tail sweeps through over the loop, leaned either way, so framing leaves room for it.
       const reachPoints: THREE.Vector3[] = [];
       for (const lean of [-FOLLOW.lean, 0, FOLLOW.lean]) {
-        clip.forEach(row => { chain((i, out) => out.copy(row[i]), lean); P.forEach(p => reachPoints.push(p.clone())); });
+        clip.forEach((row, f) => { chain((i, out) => out.copy(row[i]), lean, f); P.forEach(p => reachPoints.push(p.clone())); });
       }
-      tips = clip.map(row => { chain((i, out) => out.copy(row[i]), 0); return P[P.length - 1].clone(); });
-      chain((i, out) => out.copy(clip[START][i]), 0);
+      tips = clip.map((row, f) => { chain((i, out) => out.copy(row[i]), 0, f); return P[P.length - 1].clone(); });
+      chain((i, out) => out.copy(clip[START][i]), 0, START);
 
       // Centre the astronaut and everything the tail sweeps through, then remember the view angle they need.
       const pts = [...Object.values(data.body).map(v), ...reachPoints].map(toView);
@@ -211,13 +229,13 @@ export default function AstroTail({ className }: { className?: string }) {
       // Lean the whole tail about the socket so its tip points at the cursor (clockwise on screen is positive).
       let want = 0;
       if (pointer.inside) {
-        chain((i, out) => frameAt(current, i, out), 0);
+        chain((i, out) => frameAt(current, i, out), 0, current);
         screenOffset(P[P.length - 1], tipOffset);
         const turn = Math.atan2(tipOffset.y, tipOffset.x) - Math.atan2(cursorOffset.y, cursorOffset.x);
         want = THREE.MathUtils.clamp(Math.atan2(Math.sin(turn), Math.cos(turn)), -FOLLOW.lean, FOLLOW.lean);
       }
       leanEase += (want - leanEase) * k; lean += (leanEase - lean) * k;
-      chain((i, out) => frameAt(current, i, out), lean);
+      chain((i, out) => frameAt(current, i, out), lean, current);
     };
     const pose = () => {
       segments.forEach((s, i) => { s.group.position.copy(P[i]); s.group.quaternion.copy(F[i]); });
