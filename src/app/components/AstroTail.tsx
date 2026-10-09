@@ -106,51 +106,71 @@ export default function AstroTail({ className }: { className?: string }) {
     const pointer = { x: 0, y: 0, inside: false };
     let lastTime = -1, goalFrame = START, frameEase = START, current = START, lean = 0, leanEase = 0;
     let tips: THREE.Vector3[] = [];                    // tip position of each pose, unleaned
+    // Poses whose sharpest joint still bends more than this are only passed through, never stopped on: held still
+    // under the cursor such a bend reads as a kink.
+    const HOLDABLE_BEND = THREE.MathUtils.degToRad(45);
+    let holdable: boolean[] = [];
     // Follow-through: each joint follows the film frame at its own pace, quick at the socket and slower toward
     // the tip, so a moving tail trails and curls behind its root and settles into one pose when it stops.
     const TRAIL = { root: 16, tip: 3.5 };              // per-second catch-up rates at the socket and at the tip
     let jointFrames: number[] = [];
 
     const qb = new THREE.Quaternion(), qv = new THREE.Quaternion();
-    const step = new THREE.Vector3(), socketScreen = new THREE.Vector3();
+    const step = new THREE.Vector3(), tmpDir = new THREE.Vector3(), socketScreen = new THREE.Vector3();
     // The film folds one joint back on itself (up to ~150°) while the tail is out to the left; held still under
     // the cursor that reads as a kink. Bends up to a knee pass untouched; beyond it only a small share of the extra
-    // bend is kept. On the left the softening is strong (fold ~50°); it relaxes over the frames where the tail
-    // crosses to the right, because there a straighter tail would pass behind the legs.
-    const SOFT = { strong: { knee: 35, keep: .15 }, mild: { knee: 60, keep: .2 }, fromFrame: 44, toFrame: 58 };
+    // bend is kept. On the left the softening is strong; it relaxes over the frames where the tail crosses to the
+    // right, because there a straighter tail would pass behind the legs.
+    const SOFT = { strong: { knee: 25, keep: .1 }, mild: { knee: 60, keep: .2 }, fromFrame: 44, toFrame: 58 };
     const ID = new THREE.Quaternion();
     const softness = (f: number) => 1 - THREE.MathUtils.smoothstep(f, SOFT.fromFrame, SOFT.toFrame);
-    // Returns the bend taken out (radians) and leaves its axis in `removedAxis`, so it can be spread downstream.
-    const removedAxis = new THREE.Vector3();
     const soften = (q: THREE.Quaternion, s: number) => {
       if (q.w < 0) q.set(-q.x, -q.y, -q.z, -q.w);
       const angle = 2 * Math.acos(Math.min(1, q.w));
       const knee = THREE.MathUtils.degToRad(THREE.MathUtils.lerp(SOFT.mild.knee, SOFT.strong.knee, s));
       const keep = THREE.MathUtils.lerp(SOFT.mild.keep, SOFT.strong.keep, s);
-      if (angle <= knee) return 0;
-      const kept = knee + (angle - knee) * keep, sin = Math.sqrt(1 - q.w * q.w);
-      removedAxis.set(q.x / sin, q.y / sin, q.z / sin);
-      q.slerpQuaternions(ID, qs.copy(q), kept / angle);
-      return angle - kept;
+      if (angle > knee) q.slerpQuaternions(ID, qs.copy(q), (knee + (angle - knee) * keep) / angle);
+      return q;
     };
-    // The bend taken out of a fold is not discarded: it is handed on to the next CURL_SPREAD joints as a gentle
-    // curl about the same axis, so the tail still curves where the film folds it, just without the kink.
-    const CURL_SPREAD = 10, CURL_SHARE = .8;
-    const curlAxis = new THREE.Vector3(), qcurl = new THREE.Quaternion();
     const qs = new THREE.Quaternion();
+    // On the left the film also bunches its curl into a few short vertebrae where the thin tip begins, so the tip
+    // seems to stand up from a corner. There each joint's bend is replaced by a weighted average of its
+    // neighbours' (spreading the curl along the tail) and eased off a little overall.
+    const SMOOTH = { radius: 5, sigma: 2.5, flatten: .25 };
+    const kernel = Array.from({ length: SMOOTH.radius * 2 + 1 }, (_, k) => Math.exp(-((k - SMOOTH.radius) ** 2) / (2 * SMOOTH.sigma ** 2)));
+    let bends: THREE.Vector3[] = [], spread: THREE.Vector3[] = [];
+    const firstRot = new THREE.Quaternion();
+    const toVector = (q: THREE.Quaternion, out: THREE.Vector3) => {
+      if (q.w < 0) q.set(-q.x, -q.y, -q.z, -q.w);
+      const half = Math.acos(Math.min(1, q.w)), sin = Math.sin(half);
+      return sin < 1e-6 ? out.set(0, 0, 0) : out.set(q.x, q.y, q.z).multiplyScalar(2 * half / sin);
+    };
+    const fromVector = (v: THREE.Vector3, out: THREE.Quaternion) => {
+      const angle = v.length();
+      return angle < 1e-9 ? out.identity() : out.setFromAxisAngle(tmpDir.copy(v).divideScalar(angle), angle);
+    };
     // Pose the chain from relative rotations, leaned about the view axis; positions follow from the socket.
     const chain = (rotations: (i: number, out: THREE.Quaternion) => THREE.Quaternion, lean: number, frame: number) => {
-      qv.setFromAxisAngle(viewAxis, lean);
-      const s = softness(frame);
-      let curl = 0, curlLeft = 0;
-      for (let i = 0; i < segments.length; i++) {
+      const n = segments.length, s = softness(frame);
+      if (bends.length !== n) { bends = segments.map(() => new THREE.Vector3()); spread = segments.map(() => new THREE.Vector3()); }
+      for (let i = 0; i < n; i++) {
         rotations(i, qb);
-        if (i > 0) {
-          const removed = soften(qb, s);
-          if (removed > 0) { curl = removed * CURL_SHARE / CURL_SPREAD; curlLeft = CURL_SPREAD; curlAxis.copy(removedAxis); }
-          else if (curlLeft > 0) { qb.multiply(qcurl.setFromAxisAngle(curlAxis, curl)); curlLeft--; }
+        if (i === 0) firstRot.copy(qb); else toVector(soften(qb, s), bends[i]);
+      }
+      if (s > 0) {
+        for (let i = 1; i < n; i++) {
+          spread[i].set(0, 0, 0); let total = 0;
+          for (let k = -SMOOTH.radius; k <= SMOOTH.radius; k++) {
+            const j = i + k; if (j < 1 || j >= n) continue;
+            spread[i].addScaledVector(bends[j], kernel[k + SMOOTH.radius]); total += kernel[k + SMOOTH.radius];
+          }
+          spread[i].divideScalar(total).multiplyScalar(1 - SMOOTH.flatten);
         }
-        if (i === 0) F[0].multiplyQuaternions(qv, qb); else F[i].multiplyQuaternions(F[i - 1], qb);
+        for (let i = 1; i < n; i++) bends[i].lerp(spread[i], s);
+      }
+      qv.setFromAxisAngle(viewAxis, lean);
+      for (let i = 0; i < n; i++) {
+        if (i === 0) F[0].multiplyQuaternions(qv, firstRot); else F[i].multiplyQuaternions(F[i - 1], fromVector(bends[i], qb));
         step.copy(restDir).applyQuaternion(F[i]);
         P[i + 1].copy(P[i]).addScaledVector(step, segments[i].length);
       }
@@ -209,7 +229,17 @@ export default function AstroTail({ className }: { className?: string }) {
       for (const lean of [-FOLLOW.lean, 0, FOLLOW.lean]) {
         clip.forEach((row, f) => { chain((i, out) => out.copy(row[i]), lean, f); P.forEach(p => reachPoints.push(p.clone())); });
       }
-      tips = clip.map((row, f) => { chain((i, out) => out.copy(row[i]), 0, f); return P[P.length - 1].clone(); });
+      const sharpest = () => {
+        let m = 0;
+        for (let i = 1; i < P.length - 1; i++) m = Math.max(m, step.subVectors(P[i], P[i - 1]).normalize().angleTo(tmpDir.subVectors(P[i + 1], P[i]).normalize()));
+        return m;
+      };
+      holdable = [];
+      tips = clip.map((row, f) => {
+        chain((i, out) => out.copy(row[i]), 0, f);
+        holdable.push(sharpest() <= HOLDABLE_BEND);
+        return P[P.length - 1].clone();
+      });
       chain((i, out) => out.copy(clip[START][i]), 0, START);
       jointFrames = segments.map(() => START);
 
@@ -236,6 +266,7 @@ export default function AstroTail({ className }: { className?: string }) {
         // The film pose whose tip is nearest the cursor, preferring poses close to the current one.
         let best = goalFrame, bestCost = Infinity;
         tips.forEach((tip, f) => {
+          if (!holdable[f]) return;
           const cost = screenOffset(tip, tipOffset).distanceTo(cursorOffset) + FOLLOW.stickiness * Math.abs(f - current) / clip.length;
           if (cost < bestCost) { bestCost = cost; best = f; }
         });
