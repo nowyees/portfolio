@@ -71,9 +71,9 @@
 .spec-name { display:block; min-width:0; overflow:hidden; text-overflow:ellipsis; padding-bottom:.6em; border-bottom:1px solid #d4d4d4; font:500 1em/1.2 var(--sans); letter-spacing:-.02em; white-space:nowrap; }
 .spec-rows { display:block; margin:0; }
 .spec-rows > * { display:grid; grid-template-columns:auto 1fr auto; gap:.8em; align-items:center; min-height:1.7em; border-bottom:1px solid #d4d4d4; }
-.spec-rows :is(dt,b) { font:400 .75em/1 var(--mono); letter-spacing:.04em; }
-.spec-rows :is(span,i) { justify-self:center; font:400 .75em/1 var(--sans); font-style:normal; color:#bbb; }
-.spec-rows :is(dd,em) { margin:0; justify-self:end; font:400 .7em/1.2 var(--mono); font-style:normal; letter-spacing:.06em; text-transform:uppercase; color:#555; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+.spec-rows > * > :is(dt,b) { font:400 .75em/1 var(--mono); letter-spacing:.04em; }
+.spec-rows > * > :is(span,i) { justify-self:center; font:400 .75em/1 var(--sans); font-style:normal; color:#bbb; }
+.spec-rows > * > :is(dd,em) { margin:0; justify-self:end; font:400 .7em/1.2 var(--mono); font-style:normal; letter-spacing:.06em; text-transform:uppercase; color:#555; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
 .projects-index .gallery-footer { padding-top:40px; }
 @media (max-width:600px) {
   .projects-index .gallery-intro { padding-top:14vh; }
