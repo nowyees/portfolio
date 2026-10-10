@@ -197,7 +197,10 @@
 
 /* Motion gallery: rigged pieces, one at a time */
 .motion-gallery { position:relative; height:100dvh; overflow:hidden; }
-.motion-stage { position:absolute; inset:0; cursor:crosshair; touch-action:none; }
+.motion-stage { position:absolute; inset:0; cursor:none; touch-action:none; }
+.astro-cursor { position:absolute; left:0; top:0; z-index:3; width:22px; height:22px; margin:-11px 0 0 -11px; border:1px solid var(--ink); border-radius:50%; pointer-events:none; opacity:0; transition:opacity .2s; }
+.astro-cursor::after { content:''; position:absolute; left:50%; top:50%; width:3px; height:3px; margin:-1.5px 0 0 -1.5px; border-radius:50%; background:var(--ink); }
+.astro-cursor.is-shown { opacity:1; }
 .motion-stage canvas { display:block; }
 .motion-arrow { position:absolute; top:50%; z-index:2; width:56px; height:56px; margin-top:-28px; display:flex; align-items:center; justify-content:center; border:0; background:transparent; color:var(--ink); cursor:pointer; transition:opacity .2s; }
 .motion-arrow.is-prev { left:clamp(8px,4vw,56px); }

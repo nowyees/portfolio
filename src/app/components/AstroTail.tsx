@@ -87,6 +87,10 @@ export default function AstroTail({ className }: { className?: string }) {
     hint.className = 'astro-hint';
     hint.innerHTML = '<span class="astro-hint-mark"><i></i></span><span class="astro-hint-label">Move</span>';
     host.appendChild(hint);
+    // A drawn cursor (ring + dot) in place of the system one, which is hard to see over the hairlines.
+    const cursor = document.createElement('div');
+    cursor.className = 'astro-cursor';
+    host.appendChild(cursor);
     const HINT = { hideAfter: .6, returnAfter: 2.5 };     // seconds of moving before it hides; of absence before it returns
     let movedFor = 0, awayFor = 0, hintShown = true;
     const hintPoint = new THREE.Vector3();
@@ -423,8 +427,10 @@ export default function AstroTail({ className }: { className?: string }) {
       const r = host.getBoundingClientRect();
       pointer.x = (event.clientX - r.left) / r.width * 2 - 1; pointer.y = -((event.clientY - r.top) / r.height * 2 - 1);
       pointer.inside = true;
+      cursor.style.transform = `translate(${event.clientX - r.left}px, ${event.clientY - r.top}px)`;
+      cursor.classList.toggle('is-shown', event.pointerType === 'mouse' || event.pointerType === 'pen');
     };
-    const leave = () => { pointer.inside = false; };
+    const leave = () => { pointer.inside = false; cursor.classList.remove('is-shown'); };
     host.addEventListener('pointerdown', move); host.addEventListener('pointermove', move); host.addEventListener('pointerleave', leave);
 
     const draco = new DRACOLoader().setDecoderPath('/draco/');
@@ -441,7 +447,7 @@ export default function AstroTail({ className }: { className?: string }) {
       host.removeEventListener('pointerdown', move); host.removeEventListener('pointermove', move); host.removeEventListener('pointerleave', leave);
       scene.traverse(o => { const m = o as THREE.Mesh; if (m.isMesh) m.geometry.dispose(); });
       target.dispose(); lines.dispose(); edgeMaterial.dispose(); downsampleMaterial.dispose(); normalMaterial.dispose(); draco.dispose(); renderer.dispose();
-      renderer.domElement.remove(); hint.remove();
+      renderer.domElement.remove(); hint.remove(); cursor.remove();
     };
   }, []);
 
