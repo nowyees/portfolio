@@ -34,6 +34,13 @@ export default function MotionGallery() {
     <SiteShell active="motion">
       <main className="motion-gallery">
         <Piece key={pieces[index].id} className="motion-stage" />
+        {/* How to play with it: Korean first, English smaller and grey beneath (touch wording on touch screens). */}
+        <p className="motion-guide">
+          <span className="is-pointer">마우스를 움직여 꼬리를 흔들어 보세요</span>
+          <span className="is-touch">화면을 쓸어 꼬리를 흔들어 보세요</span>
+          <small className="is-pointer">Move your cursor to swing the tail</small>
+          <small className="is-touch">Drag across the screen to swing the tail</small>
+        </p>
         <button type="button" className="motion-arrow is-prev" aria-label="Previous piece" disabled={single} onClick={() => go(-1)}><span aria-hidden="true" /></button>
         <button type="button" className="motion-arrow is-next" aria-label="Next piece" disabled={single} onClick={() => go(1)}><span aria-hidden="true" /></button>
         <p className="motion-caption"><em>{title}</em> — {note}<span className="motion-count">{count(index + 1)} / {count(pieces.length)}</span></p>
