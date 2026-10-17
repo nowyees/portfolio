@@ -5,11 +5,13 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { edgeShader, downsampleShader } from './AstroTail';
 import { createRobotControls, controlLabel, type RobotMetadata, type RobotSelection } from '../../lib/robotControls';
 
-const ranges = (key: string) => key === 'head' ? [{ label: 'Turn', min: -Math.PI / 2, max: Math.PI / 2 }, { label: 'Tilt', min: -Math.PI / 6, max: Math.PI / 6 }]
+const ranges = (key: string) => key === 'head' ? [{ label: 'Turn', min: -Math.PI / 3, max: Math.PI / 3 }, { label: 'Tilt', min: -Math.PI / 9, max: Math.PI / 9 }]
   : key === 'base' ? [{ label: 'Turn', min: -Math.PI, max: Math.PI }, { label: 'Roll', min: -.35, max: .35 }]
   : key === 'torso' ? [{ label: 'Lean', min: -.22, max: .22 }]
   : key.startsWith('arm_') ? [{ label: 'Lift', min: 0, max: 1 }]
   : key.startsWith('wheel_') ? [{ label: 'Spin', min: -Math.PI * 2, max: Math.PI * 2 }]
+  : key.startsWith('rail_') ? [{ label: 'Rail', min: 0, max: 1 }]
+  : key.endsWith('_THUMB') ? [{ label: 'Open / curl', min: -1, max: 1 }, { label: 'Rail', min: 0, max: 1 }]
   : [{ label: 'Open / curl', min: -1, max: 1 }];
 
 type Rig = {
@@ -108,11 +110,12 @@ export default function DualArmIK({ className }: { className?: string }) {
     const move = (event: PointerEvent) => {
       if (pressed && selection) {
         const dx = event.clientX - dragX, dy = event.clientY - dragY;
-        if (selection === 'head') { change(selection, 0, dragValues[0] + dx * .009); change(selection, 1, dragValues[1] + dy * .005); }
+        if (selection === 'head') { change(selection, 0, dragValues[0] + dx * .006); change(selection, 1, dragValues[1] + dy * .003); }
         else if (selection === 'base') { change(selection, 0, dragValues[0] + dx * .009); change(selection, 1, dragValues[1] - dy * .002); }
         else if (selection === 'torso') change(selection, 0, dragValues[0] + dy * .003);
         else if (selection.startsWith('arm_')) change(selection, 0, dragValues[0] + (-dy + (selection.endsWith('L') ? dx : -dx) * .4) * .004);
         else if (selection.startsWith('wheel_')) change(selection, 0, dragValues[0] + (dx - dy) * .035);
+        else if (selection.startsWith('rail_')) change(selection, 0, dragValues[0] + (dx - dy) * .008);
         else change(selection, 0, dragValues[0] + (dx * .3 - dy) * .012);
         return;
       }
@@ -212,7 +215,7 @@ export default function DualArmIK({ className }: { className?: string }) {
         bounds.makeEmpty();
         for (const object of selectable) {
           const key = object.userData.control as string;
-          const matches = key === selection || selection.startsWith('hand_') && key?.startsWith(`finger_${selection.split('_')[1]}_`);
+          const matches = key === selection || selection.startsWith('hand_') && (key?.startsWith(`finger_${selection.split('_')[1]}_`) || key === `rail_${selection.split('_')[1]}`);
           if (matches) { object.updateWorldMatrix(true, false); partBounds.setFromObject(object); bounds.union(partBounds); }
         }
         if (!bounds.isEmpty()) bounds.getCenter(focusTarget);
@@ -221,7 +224,7 @@ export default function DualArmIK({ className }: { className?: string }) {
       const ease = 1 - Math.exp(-dt * 8);
       viewTarget.lerp(focusTarget, ease);
       camera.position.copy(viewTarget); camera.position.z += 4; camera.lookAt(viewTarget);
-      const zoom = focus && selection ? /^(hand|finger)_/.test(selection) ? .18 : selection === 'head' ? .42 : .6 : 1;
+      const zoom = focus && selection ? /^(hand|finger|rail)_/.test(selection) ? .18 : selection === 'head' ? .42 : .6 : 1;
       camera.fov = THREE.MathUtils.lerp(camera.fov, fullFov * zoom, ease); camera.updateProjectionMatrix();
       if (paths.L && controls) {
         controls.root.updateMatrixWorld(true);
@@ -242,21 +245,22 @@ export default function DualArmIK({ className }: { className?: string }) {
       renderer.domElement.remove(); cursor.remove(); hint.remove(); tooltip.remove();
     };
   }, []);
-  const fingers = selected && /^(hand|finger)_/.test(selected) ? ['THUMB', 'INDEX', 'MIDDLE', 'RING', 'PINKY'] : [];
+  const fingers = selected && /^(hand|finger|rail)_/.test(selected) ? ['THUMB', 'INDEX', 'MIDDLE', 'RING', 'PINKY'] : [];
   const side = selected?.split('_')[1];
   return <div className={`${className || ''} robot-interactive`} role="group" aria-label="Articulated robot. Select a part, then drag to move it.">
     <div ref={hostRef} style={{ position: 'absolute', inset: 0 }} />
     {status ? <p role="status" className="robot-loading">{status}</p> : <aside className="robot-panel" aria-label="Robot controls">
       <div className="robot-panel-heading"><select aria-label="Select robot part" value={selected || ''} onChange={e => apiRef.current?.select((e.target.value || null) as RobotSelection | null)}>
         <option value="">Select a part</option>
-        {['head', 'torso', 'base', 'arm_L', 'arm_R', 'hand_L', 'hand_R', 'wheel_FRONT_NEG_X', 'wheel_FRONT_POS_X', 'wheel_REAR_NEG_X', 'wheel_REAR_POS_X'].map(key => <option key={key} value={key}>{controlLabel(key)}</option>)}
+        {['head', 'torso', 'base', 'arm_L', 'arm_R', 'hand_L', 'hand_R', 'rail_L', 'rail_R', 'wheel_FRONT_NEG_X', 'wheel_FRONT_POS_X', 'wheel_REAR_NEG_X', 'wheel_REAR_POS_X'].map(key => <option key={key} value={key}>{controlLabel(key)}</option>)}
         {selected?.startsWith('finger_') && <option value={selected}>{controlLabel(selected)}</option>}
       </select><button type="button" onClick={() => apiRef.current?.reset()}>Reset pose</button></div>
       {!selected && <p>Click a part. Drag to move.</p>}
       {selected && <>
         <button type="button" className="robot-focus" aria-pressed={focused} onClick={() => apiRef.current?.focus(!focused)}>{focused ? 'Full view' : 'Focus on part'}</button>
-        {fingers.length > 0 && <div className="robot-fingers"><button type="button" aria-pressed={selected === `hand_${side}`} onClick={() => apiRef.current?.select(`hand_${side}`)}>All</button>{fingers.map(f => <button type="button" key={f} aria-pressed={selected === `finger_${side}_${f}`} onClick={() => apiRef.current?.select(`finger_${side}_${f}`)}>{f === 'PINKY' ? 'Little' : f[0] + f.slice(1).toLowerCase()}</button>)}</div>}
+        {fingers.length > 0 && <div className="robot-fingers"><button type="button" aria-pressed={selected === `hand_${side}`} onClick={() => apiRef.current?.select(`hand_${side}`)}>All</button>{fingers.map(f => <button type="button" key={f} aria-pressed={selected === `finger_${side}_${f}`} onClick={() => apiRef.current?.select(`finger_${side}_${f}`)}>{f === 'PINKY' ? 'Little' : f[0] + f.slice(1).toLowerCase()}</button>)}<button type="button" aria-pressed={selected === `rail_${side}`} onClick={() => apiRef.current?.select(`rail_${side}`)}>Rail</button></div>}
         {ranges(selected).map((range, channel) => <label key={`${selected}-${channel}`} className="robot-range"><span>{range.label}</span><input type="range" aria-label={`${controlLabel(selected)} ${range.label}`} min={range.min} max={range.max} step={(range.max - range.min) / 400} value={selectedValues[channel] || 0} onChange={e => apiRef.current?.set(selected, channel, Number(e.target.value))} /></label>)}
+        {fingers.length > 0 && <p>Thumb clearance adjusts automatically.</p>}
       </>}
     </aside>}
   </div>;
