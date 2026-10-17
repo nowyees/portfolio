@@ -25,7 +25,7 @@ type SceneData = {
 type TailClip = { fps: number; frames: number[]; bones: string[]; hold: number; quats: number[][] };
 
 
-const edgeShader = {
+export const edgeShader = {
   vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0., 1.); }',
   fragmentShader: `
     uniform sampler2D tNormal; uniform sampler2D tDepth; uniform vec2 texel; uniform float near; uniform float far;
@@ -53,7 +53,7 @@ const edgeShader = {
 // Box-filters the supersampled line image down to the screen: each screen pixel averages the 4×4 grid of samples
 // covering it, so one-texel lines become thin, continuous, antialiased hairlines. The ink is then darkened a
 // little, since averaging a thin line pales it.
-const downsampleShader = {
+export const downsampleShader = {
   vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0., 1.); }',
   fragmentShader: `
     uniform sampler2D tLines; uniform vec2 pixel; varying vec2 vUv;

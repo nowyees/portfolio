@@ -2,10 +2,12 @@ import React, { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import SiteShell from './SiteShell';
 import AstroTail from './AstroTail';
+import DualArmIK from './DualArmIK';
 
 // Rigged pieces you can move, one at a time; the arrows (or ← →) step through them.
 const pieces: Array<{ id: string; title: string; note: string; Piece: React.ComponentType<{ className?: string }> }> = [
   { id: 'astronaut-tail', title: 'Graduation work', note: 'Robotic tail', Piece: AstroTail },
+  { id: 'dual-arm-ik', title: 'Motion study', note: 'Dual-arm IK', Piece: DualArmIK },
 ];
 
 export default function MotionGallery() {
