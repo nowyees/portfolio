@@ -49,6 +49,9 @@ for (let n = 0; n < 128; n++) {
 controls.reset(); controls.update();
 for (const side of ['L', 'R']) {
   const other = side === 'L' ? 'R' : 'L';
+  const hand = controls.hands[side];
+  const palm = hand.children.find(child => child.children.length > 0);
+  const palmPosition = palm.position.toArray(), palmRotation = palm.quaternion.toArray();
   controls.toggleFlip(side); controls.update(.25);
   const midway = controls.get(`rail_${side}`)[0];
   assert.ok(midway > 0 && midway < 1, 'Flip must animate, not snap');
@@ -60,7 +63,14 @@ for (const side of ['L', 'R']) {
   controls.toggleFlip(side);
   for (let n = 0; n < 70; n++) { controls.update(1 / 60); assert.ok(controls.thumbClearance(side) >= .0119); }
   assert.equal(controls.get(`rail_${side}`)[0], 1);
-  assert.ok(Math.abs(Math.abs(controls.get(`wrist_${side}`)[0]) - Math.PI) < 1e-9);
+  assert.deepEqual(palm.position.toArray(), palmPosition, 'Rail must not move the palm');
+  assert.deepEqual(palm.quaternion.toArray(), palmRotation, 'Rail must not rotate the hand');
+  controls.toggleFlip(side);
+  for (let n = 0; n < 70; n++) controls.update(1 / 60);
+  assert.equal(controls.get(`rail_${side}`)[0], 0, 'Second click must return the rail to its original endpoint');
+  controls.set(`rail_${side}`, 0, 1); controls.toggleFlip(side);
+  for (let n = 0; n < 70; n++) controls.update(1 / 60);
+  assert.equal(controls.get(`rail_${side}`)[0], 0, 'Click must also return a manually moved rail');
   controls.toggleGrip(side);
   for (let n = 0; n < 45; n++) { controls.update(1 / 60); assert.ok(controls.thumbClearance(side) >= .0119); }
   assert.equal(controls.get(`hand_${side}`)[0], -.4, 'Click-open must retain a relaxed bend');
@@ -69,7 +79,6 @@ for (const side of ['L', 'R']) {
   assert.equal(controls.get(`hand_${side}`)[0], .55, 'Click-close must stop at a moderate grip');
   controls.toggleFlip(side); controls.toggleGrip(side); controls.reset(); controls.update(2);
   assert.equal(controls.isAnimating(), false);
-  assert.equal(controls.get(`wrist_${side}`)[0], 0);
   assert.equal(controls.get(`hand_${side}`)[0], 0);
 }
 console.log(`Passed: segment distances, 10 fully extended fingers, ${cases} combined/mixed grip and rail poses, animated hand flips/grips/reversals/reset.`);

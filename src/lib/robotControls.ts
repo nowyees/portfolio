@@ -32,7 +32,6 @@ export function createRobotControls(model: THREE.Object3D, metadata: RobotMetada
   const upper = new THREE.Group(), upperContent = new THREE.Group();
   upper.position.y = .43; upperContent.position.y = -.43; upper.add(upperContent); root.add(upper);
   const hands: Record<string, THREE.Group> = {};
-  const wrists: Record<string, { pivot: THREE.Group; axis: THREE.Vector3 }> = {};
   type Gesture = { elapsed: number; duration: number; from: number[]; to: number[] };
   const flips: Record<string, Gesture> = {}, grips: Record<string, Gesture> = {};
   const flipped: Record<string, boolean> = {}, opened: Record<string, boolean> = {};
@@ -65,20 +64,12 @@ export function createRobotControls(model: THREE.Object3D, metadata: RobotMetada
   };
   for (const [side, bones] of Object.entries(metadata.hands)) {
     values[`rail_${side}`] = [0];
-    values[`wrist_${side}`] = [0];
     const hand = new THREE.Group(); hands[side] = hand; upperContent.add(hand);
-    // The outer hand is driven by the baked arm pose. Rotate an inner wrist
-    // instead, around its actual longitudinal axis, without changing bind space.
-    const wrist = bones.find(b => b.name === 'DEF_hand')!;
-    const pivot = new THREE.Group(), content = new THREE.Group();
-    pivot.position.fromArray(wrist.head); content.position.copy(pivot.position).negate();
-    hand.add(pivot); pivot.add(content);
-    wrists[side] = { pivot, axis: new THREE.Vector3().fromArray(wrist.tail).sub(pivot.position).normalize() };
     const groups = new Map<string, THREE.Group>(), world = new Map(bones.map(b => [b.name, new THREE.Matrix4().fromArray(b.matrix)]));
     for (const b of bones) groups.set(b.name, new THREE.Group());
     for (const b of bones) {
       const group = groups.get(b.name)!, parent = b.parent && groups.get(b.parent);
-      (parent || content).add(group);
+      (parent || hand).add(group);
       const matrix = world.get(b.name)!.clone();
       if (parent) matrix.premultiply(world.get(b.parent!)!.clone().invert());
       decompose(matrix, group);
@@ -103,15 +94,14 @@ export function createRobotControls(model: THREE.Object3D, metadata: RobotMetada
       object.userData.control = b.name === 'MCH_THUMB_RAIL' ? `rail_${side}` : fingerKey(side, b.name); meshes.push(object);
     }
     const palm = model.getObjectByName(`robot_palm_${side}`);
-    if (palm instanceof THREE.Mesh) { content.add(palm); palm.userData.control = `hand_${side}`; meshes.push(palm); }
+    if (palm instanceof THREE.Mesh) { hand.add(palm); palm.userData.control = `hand_${side}`; meshes.push(palm); }
   }
   const fingerNames = ['THUMB', 'INDEX', 'MIDDLE', 'RING', 'PINKY'];
   const toggleFlip = (side: string) => {
     if (!hands[side]) return;
-    flipped[side] = !flipped[side];
+    flipped[side] = flips[side] ? !flipped[side] : values[`rail_${side}`][0] < .5;
     flips[side] = { elapsed: 0, duration: 1.05,
-      from: [values[`rail_${side}`][0], values[`wrist_${side}`][0]],
-      to: [flipped[side] ? 1 : 0, flipped[side] ? (side === 'L' ? Math.PI : -Math.PI) : 0] };
+      from: [values[`rail_${side}`][0]], to: [flipped[side] ? 1 : 0] };
   };
   const toggleGrip = (side: string) => {
     if (!hands[side]) return;
@@ -168,7 +158,6 @@ export function createRobotControls(model: THREE.Object3D, metadata: RobotMetada
     for (const [side, gesture] of Object.entries(flips)) {
       const t = advance(gesture);
       values[`rail_${side}`][0] = THREE.MathUtils.lerp(gesture.from[0], gesture.to[0], t);
-      values[`wrist_${side}`][0] = THREE.MathUtils.lerp(gesture.from[1], gesture.to[1], t);
       if (gesture.elapsed === gesture.duration) delete flips[side];
     }
     for (const [side, gesture] of Object.entries(grips)) {
@@ -177,7 +166,6 @@ export function createRobotControls(model: THREE.Object3D, metadata: RobotMetada
       values[`hand_${side}`][0] = values[`finger_${side}_INDEX`][0];
       if (gesture.elapsed === gesture.duration) delete grips[side];
     }
-    for (const [side, wrist] of Object.entries(wrists)) wrist.pivot.quaternion.setFromAxisAngle(wrist.axis, values[`wrist_${side}`][0]);
     root.rotation.y = values.base[0]; root.position.z = values.base[1]; upper.rotation.x = values.torso[0];
     for (const wheel of wheels) wheel.group.rotation.x = values[wheel.key][0] + values.base[1] / wheel.radius;
     for (const joint of joints) {
