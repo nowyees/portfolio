@@ -46,4 +46,30 @@ for (let n = 0; n < 128; n++) {
   }
   check();
 }
-console.log(`Passed: segment distances, 10 fully extended fingers, ${cases} combined/mixed grip and rail poses.`);
+controls.reset(); controls.update();
+for (const side of ['L', 'R']) {
+  const other = side === 'L' ? 'R' : 'L';
+  controls.toggleFlip(side); controls.update(.25);
+  const midway = controls.get(`rail_${side}`)[0];
+  assert.ok(midway > 0 && midway < 1, 'Flip must animate, not snap');
+  assert.equal(controls.get(`rail_${other}`)[0], 0, 'Hands must be independent');
+  controls.toggleFlip(side);
+  assert.equal(controls.get(`rail_${side}`)[0], midway, 'Reversal must start at current pose');
+  for (let n = 0; n < 70; n++) { controls.update(1 / 60); assert.ok(controls.thumbClearance(side) >= .0119); }
+  assert.equal(controls.get(`rail_${side}`)[0], 0);
+  controls.toggleFlip(side);
+  for (let n = 0; n < 70; n++) { controls.update(1 / 60); assert.ok(controls.thumbClearance(side) >= .0119); }
+  assert.equal(controls.get(`rail_${side}`)[0], 1);
+  assert.ok(Math.abs(Math.abs(controls.get(`wrist_${side}`)[0]) - Math.PI) < 1e-9);
+  controls.toggleGrip(side);
+  for (let n = 0; n < 45; n++) { controls.update(1 / 60); assert.ok(controls.thumbClearance(side) >= .0119); }
+  assert.equal(controls.get(`hand_${side}`)[0], -.4, 'Click-open must retain a relaxed bend');
+  controls.toggleGrip(side);
+  for (let n = 0; n < 45; n++) { controls.update(1 / 60); assert.ok(controls.thumbClearance(side) >= .0119); }
+  assert.equal(controls.get(`hand_${side}`)[0], .55, 'Click-close must stop at a moderate grip');
+  controls.toggleFlip(side); controls.toggleGrip(side); controls.reset(); controls.update(2);
+  assert.equal(controls.isAnimating(), false);
+  assert.equal(controls.get(`wrist_${side}`)[0], 0);
+  assert.equal(controls.get(`hand_${side}`)[0], 0);
+}
+console.log(`Passed: segment distances, 10 fully extended fingers, ${cases} combined/mixed grip and rail poses, animated hand flips/grips/reversals/reset.`);

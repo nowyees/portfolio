@@ -27,7 +27,7 @@ export default function DualArmIK({ className }: { className?: string }) {
   const [selected, setSelected] = useState<RobotSelection | null>(null);
   const [selectedValues, setSelectedValues] = useState<number[]>([]);
   const [focused, setFocused] = useState(false);
-  const apiRef = useRef<{ select: (key: RobotSelection | null) => void; set: (key: RobotSelection, channel: number, value: number) => void; focus: (value: boolean) => void; reset: () => void } | null>(null);
+  const apiRef = useRef<{ select: (key: RobotSelection | null) => void; set: (key: RobotSelection, channel: number, value: number) => void; gesture: (side: string, flip: boolean) => void; focus: (value: boolean) => void; reset: () => void } | null>(null);
   useEffect(() => {
     const host = hostRef.current!;
     let disposed = false, frame = 0, last = 0;
@@ -73,7 +73,7 @@ export default function DualArmIK({ className }: { className?: string }) {
     host.appendChild(hint);
     const tooltip = document.createElement('div'); tooltip.className = 'robot-hover'; host.appendChild(tooltip);
     const pointer = new THREE.Vector2(), ray = new THREE.Raycaster();
-    let pressed = false, selection: RobotSelection | null = null;
+    let pressed = false, dragged = false, selection: RobotSelection | null = null;
     let controls: ReturnType<typeof createRobotControls> | null = null;
     let dragX = 0, dragY = 0, dragValues: number[] = [];
     const selectable: THREE.Object3D[] = [];
@@ -92,7 +92,10 @@ export default function DualArmIK({ className }: { className?: string }) {
       controls?.set(key, channel, THREE.MathUtils.clamp(value, range.min, range.max));
       if (selection === key && controls) setSelectedValues(controls.get(key));
     };
-    apiRef.current = { select: choose, set: change, focus: value => { focus = value; setFocused(value); }, reset: () => {
+    const gesture = (side: string, flip: boolean) => {
+      if (flip) controls?.toggleFlip(side); else controls?.toggleGrip(side);
+    };
+    apiRef.current = { select: choose, set: change, gesture, focus: value => { focus = value; setFocused(value); }, reset: () => {
       controls?.reset(); if (selection && controls) setSelectedValues(controls.get(selection));
     } };
     const locate = (event: PointerEvent) => {
@@ -110,6 +113,8 @@ export default function DualArmIK({ className }: { className?: string }) {
     const move = (event: PointerEvent) => {
       if (pressed && selection) {
         const dx = event.clientX - dragX, dy = event.clientY - dragY;
+        if (!dragged && Math.hypot(dx, dy) < 6) return;
+        dragged = true;
         if (selection === 'head') { change(selection, 0, dragValues[0] + dx * .006); change(selection, 1, dragValues[1] + dy * .003); }
         else if (selection === 'base') { change(selection, 0, dragValues[0] + dx * .009); change(selection, 1, dragValues[1] - dy * .002); }
         else if (selection === 'torso') change(selection, 0, dragValues[0] + dy * .003);
@@ -122,17 +127,23 @@ export default function DualArmIK({ className }: { className?: string }) {
       const key = locate(event);
       host.style.cursor = key ? 'grab' : 'default';
       cursor.classList.toggle('is-shown', !!key);
-      tooltip.textContent = key ? controlLabel(key) : ''; tooltip.classList.toggle('is-shown', !!key);
+      const action = key && (/^rail_/.test(key) || key.endsWith('_THUMB')) ? ' · click to flip' : key && /^(hand|finger)_/.test(key) ? ' · click to open / close' : '';
+      tooltip.textContent = key ? controlLabel(key) + action : ''; tooltip.classList.toggle('is-shown', !!key);
     };
     const start = (event: PointerEvent) => {
       if (!controls || event.button !== 0) return;
       const key = locate(event); choose(key);
       if (!key) return;
-      pressed = true; dragX = event.clientX; dragY = event.clientY; dragValues = controls.get(key);
+      pressed = true; dragged = false; dragX = event.clientX; dragY = event.clientY; dragValues = controls.get(key);
       host.setPointerCapture(event.pointerId); host.style.cursor = 'grabbing';
       hint.classList.remove('is-shown'); tooltip.classList.remove('is-shown');
     };
-    const end = () => { pressed = false; host.style.cursor = 'default'; cursor.classList.remove('is-shown'); };
+    const end = (event?: PointerEvent) => {
+      if (pressed && !dragged && event?.type === 'pointerup' && Math.hypot(event.clientX - dragX, event.clientY - dragY) < 6 && selection && /^(hand|finger|rail)_/.test(selection)) {
+        gesture(selection.split('_')[1], selection.startsWith('rail_') || selection.endsWith('_THUMB'));
+      }
+      pressed = false; host.style.cursor = 'default'; cursor.classList.remove('is-shown');
+    };
     const leave = () => { if (!pressed) { end(); tooltip.classList.remove('is-shown'); } };
     host.addEventListener('pointermove', move); host.addEventListener('pointerdown', start);
     host.addEventListener('pointerup', end); host.addEventListener('pointercancel', end); host.addEventListener('pointerleave', leave);
@@ -188,6 +199,7 @@ export default function DualArmIK({ className }: { className?: string }) {
 
     const point = new THREE.Vector3(), viewTarget = new THREE.Vector3(0, .78, 0), focusTarget = new THREE.Vector3();
     const bounds = new THREE.Box3(), partBounds = new THREE.Box3();
+    let lastPanelUpdate = 0, wasAnimating = false;
     const tick = (now: number) => {
       const dt = Math.min(.04, last ? (now - last) / 1000 : 0); last = now;
       for (const [side, path] of Object.entries(paths)) {
@@ -209,7 +221,12 @@ export default function DualArmIK({ className }: { className?: string }) {
         for (let k = 0; k < n; k++) output[k] = cover.base[k] + (cover.delta[i * n + k] * (1 - t) + cover.delta[j * n + k] * t) * cover.scale;
         position.needsUpdate = true; cover.mesh.geometry.computeVertexNormals();
       }
-      controls?.update();
+      controls?.update(dt);
+      const animating = controls?.isAnimating() || false;
+      if (selection && controls && (animating && now - lastPanelUpdate > 100 || wasAnimating && !animating)) {
+        setSelectedValues(controls.get(selection)); lastPanelUpdate = now;
+      }
+      wasAnimating = animating;
       focusTarget.set(0, .78, 0);
       if (focus && selection && controls) {
         bounds.makeEmpty();
@@ -247,7 +264,7 @@ export default function DualArmIK({ className }: { className?: string }) {
   }, []);
   const fingers = selected && /^(hand|finger|rail)_/.test(selected) ? ['THUMB', 'INDEX', 'MIDDLE', 'RING', 'PINKY'] : [];
   const side = selected?.split('_')[1];
-  return <div className={`${className || ''} robot-interactive`} role="group" aria-label="Articulated robot. Select a part, then drag to move it.">
+  return <div className={`${className || ''} robot-interactive`} role="group" aria-label="Articulated robot. Click a hand to open or close, click a thumb to flip, or drag a part to move it.">
     <div ref={hostRef} style={{ position: 'absolute', inset: 0 }} />
     {status ? <p role="status" className="robot-loading">{status}</p> : <aside className="robot-panel" aria-label="Robot controls">
       <div className="robot-panel-heading"><select aria-label="Select robot part" value={selected || ''} onChange={e => apiRef.current?.select((e.target.value || null) as RobotSelection | null)}>
@@ -255,10 +272,11 @@ export default function DualArmIK({ className }: { className?: string }) {
         {['head', 'torso', 'base', 'arm_L', 'arm_R', 'hand_L', 'hand_R', 'rail_L', 'rail_R', 'wheel_FRONT_NEG_X', 'wheel_FRONT_POS_X', 'wheel_REAR_NEG_X', 'wheel_REAR_POS_X'].map(key => <option key={key} value={key}>{controlLabel(key)}</option>)}
         {selected?.startsWith('finger_') && <option value={selected}>{controlLabel(selected)}</option>}
       </select><button type="button" onClick={() => apiRef.current?.reset()}>Reset pose</button></div>
-      {!selected && <p>Click a part. Drag to move.</p>}
+      {!selected && <p>Click hand to open / close. Click thumb to flip. Drag any part to adjust.</p>}
       {selected && <>
         <button type="button" className="robot-focus" aria-pressed={focused} onClick={() => apiRef.current?.focus(!focused)}>{focused ? 'Full view' : 'Focus on part'}</button>
         {fingers.length > 0 && <div className="robot-fingers"><button type="button" aria-pressed={selected === `hand_${side}`} onClick={() => apiRef.current?.select(`hand_${side}`)}>All</button>{fingers.map(f => <button type="button" key={f} aria-pressed={selected === `finger_${side}_${f}`} onClick={() => apiRef.current?.select(`finger_${side}_${f}`)}>{f === 'PINKY' ? 'Little' : f[0] + f.slice(1).toLowerCase()}</button>)}<button type="button" aria-pressed={selected === `rail_${side}`} onClick={() => apiRef.current?.select(`rail_${side}`)}>Rail</button></div>}
+        {side && fingers.length > 0 && <div className="robot-fingers"><button type="button" onClick={() => apiRef.current?.gesture(side, true)}>Flip hand</button><button type="button" onClick={() => apiRef.current?.gesture(side, false)}>Open / close hand</button></div>}
         {ranges(selected).map((range, channel) => <label key={`${selected}-${channel}`} className="robot-range"><span>{range.label}</span><input type="range" aria-label={`${controlLabel(selected)} ${range.label}`} min={range.min} max={range.max} step={(range.max - range.min) / 400} value={selectedValues[channel] || 0} onChange={e => apiRef.current?.set(selected, channel, Number(e.target.value))} /></label>)}
         {fingers.length > 0 && <p>Thumb clearance adjusts automatically.</p>}
       </>}
