@@ -3,6 +3,14 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { edgeShader, downsampleShader } from './AstroTail';
+import { createRobotControls, controlLabel, type RobotMetadata, type RobotSelection } from '../../lib/robotControls';
+
+const ranges = (key: string) => key === 'head' ? [{ label: 'Turn', min: -Math.PI / 2, max: Math.PI / 2 }, { label: 'Tilt', min: -Math.PI / 6, max: Math.PI / 6 }]
+  : key === 'base' ? [{ label: 'Turn', min: -Math.PI, max: Math.PI }, { label: 'Roll', min: -.35, max: .35 }]
+  : key === 'torso' ? [{ label: 'Lean', min: -.22, max: .22 }]
+  : key.startsWith('arm_') ? [{ label: 'Lift', min: 0, max: 1 }]
+  : key.startsWith('wheel_') ? [{ label: 'Spin', min: -Math.PI * 2, max: Math.PI * 2 }]
+  : [{ label: 'Open / curl', min: -1, max: 1 }];
 
 type Rig = {
   frames: number; paths: Record<string, number[][]>;
@@ -14,6 +22,10 @@ type Rig = {
 export default function DualArmIK({ className }: { className?: string }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState('Loading motion…');
+  const [selected, setSelected] = useState<RobotSelection | null>(null);
+  const [selectedValues, setSelectedValues] = useState<number[]>([]);
+  const [focused, setFocused] = useState(false);
+  const apiRef = useRef<{ select: (key: RobotSelection | null) => void; set: (key: RobotSelection, channel: number, value: number) => void; focus: (value: boolean) => void; reset: () => void } | null>(null);
   useEffect(() => {
     const host = hostRef.current!;
     let disposed = false, frame = 0, last = 0;
@@ -39,6 +51,7 @@ export default function DualArmIK({ className }: { className?: string }) {
     const plane = new THREE.PlaneGeometry(2, 2), quadCamera = new THREE.Camera();
     const edgeScene = new THREE.Scene(), screenScene = new THREE.Scene();
     edgeScene.add(new THREE.Mesh(plane, edge)); screenScene.add(new THREE.Mesh(plane, down));
+    let fullFov = 30, focus = false;
     const resize = () => {
       const w = Math.max(1, host.clientWidth), h = Math.max(1, host.clientHeight);
       const dpr = Math.min(window.devicePixelRatio || 1, 1.5), ratio = dpr * 2;
@@ -47,34 +60,77 @@ export default function DualArmIK({ className }: { className?: string }) {
       edge.uniforms.texel.value.set(1 / (w * ratio), 1 / (h * ratio));
       down.uniforms.pixel.value.set(1 / (w * dpr), 1 / (h * dpr));
       camera.aspect = w / h;
-      camera.fov = THREE.MathUtils.radToDeg(2 * Math.atan(Math.max(1.02, .95 / camera.aspect) / 4));
+      fullFov = THREE.MathUtils.radToDeg(2 * Math.atan(Math.max(1.02, .95 / camera.aspect) / 4));
+      camera.fov = fullFov;
       camera.updateProjectionMatrix();
     };
     const observer = new ResizeObserver(resize); observer.observe(host); resize();
     const cursor = document.createElement('div'); cursor.className = 'astro-cursor'; host.appendChild(cursor);
     const hint = document.createElement('div'); hint.className = 'astro-hint is-shown';
-    hint.innerHTML = '<span class="astro-hint-mark"><i></i></span><span class="astro-hint-label">Move either hand</span>';
+    hint.innerHTML = '<span class="astro-hint-mark"><i></i></span><span class="astro-hint-label">Select a part</span>';
     host.appendChild(hint);
+    const tooltip = document.createElement('div'); tooltip.className = 'robot-hover'; host.appendChild(tooltip);
     const pointer = new THREE.Vector2(), ray = new THREE.Raycaster();
-    const reachPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -.28);
-    const goal = new THREE.Vector3();
-    let active = '', pressed = false;
+    let pressed = false, selection: RobotSelection | null = null;
+    let controls: ReturnType<typeof createRobotControls> | null = null;
+    let dragX = 0, dragY = 0, dragValues: number[] = [];
+    const selectable: THREE.Object3D[] = [];
     type Part = { object: THREE.Object3D; side: string; poses: Array<{ p: THREE.Vector3; q: THREE.Quaternion; s: THREE.Vector3 }> };
     type Cover = { mesh: THREE.Mesh; side: string; base: Float32Array; delta: Int16Array; scale: number; shown: number };
     let paths: Record<string, THREE.Vector3[]> = {}, parts: Part[] = [], covers: Cover[] = [];
     const current: Record<string, number> = { L: 0, R: 0 };
-    const move = (event: PointerEvent) => {
-      if (event.pointerType !== 'mouse' && !pressed) return;
+    const choose = (key: RobotSelection | null) => {
+      selection = key; setSelected(key); setSelectedValues(key && controls ? controls.get(key) : []);
+      if (key) hint.classList.remove('is-shown');
+      tooltip.classList.remove('is-shown');
+      if (!key) { focus = false; setFocused(false); }
+    };
+    const change = (key: RobotSelection, channel: number, value: number) => {
+      const range = ranges(key)[channel];
+      controls?.set(key, channel, THREE.MathUtils.clamp(value, range.min, range.max));
+      if (selection === key && controls) setSelectedValues(controls.get(key));
+    };
+    apiRef.current = { select: choose, set: change, focus: value => { focus = value; setFocused(value); }, reset: () => {
+      controls?.reset(); if (selection && controls) setSelectedValues(controls.get(selection));
+    } };
+    const locate = (event: PointerEvent) => {
       const rect = host.getBoundingClientRect(), x = event.clientX - rect.left, y = event.clientY - rect.top;
       pointer.set(x / rect.width * 2 - 1, 1 - y / rect.height * 2);
-      cursor.style.transform = `translate(${x}px,${y}px)`; cursor.classList.add('is-shown');
-      ray.setFromCamera(pointer, camera); ray.ray.intersectPlane(reachPlane, goal);
-      if (!pressed || !active) active = goal.x >= 0 ? 'L' : 'R';
-      hint.classList.remove('is-shown');
+      cursor.style.transform = `translate(${x}px,${y}px)`;
+      tooltip.style.transform = `translate(${x + 18}px,${y - 8}px)`;
+      ray.setFromCamera(pointer, camera);
+      const hit = ray.intersectObjects(selectable, false)[0];
+      if (!hit) return null;
+      let key = hit.object.userData.control as RobotSelection;
+      if (key === 'head' && controls && controls.upperContent.worldToLocal(hit.point.clone()).y < 1.10) key = 'torso';
+      return key;
     };
-    const start = (event: PointerEvent) => { pressed = true; host.setPointerCapture(event.pointerId); move(event); };
-    const end = () => { pressed = false; cursor.classList.remove('is-shown'); };
-    const leave = () => { if (!pressed) { active = ''; end(); } };
+    const move = (event: PointerEvent) => {
+      if (pressed && selection) {
+        const dx = event.clientX - dragX, dy = event.clientY - dragY;
+        if (selection === 'head') { change(selection, 0, dragValues[0] + dx * .009); change(selection, 1, dragValues[1] + dy * .005); }
+        else if (selection === 'base') { change(selection, 0, dragValues[0] + dx * .009); change(selection, 1, dragValues[1] - dy * .002); }
+        else if (selection === 'torso') change(selection, 0, dragValues[0] + dy * .003);
+        else if (selection.startsWith('arm_')) change(selection, 0, dragValues[0] + (-dy + (selection.endsWith('L') ? dx : -dx) * .4) * .004);
+        else if (selection.startsWith('wheel_')) change(selection, 0, dragValues[0] + (dx - dy) * .035);
+        else change(selection, 0, dragValues[0] + (dx * .3 - dy) * .012);
+        return;
+      }
+      const key = locate(event);
+      host.style.cursor = key ? 'grab' : 'default';
+      cursor.classList.toggle('is-shown', !!key);
+      tooltip.textContent = key ? controlLabel(key) : ''; tooltip.classList.toggle('is-shown', !!key);
+    };
+    const start = (event: PointerEvent) => {
+      if (!controls || event.button !== 0) return;
+      const key = locate(event); choose(key);
+      if (!key) return;
+      pressed = true; dragX = event.clientX; dragY = event.clientY; dragValues = controls.get(key);
+      host.setPointerCapture(event.pointerId); host.style.cursor = 'grabbing';
+      hint.classList.remove('is-shown'); tooltip.classList.remove('is-shown');
+    };
+    const end = () => { pressed = false; host.style.cursor = 'default'; cursor.classList.remove('is-shown'); };
+    const leave = () => { if (!pressed) { end(); tooltip.classList.remove('is-shown'); } };
     host.addEventListener('pointermove', move); host.addEventListener('pointerdown', start);
     host.addEventListener('pointerup', end); host.addEventListener('pointercancel', end); host.addEventListener('pointerleave', leave);
     const draco = new DRACOLoader().setDecoderPath('/draco/');
@@ -83,18 +139,30 @@ export default function DualArmIK({ className }: { className?: string }) {
     const disposeModel = (model: THREE.Object3D) => model.traverse(o => {
       if (o instanceof THREE.Mesh) { o.geometry.dispose(); const materials = Array.isArray(o.material) ? o.material : [o.material]; materials.forEach(m => m.dispose()); }
     });
+    const read = async (url: string, compressed = false) => {
+      const r = await fetch(url, { signal: abort.signal }); if (!r.ok || !r.body) throw new Error(`Could not load ${url}`);
+      return compressed ? new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).arrayBuffer() : r.json();
+    };
     Promise.all([loader.loadAsync('/lab/dual-arm-rig.glb'), fetch('/lab/dual-arm-rig.json', { signal: abort.signal }).then(r => {
       if (!r.ok) throw new Error('Rig unavailable'); return r.json() as Promise<Rig>;
     }), fetch('/lab/dual-arm-covers.bin', { signal: abort.signal }).then(async r => {
       if (!r.ok || !r.body) throw new Error('Cover data unavailable');
       return new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
-    })]).then(([gltf, rig, binary]) => {
-      if (disposed) { disposeModel(gltf.scene); return; }
-      scene.add(gltf.scene);
+    }), loader.loadAsync('/lab/robot-controls.glb'), read('/lab/robot-controls.json'), read('/lab/robot-head.bin', true)]).then(([gltf, rig, binary, controlModel, metadata, headBinary]) => {
+      if (disposed) { disposeModel(gltf.scene); disposeModel(controlModel.scene); return; }
+      controls = createRobotControls(controlModel.scene, metadata as RobotMetadata, headBinary as ArrayBuffer, normal);
+      scene.add(controls.root); controls.upperContent.add(gltf.scene);
+      for (const name of ['arms_body', 'arms_hand_L', 'arms_hand_R']) {
+        const object = gltf.scene.getObjectByName(name);
+        if (object) { object.removeFromParent(); disposeModel(object); }
+      }
+      selectable.push(...controls.meshes);
       paths = Object.fromEntries(Object.entries(rig.paths).map(([side, values]) => [side, values.map(p => new THREE.Vector3().fromArray(p))]));
       parts = rig.parts.map(part => {
-        const object = gltf.scene.getObjectByName(part.name);
+        const side = part.side;
+        const object = part.name.startsWith('arms_hand_') ? controls!.hands[side] : gltf.scene.getObjectByName(part.name);
         if (!object) throw new Error(`Missing part: ${part.name}`);
+        if (!part.name.startsWith('arms_hand_')) { object.userData.control = `arm_${side}`; selectable.push(object); }
         return { object, side: part.side, poses: part.matrices.map(values => {
           const p = new THREE.Vector3(), q = new THREE.Quaternion(), s = new THREE.Vector3();
           new THREE.Matrix4().fromArray(values).decompose(p, q, s); return { p, q, s };
@@ -106,25 +174,21 @@ export default function DualArmIK({ className }: { className?: string }) {
         geometry.setAttribute('position', new THREE.BufferAttribute(base.slice(), 3).setUsage(THREE.DynamicDrawUsage));
         geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(binary.slice(c.indices, c.indices + c.indexCount * 4)), 1));
         geometry.computeVertexNormals();
-        const mesh = new THREE.Mesh(geometry, normal); mesh.frustumCulled = false; scene.add(mesh);
-        return { mesh, side: c.name.includes('18_') || c.name.includes('20_') ? 'R' : 'L', base, shown: -1,
+        const side = c.name.includes('18_') || c.name.includes('20_') ? 'R' : 'L';
+        const mesh = new THREE.Mesh(geometry, normal); mesh.frustumCulled = false; controls!.upperContent.add(mesh);
+        mesh.userData.control = `arm_${side}`; selectable.push(mesh);
+        return { mesh, side, base, shown: -1,
           delta: new Int16Array(binary.slice(c.delta, c.delta + c.count * 3 * rig.frames * 2)), scale: c.scale };
       });
       setStatus('');
     }).catch(error => { if (!disposed) { console.error('Dual-arm motion:', error); setStatus('Motion could not load. Please refresh.'); } });
 
-    const point = new THREE.Vector3(), segment = new THREE.Vector3();
+    const point = new THREE.Vector3(), viewTarget = new THREE.Vector3(0, .78, 0), focusTarget = new THREE.Vector3();
+    const bounds = new THREE.Box3(), partBounds = new THREE.Box3();
     const tick = (now: number) => {
       const dt = Math.min(.04, last ? (now - last) / 1000 : 0); last = now;
       for (const [side, path] of Object.entries(paths)) {
-        let desired = 0, distance = Infinity;
-        if (active === side) for (let i = 0; i < path.length - 1; i++) {
-          segment.copy(path[i + 1]).sub(path[i]);
-          const t = THREE.MathUtils.clamp(point.copy(goal).sub(path[i]).dot(segment) / segment.lengthSq(), 0, 1);
-          point.copy(path[i]).addScaledVector(segment, t);
-          const d = point.distanceToSquared(goal);
-          if (d < distance) { distance = d; desired = i + t; }
-        }
+        const desired = (controls?.get(`arm_${side}`)[0] || 0) * (path.length - 1);
         current[side] = THREE.MathUtils.lerp(current[side], desired, 1 - Math.exp(-dt * 6));
       }
       for (const part of parts) {
@@ -142,8 +206,26 @@ export default function DualArmIK({ className }: { className?: string }) {
         for (let k = 0; k < n; k++) output[k] = cover.base[k] + (cover.delta[i * n + k] * (1 - t) + cover.delta[j * n + k] * t) * cover.scale;
         position.needsUpdate = true; cover.mesh.geometry.computeVertexNormals();
       }
-      if (paths.L) {
-        const p = point.copy(paths.L[0]).project(camera);
+      controls?.update();
+      focusTarget.set(0, .78, 0);
+      if (focus && selection && controls) {
+        bounds.makeEmpty();
+        for (const object of selectable) {
+          const key = object.userData.control as string;
+          const matches = key === selection || selection.startsWith('hand_') && key?.startsWith(`finger_${selection.split('_')[1]}_`);
+          if (matches) { object.updateWorldMatrix(true, false); partBounds.setFromObject(object); bounds.union(partBounds); }
+        }
+        if (!bounds.isEmpty()) bounds.getCenter(focusTarget);
+        if (selection === 'head') { focusTarget.set(0, 1.30, .04); controls.upperContent.localToWorld(focusTarget); }
+      }
+      const ease = 1 - Math.exp(-dt * 8);
+      viewTarget.lerp(focusTarget, ease);
+      camera.position.copy(viewTarget); camera.position.z += 4; camera.lookAt(viewTarget);
+      const zoom = focus && selection ? /^(hand|finger)_/.test(selection) ? .18 : selection === 'head' ? .42 : .6 : 1;
+      camera.fov = THREE.MathUtils.lerp(camera.fov, fullFov * zoom, ease); camera.updateProjectionMatrix();
+      if (paths.L && controls) {
+        controls.root.updateMatrixWorld(true);
+        const p = point.copy(paths.L[0]); controls.upperContent.localToWorld(p); p.project(camera);
         hint.style.transform = `translate(${(p.x + 1) * host.clientWidth / 2}px,${(1 - p.y) * host.clientHeight / 2}px)`;
       }
       renderer.setRenderTarget(target); renderer.render(scene, camera);
@@ -153,12 +235,29 @@ export default function DualArmIK({ className }: { className?: string }) {
     };
     frame = requestAnimationFrame(tick);
     return () => {
-      disposed = true; abort.abort(); cancelAnimationFrame(frame); observer.disconnect();
+      disposed = true; apiRef.current = null; abort.abort(); cancelAnimationFrame(frame); observer.disconnect();
       host.removeEventListener('pointermove', move); host.removeEventListener('pointerdown', start);
       host.removeEventListener('pointerup', end); host.removeEventListener('pointercancel', end); host.removeEventListener('pointerleave', leave);
       disposeModel(scene); draco.dispose(); normal.dispose(); target.dispose(); lines.dispose(); edge.dispose(); down.dispose(); plane.dispose(); renderer.dispose();
-      renderer.domElement.remove(); cursor.remove(); hint.remove();
+      renderer.domElement.remove(); cursor.remove(); hint.remove(); tooltip.remove();
     };
   }, []);
-  return <div className={className} role="img" aria-label="Interactive dual-arm robot. Move the pointer or drag on either side to move its hand."><div ref={hostRef} style={{ position: 'absolute', inset: 0 }} />{status && <p role="status" style={{ position: 'absolute', top: '48%', width: '100%', textAlign: 'center', fontSize: 12, pointerEvents: 'none' }}>{status}</p>}</div>;
+  const fingers = selected && /^(hand|finger)_/.test(selected) ? ['THUMB', 'INDEX', 'MIDDLE', 'RING', 'PINKY'] : [];
+  const side = selected?.split('_')[1];
+  return <div className={`${className || ''} robot-interactive`} role="group" aria-label="Articulated robot. Select a part, then drag to move it.">
+    <div ref={hostRef} style={{ position: 'absolute', inset: 0 }} />
+    {status ? <p role="status" className="robot-loading">{status}</p> : <aside className="robot-panel" aria-label="Robot controls">
+      <div className="robot-panel-heading"><select aria-label="Select robot part" value={selected || ''} onChange={e => apiRef.current?.select((e.target.value || null) as RobotSelection | null)}>
+        <option value="">Select a part</option>
+        {['head', 'torso', 'base', 'arm_L', 'arm_R', 'hand_L', 'hand_R', 'wheel_FRONT_NEG_X', 'wheel_FRONT_POS_X', 'wheel_REAR_NEG_X', 'wheel_REAR_POS_X'].map(key => <option key={key} value={key}>{controlLabel(key)}</option>)}
+        {selected?.startsWith('finger_') && <option value={selected}>{controlLabel(selected)}</option>}
+      </select><button type="button" onClick={() => apiRef.current?.reset()}>Reset pose</button></div>
+      {!selected && <p>Click a part. Drag to move.</p>}
+      {selected && <>
+        <button type="button" className="robot-focus" aria-pressed={focused} onClick={() => apiRef.current?.focus(!focused)}>{focused ? 'Full view' : 'Focus on part'}</button>
+        {fingers.length > 0 && <div className="robot-fingers"><button type="button" aria-pressed={selected === `hand_${side}`} onClick={() => apiRef.current?.select(`hand_${side}`)}>All</button>{fingers.map(f => <button type="button" key={f} aria-pressed={selected === `finger_${side}_${f}`} onClick={() => apiRef.current?.select(`finger_${side}_${f}`)}>{f === 'PINKY' ? 'Little' : f[0] + f.slice(1).toLowerCase()}</button>)}</div>}
+        {ranges(selected).map((range, channel) => <label key={`${selected}-${channel}`} className="robot-range"><span>{range.label}</span><input type="range" aria-label={`${controlLabel(selected)} ${range.label}`} min={range.min} max={range.max} step={(range.max - range.min) / 400} value={selectedValues[channel] || 0} onChange={e => apiRef.current?.set(selected, channel, Number(e.target.value))} /></label>)}
+      </>}
+    </aside>}
+  </div>;
 }
