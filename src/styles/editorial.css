@@ -228,30 +228,5 @@
 .astro-hint-label { font:500 10px/1 var(--sans); text-transform:uppercase; letter-spacing:.075em; color:var(--ink); }
 @keyframes astro-hint-swing { from { transform:translateX(-13px); } to { transform:translateX(13px); } }
 .robot-interactive { cursor:default; }
-.robot-panel { position:absolute; z-index:4; left:clamp(20px,4vw,56px); bottom:68px; width:260px; padding:14px 16px; background:color-mix(in srgb,var(--paper) 94%,transparent); border:1px solid #ddd; font:11px/1.5 var(--sans); color:var(--ink); cursor:default; }
-.robot-panel-heading { display:flex; align-items:center; justify-content:space-between; gap:16px; }
-.robot-panel select { min-width:0; max-width:154px; padding:3px 16px 3px 0; border:0; border-radius:0; color:inherit; background:transparent; font:500 11px/1.4 var(--sans); cursor:pointer; }
-.robot-panel button { border:0; padding:3px 0; background:transparent; color:inherit; font:10px/1.5 var(--sans); cursor:pointer; }
-.robot-panel-heading button { white-space:nowrap; color:#666; text-decoration:underline; text-underline-offset:3px; }
-.robot-panel p { margin:10px 0 0; color:#777; font-size:10px; }
-.robot-range { display:flex; gap:14px; align-items:center; margin-top:12px; }
-.robot-range span { flex:0 0 62px; color:#666; white-space:nowrap; }
-.robot-panel .robot-focus { display:block; margin-top:8px; color:#666; text-decoration:underline; text-underline-offset:3px; }
-.robot-range input { min-width:0; width:100%; height:20px; margin:0; accent-color:var(--ink); cursor:ew-resize; }
-.robot-fingers { display:flex; gap:12px; margin-top:12px; flex-wrap:wrap; }
-.robot-fingers button { color:#777; }
-.robot-fingers button[aria-pressed="true"] { color:var(--ink); text-decoration:underline; text-underline-offset:4px; }
-.robot-hover { position:absolute; left:0; top:0; z-index:4; pointer-events:none; opacity:0; padding:3px 6px; white-space:nowrap; background:var(--paper); color:var(--ink); font:10px/1.4 var(--sans); }
-.robot-hover.is-shown { opacity:1; }
 .robot-loading { position:absolute; top:48%; width:100%; text-align:center; font:12px/1.5 var(--sans); pointer-events:none; }
-.robot-panel :is(button,select,input):focus-visible { outline:1px solid currentColor; outline-offset:4px; }
-@media (max-width:600px) {
-  .robot-panel { left:18px; right:18px; bottom:64px; width:auto; padding:10px 14px; }
-  .robot-panel select { max-width:none; }
-  .robot-range { margin-top:7px; }
-  .robot-range input { height:32px; }
-  .robot-fingers { margin-top:7px; gap:14px; }
-  .robot-fingers button { padding-block:7px; }
-  .robot-hover { display:none; }
-}
 @media (prefers-reduced-motion: reduce) { .astro-hint-mark i { animation:none; } }

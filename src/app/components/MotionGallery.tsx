@@ -5,15 +5,20 @@ import AstroTail from './AstroTail';
 import DualArmIK from './DualArmIK';
 
 // Rigged pieces you can move, one at a time; the arrows (or ← →) step through them.
-const pieces: Array<{ id: string; title: string; note: string; Piece: React.ComponentType<{ className?: string }> }> = [
-  { id: 'astronaut-tail', title: 'Graduation work', note: 'Robotic tail', Piece: AstroTail },
-  { id: 'dual-arm-ik', title: 'Motion study', note: 'Dual-arm IK', Piece: DualArmIK },
+type Guide = { pointer: [string, string]; touch: [string, string] };   // [Korean, English]
+const pieces: Array<{ id: string; title: string; note: string; guide: Guide; Piece: React.ComponentType<{ className?: string }> }> = [
+  { id: 'astronaut-tail', title: 'Graduation work', note: 'Robotic tail', Piece: AstroTail, guide: {
+    pointer: ['마우스를 움직여 꼬리를 흔들어 보세요', 'Move your cursor to swing the tail'],
+    touch: ['화면을 쓸어 꼬리를 흔들어 보세요', 'Drag across the screen to swing the tail'] } },
+  { id: 'dual-arm-ik', title: 'Motion study', note: 'Dual-arm IK', Piece: DualArmIK, guide: {
+    pointer: ['빨갛게 표시되는 부분을 끌어서 움직여 보세요', 'Drag a part that lights up red to move it'],
+    touch: ['로봇의 부분을 끌어서 움직여 보세요', 'Drag a part of the robot to move it'] } },
 ];
 
 export default function MotionGallery() {
   const { id } = useParams(), navigate = useNavigate();
   const index = Math.max(0, pieces.findIndex(piece => piece.id === id));
-  const { title, note, Piece } = pieces[index];
+  const { title, note, guide, Piece } = pieces[index];
   const single = pieces.length < 2;
   const go = (step: number) => {
     if (single) return;
@@ -36,10 +41,10 @@ export default function MotionGallery() {
         <Piece key={pieces[index].id} className="motion-stage" />
         {/* How to play with it: Korean first, English smaller and grey beneath (touch wording on touch screens). */}
         <p className="motion-guide">
-          <span className="is-pointer">마우스를 움직여 꼬리를 흔들어 보세요</span>
-          <span className="is-touch">화면을 쓸어 꼬리를 흔들어 보세요</span>
-          <small className="is-pointer">Move your cursor to swing the tail</small>
-          <small className="is-touch">Drag across the screen to swing the tail</small>
+          <span className="is-pointer">{guide.pointer[0]}</span>
+          <span className="is-touch">{guide.touch[0]}</span>
+          <small className="is-pointer">{guide.pointer[1]}</small>
+          <small className="is-touch">{guide.touch[1]}</small>
         </p>
         <button type="button" className="motion-arrow is-prev" aria-label="Previous piece" disabled={single} onClick={() => go(-1)}><span aria-hidden="true" /></button>
         <button type="button" className="motion-arrow is-next" aria-label="Next piece" disabled={single} onClick={() => go(1)}><span aria-hidden="true" /></button>

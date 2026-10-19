@@ -28,35 +28,40 @@ type TailClip = { fps: number; frames: number[]; bones: string[]; hold: number; 
 export const edgeShader = {
   vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0., 1.); }',
   fragmentShader: `
-    uniform sampler2D tNormal; uniform sampler2D tDepth; uniform vec2 texel; uniform float near; uniform float far;
+    uniform sampler2D tNormal; uniform sampler2D tDepth; uniform vec2 texel; uniform float near; uniform float far; uniform float crease;
     varying vec2 vUv;
     float viewZ(float d){ return near * far / (far - d * (far - near)); }
     void main(){
       vec4 c = texture2D(tNormal, vUv); float z = viewZ(texture2D(tDepth, vUv).x);
-      float depthEdge = 0., normalEdge = 0., coverage = c.a;
+      float depthEdge = 0., normalEdge = 0., coverage = c.a; bool neighbourMarked = false;
       // Forward neighbours only, so each edge is marked on one side of it: lines one texel wide.
       for (int i = 0; i < 4; i++) {
         vec2 o = i == 0 ? vec2(1., 0.) : i == 1 ? vec2(0., 1.) : i == 2 ? vec2(.7, .7) : vec2(.7, -.7);
         vec2 uv = vUv + o * texel;
         vec4 cn = texture2D(tNormal, uv); float zn = viewZ(texture2D(tDepth, uv).x);
         coverage = max(coverage, cn.a);
+        if (i < 2) neighbourMarked = neighbourMarked || cn.a > .6 && cn.a < .9; // diagonal samples blend texels
         if (c.a > .5 && cn.a > .5) {
           depthEdge = max(depthEdge, abs(zn - z) / z);
           normalEdge = max(normalEdge, 1. - dot(c.xyz * 2. - 1., cn.xyz * 2. - 1.));
         } else if (c.a > .5 || cn.a > .5) depthEdge = 1.;
       }
-      float edge = max(smoothstep(.008, .03, depthEdge), smoothstep(.1, .3, normalEdge)) * coverage;
-      gl_FragColor = vec4(mix(vec3(1.), vec3(.067), edge), max(edge, c.a));
+      float edge = max(smoothstep(.008, .03, depthEdge), smoothstep(crease, crease + .2, normalEdge)) * coverage;
+      // A part drawn with alpha .75 (instead of 1) is highlighted: its lines are drawn in the site's red.
+      // (A silhouette texel lies just outside the part, so it takes the mark from the part beside it.)
+      bool marked = c.a > .6 && c.a < .9 || c.a < .5 && neighbourMarked;
+      gl_FragColor = vec4(mix(vec3(1.), marked ? vec3(.937, .161, .125) : vec3(.067), edge), c.a > .5 ? 1. : edge);
     }`,
 };
 
 // Box-filters the supersampled line image down to the screen: each screen pixel averages the 4×4 grid of samples
 // covering it, so one-texel lines become thin, continuous, antialiased hairlines. The ink is then darkened a
-// little, since averaging a thin line pales it.
+// little, since averaging a thin line pales it. With `speck` > 0, ink with nothing else within `speck` pixels (a lone
+// dot: noise from overlapping CAD shells) is dropped. Coloured lines keep their hue.
 export const downsampleShader = {
   vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0., 1.); }',
   fragmentShader: `
-    uniform sampler2D tLines; uniform vec2 pixel; varying vec2 vUv;
+    uniform sampler2D tLines; uniform vec2 pixel; uniform float speck; varying vec2 vUv;
     void main(){
       vec4 sum = vec4(0.);
       for (int x = 0; x < 4; x++) for (int y = 0; y < 4; y++) {
@@ -65,9 +70,21 @@ export const downsampleShader = {
       }
       sum /= 16.;
       if (sum.a < .001) { gl_FragColor = vec4(0.); return; }
-      float ink = 1. - sum.r / sum.a;
-      ink = 1. - (1. - ink) * (1. - ink);
-      gl_FragColor = vec4(vec3(1. - ink * .933), sum.a);
+      vec3 color = sum.rgb / sum.a;
+      float ink = 1. - min(color.r, min(color.g, color.b));
+      if (ink < .001) { gl_FragColor = vec4(vec3(1.), sum.a); return; }
+      if (speck > 0.) {
+        // Lines run on past this pixel; a speck has nothing around it. Look round a ring speck pixels out.
+        float around = 0.;
+        for (int k = 0; k < 16; k++) {
+          float a = float(k) * .3927;
+          vec4 r = texture2D(tLines, vUv + vec2(cos(a), sin(a)) * speck * pixel);
+          around = max(around, (1. - min(r.r, min(r.g, r.b))) * r.a);
+        }
+        if (around < .25) { gl_FragColor = vec4(vec3(1.), sum.a); return; }
+      }
+      float boosted = 1. - (1. - ink) * (1. - ink);
+      gl_FragColor = vec4(vec3(1.) - (vec3(1.) - color) * boosted / ink * .933, sum.a);
     }`,
 };
 
@@ -102,13 +119,13 @@ export default function AstroTail({ className }: { className?: string }) {
     const target = new THREE.WebGLRenderTarget(1, 1, { depthTexture: new THREE.DepthTexture(1, 1) });
     const edgeMaterial = new THREE.ShaderMaterial({
       ...edgeShader, transparent: true,
-      uniforms: { tNormal: { value: target.texture }, tDepth: { value: target.depthTexture }, texel: { value: new THREE.Vector2() }, near: { value: camera.near }, far: { value: camera.far } },
+      uniforms: { tNormal: { value: target.texture }, tDepth: { value: target.depthTexture }, texel: { value: new THREE.Vector2() }, near: { value: camera.near }, far: { value: camera.far }, crease: { value: .1 } },
     });
     const quadScene = new THREE.Scene(); quadScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), edgeMaterial));
     const lines = new THREE.WebGLRenderTarget(1, 1, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });
     const downsampleMaterial = new THREE.ShaderMaterial({
       ...downsampleShader, transparent: true,
-      uniforms: { tLines: { value: lines.texture }, pixel: { value: new THREE.Vector2() } },
+      uniforms: { tLines: { value: lines.texture }, pixel: { value: new THREE.Vector2() }, speck: { value: 0 } },
     });
     const screenScene = new THREE.Scene(); screenScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), downsampleMaterial));
     const quadCamera = new THREE.Camera();
