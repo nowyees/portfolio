@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
+import { toCreasedNormals } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { edgeShader, downsampleShader } from './AstroTail';
 import { createRobotControls, type RobotMetadata, type RobotSelection } from '../../lib/robotControls';
 
@@ -170,10 +171,14 @@ export default function DualArmIK({ className }: { className?: string }) {
       if (disposed) { disposeModel(gltf.scene); disposeModel(controlModel.scene); return; }
       controls = createRobotControls(controlModel.scene, metadata as RobotMetadata, headBinary as ArrayBuffer, normal);
       scene.add(controls.root); controls.upperContent.add(gltf.scene);
-      // Draw everything with the shared normal material (the loaded materials are never shown).
+      // Draw everything with the shared normal material (the loaded materials are never shown). The CAD meshes'
+      // normals are re-split at 38°, as the tail's were in Blender, so only real creases draw and the smooth
+      // shells stop breaking into dashes and specks.
       scene.traverse(o => {
         if (!(o instanceof THREE.Mesh) || o.material === normal) return;
         (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => m.dispose()); o.material = normal;
+        const creased = toCreasedNormals(o.geometry, THREE.MathUtils.degToRad(38));
+        o.geometry.dispose(); o.geometry = creased;
       });
       for (const name of ['arms_body', 'arms_hand_L', 'arms_hand_R']) {
         const object = gltf.scene.getObjectByName(name);
