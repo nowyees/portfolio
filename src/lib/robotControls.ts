@@ -4,8 +4,8 @@ import { segmentDistanceSquared } from './fingerClearance';
 // Slightly below the authored neutral hand's minimum link spacing (12.8 mm),
 // so beginning a small gesture does not abruptly relocate the thumb mount.
 const THUMB_CLEARANCE = .012;
-// Thumb curl while it travels the rail: the same bend as a folded hand.
-const THUMB_BENT = .55;
+// Thumb curl while it travels the rail: a light bend that keeps it bent without pressing the tip into the palm.
+const THUMB_BENT = .25;
 
 export type RobotSelection = 'head' | 'torso' | 'base' | `arm_${string}` | `hand_${string}` | `finger_${string}` | `wheel_${string}` | `rail_${string}`;
 export type RobotMetadata = {
@@ -59,7 +59,7 @@ export function createRobotControls(model: THREE.Object3D, metadata: RobotMetada
   const screwTurn = new THREE.Quaternion();
   // Carried round to the far end of the rail, the thumb would point straight out from the hand; as it travels it
   // also folds about its base (local X) so at the far end it runs up the side of the palm and over it.
-  const THUMB_FOLD = { axis: new THREE.Vector3(1, 0, 0), angle: 1.1 };
+  const THUMB_FOLD = { axis: new THREE.Vector3(1, 0, 0), angle: .7 };
   const joints: Array<{ group: THREE.Group; rest: Transform; open: Transform; closed: Transform; rail: Transform; isRail: boolean; screw?: Screw; fold: boolean; finger: string; side: string }> = [];
   const links: Array<{ group: THREE.Group; localTail: THREE.Vector3; a: THREE.Vector3; b: THREE.Vector3; side: string; thumb: boolean }> = [];
   const safeThumb: Record<string, { signature: string; curl: number; rail: number }> = {};
