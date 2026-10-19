@@ -55,7 +55,10 @@ export function createRobotControls(model: THREE.Object3D, metadata: RobotMetada
     return { axis, angle, pivot, shift };
   };
   const screwTurn = new THREE.Quaternion();
-  const joints: Array<{ group: THREE.Group; rest: Transform; open: Transform; closed: Transform; rail: Transform; isRail: boolean; screw?: Screw; finger: string; side: string }> = [];
+  // Carried round to the far end of the rail, the thumb would point straight out from the hand; as it travels it
+  // also folds about its base (local X) so at the far end it runs up the side of the palm and over it.
+  const THUMB_FOLD = { axis: new THREE.Vector3(1, 0, 0), angle: 1.1 };
+  const joints: Array<{ group: THREE.Group; rest: Transform; open: Transform; closed: Transform; rail: Transform; isRail: boolean; screw?: Screw; fold: boolean; finger: string; side: string }> = [];
   const links: Array<{ group: THREE.Group; localTail: THREE.Vector3; a: THREE.Vector3; b: THREE.Vector3; side: string; thumb: boolean }> = [];
   const safeThumb: Record<string, { signature: string; curl: number; rail: number }> = {};
   const values: Record<string, number[]> = { head: [0, 0], torso: [0], base: [0, 0], arm_L: [0], arm_R: [0], hand_L: [0], hand_R: [0] };
@@ -102,7 +105,7 @@ export function createRobotControls(model: THREE.Object3D, metadata: RobotMetada
         };
         values[finger] ||= [0];
         const isRail = b.name === 'MCH_THUMB_RAIL', rest = { p: group.position.clone(), q: group.quaternion.clone(), s: group.scale.clone() }, rail = localPose('rail');
-        joints.push({ group, finger, side, isRail, rest, open: localPose('open'), closed: localPose('closed'), rail, screw: isRail ? screwBetween(rest, rail) : undefined });
+        joints.push({ group, finger, side, isRail, fold: b.name === 'DEF_THUMB_BASE', rest, open: localPose('open'), closed: localPose('closed'), rail, screw: isRail ? screwBetween(rest, rail) : undefined });
         if (b.name.endsWith('_MID') || b.name.endsWith('_TIP')) links.push({ group, localTail: new THREE.Vector3().fromArray(b.tail).applyMatrix4(world.get(b.name)!.clone().invert()), a: new THREE.Vector3(), b: new THREE.Vector3(), side, thumb: b.name.includes('THUMB') });
       }
     }
@@ -164,6 +167,7 @@ export function createRobotControls(model: THREE.Object3D, metadata: RobotMetada
     joint.group.position.lerpVectors(joint.rest.p, pose.p, t);
     joint.group.quaternion.slerpQuaternions(joint.rest.q, pose.q, t);
     joint.group.scale.lerpVectors(joint.rest.s, pose.s, t);
+    if (joint.fold) joint.group.quaternion.multiply(screwTurn.setFromAxisAngle(THUMB_FOLD.axis, THUMB_FOLD.angle * rail));
   };
   const clearance = (side: string) => {
     hands[side].updateWorldMatrix(true, true);
