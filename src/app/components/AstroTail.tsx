@@ -28,7 +28,7 @@ type TailClip = { fps: number; frames: number[]; bones: string[]; hold: number; 
 export const edgeShader = {
   vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0., 1.); }',
   fragmentShader: `
-    uniform sampler2D tNormal; uniform sampler2D tDepth; uniform vec2 texel; uniform float near; uniform float far; uniform float crease;
+    uniform sampler2D tNormal; uniform sampler2D tDepth; uniform vec2 texel; uniform float near; uniform float far; uniform float crease; uniform float dim;
     varying vec2 vUv;
     float viewZ(float d){ return near * far / (far - d * (far - near)); }
     void main(){
@@ -47,10 +47,12 @@ export const edgeShader = {
         } else if (c.a > .5 || cn.a > .5) depthEdge = 1.;
       }
       float edge = max(smoothstep(.008, .03, depthEdge), smoothstep(crease, crease + .2, normalEdge)) * coverage;
-      // A part drawn with alpha .75 (instead of 1) is highlighted: its lines are drawn in the site's red.
+      // A part drawn with alpha .75 (instead of 1) is highlighted: it keeps full ink while every other line fades to
+      // a pale grey by dim (0 = no highlight), so the hovered part stands out without any colour.
       // (A silhouette texel lies just outside the part, so it takes the mark from the part beside it.)
       bool marked = c.a > .6 && c.a < .9 || c.a < .5 && neighbourMarked;
-      gl_FragColor = vec4(mix(vec3(1.), marked ? vec3(.937, .161, .125) : vec3(.067), edge), c.a > .5 ? 1. : edge);
+      vec3 ink = marked ? vec3(.067) : vec3(mix(.067, .72, dim));
+      gl_FragColor = vec4(mix(vec3(1.), ink, edge), c.a > .5 ? 1. : edge);
     }`,
 };
 
@@ -119,7 +121,7 @@ export default function AstroTail({ className }: { className?: string }) {
     const target = new THREE.WebGLRenderTarget(1, 1, { depthTexture: new THREE.DepthTexture(1, 1) });
     const edgeMaterial = new THREE.ShaderMaterial({
       ...edgeShader, transparent: true,
-      uniforms: { tNormal: { value: target.texture }, tDepth: { value: target.depthTexture }, texel: { value: new THREE.Vector2() }, near: { value: camera.near }, far: { value: camera.far }, crease: { value: .1 } },
+      uniforms: { tNormal: { value: target.texture }, tDepth: { value: target.depthTexture }, texel: { value: new THREE.Vector2() }, near: { value: camera.near }, far: { value: camera.far }, crease: { value: .1 }, dim: { value: 0 } },
     });
     const quadScene = new THREE.Scene(); quadScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), edgeMaterial));
     const lines = new THREE.WebGLRenderTarget(1, 1, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });

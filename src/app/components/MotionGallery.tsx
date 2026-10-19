@@ -11,7 +11,7 @@ const pieces: Array<{ id: string; title: string; note: string; guide: Guide; Pie
     pointer: ['마우스를 움직여 꼬리를 흔들어 보세요', 'Move your cursor to swing the tail'],
     touch: ['화면을 쓸어 꼬리를 흔들어 보세요', 'Drag across the screen to swing the tail'] } },
   { id: 'dual-arm-ik', title: 'Motion study', note: 'Dual-arm IK', Piece: DualArmIK, guide: {
-    pointer: ['빨갛게 표시되는 부분을 끌어서 움직여 보세요', 'Drag a part that lights up red to move it'],
+    pointer: ['또렷해지는 부분을 끌어서 움직여 보세요', 'Drag the part that comes into focus to move it'],
     touch: ['로봇의 부분을 끌어서 움직여 보세요', 'Drag a part of the robot to move it'] } },
 ];
 
