@@ -4,6 +4,8 @@ import { segmentDistanceSquared } from './fingerClearance';
 // Slightly below the authored neutral hand's minimum link spacing (12.8 mm),
 // so beginning a small gesture does not abruptly relocate the thumb mount.
 const THUMB_CLEARANCE = .012;
+// Thumb curl while it travels the rail: the same bend as a folded hand.
+const THUMB_BENT = .55;
 
 export type RobotSelection = 'head' | 'torso' | 'base' | `arm_${string}` | `hand_${string}` | `finger_${string}` | `wheel_${string}` | `rail_${string}`;
 export type RobotMetadata = {
@@ -122,8 +124,9 @@ export function createRobotControls(model: THREE.Object3D, metadata: RobotMetada
   const toggleFlip = (side: string) => {
     if (!hands[side]) return;
     flipped[side] = flips[side] ? !flipped[side] : values[`rail_${side}`][0] < .5;
+    // The thumb travels bent (as when the hand is folded) rather than open, so it never straightens out on the way.
     flips[side] = { elapsed: 0, duration: 1.05,
-      from: [values[`rail_${side}`][0]], to: [flipped[side] ? 1 : 0] };
+      from: [values[`rail_${side}`][0], values[`finger_${side}_THUMB`]?.[0] || 0], to: [flipped[side] ? 1 : 0, THUMB_BENT] };
   };
   const grip = (side: string, closed: boolean) => {
     if (!hands[side]) return;
@@ -190,6 +193,7 @@ export function createRobotControls(model: THREE.Object3D, metadata: RobotMetada
     for (const [side, gesture] of Object.entries(flips)) {
       const t = advance(gesture);
       values[`rail_${side}`][0] = THREE.MathUtils.lerp(gesture.from[0], gesture.to[0], t);
+      values[`finger_${side}_THUMB`][0] = THREE.MathUtils.lerp(gesture.from[1], gesture.to[1], t);
       if (gesture.elapsed === gesture.duration) delete flips[side];
     }
     for (const [side, gesture] of Object.entries(grips)) {
