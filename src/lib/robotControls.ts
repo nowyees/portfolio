@@ -125,13 +125,14 @@ export function createRobotControls(model: THREE.Object3D, metadata: RobotMetada
     flips[side] = { elapsed: 0, duration: 1.05,
       from: [values[`rail_${side}`][0]], to: [flipped[side] ? 1 : 0] };
   };
-  const toggleGrip = (side: string) => {
+  const grip = (side: string, closed: boolean) => {
     if (!hands[side]) return;
-    opened[side] = !opened[side];
+    opened[side] = !closed;
     const target = opened[side] ? -.4 : .55;
     grips[side] = { elapsed: 0, duration: .7,
       from: fingerNames.map(f => values[`finger_${side}_${f}`]?.[0] || 0), to: fingerNames.map(() => target) };
   };
+  const toggleGrip = (side: string) => grip(side, !!opened[side]);
   for (const [name, data] of Object.entries(metadata.wheels)) {
     const object = model.getObjectByName(name);
     if (!(object instanceof THREE.Mesh)) continue;
@@ -253,6 +254,6 @@ export function createRobotControls(model: THREE.Object3D, metadata: RobotMetada
     for (const side of Object.keys(hands)) { delete flips[side]; delete grips[side]; flipped[side] = false; opened[side] = false; }
     headDirty = true;
   };
-  return { root, upperContent, hands, meshes, get, set, update, reset, toggleFlip, toggleGrip,
+  return { root, upperContent, hands, meshes, get, set, update, reset, toggleFlip, toggleGrip, grip,
     isAnimating: () => Object.keys(flips).length + Object.keys(grips).length > 0, thumbClearance: clearance };
 }

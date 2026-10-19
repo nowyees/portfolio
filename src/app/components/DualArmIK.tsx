@@ -98,8 +98,12 @@ export default function DualArmIK({ className }: { className?: string }) {
       const range = ranges(key)[channel];
       controls?.set(key, channel, THREE.MathUtils.clamp(value, range.min, range.max));
     };
-    const gesture = (side: string, flip: boolean) => {
-      if (flip) controls?.toggleFlip(side); else controls?.toggleGrip(side);
+    // Clicking a hand (palm, any finger, the thumb or its rail) steps through three moves in turn: fold the
+    // fingers, open them, then turn the thumb round its rail.
+    const handStep: Record<string, number> = {};
+    const gesture = (side: string) => {
+      const step = handStep[side] ?? 0; handStep[side] = (step + 1) % 3;
+      if (step === 0) controls?.grip(side, true); else if (step === 1) controls?.grip(side, false); else controls?.toggleFlip(side);
     };
     const locate = (event: PointerEvent) => {
       const rect = host.getBoundingClientRect(), x = event.clientX - rect.left, y = event.clientY - rect.top;
@@ -139,12 +143,12 @@ export default function DualArmIK({ className }: { className?: string }) {
     };
     const end = (event?: PointerEvent) => {
       if (pressed && !dragged && event?.type === 'pointerup' && Math.hypot(event.clientX - dragX, event.clientY - dragY) < 6 && selection && /^(hand|finger|rail)_/.test(selection)) {
-        gesture(selection.split('_')[1], selection.startsWith('rail_') || selection.endsWith('_THUMB'));
+        gesture(selection.split('_')[1]);
       }
       pressed = false; host.style.cursor = hovered ? 'grab' : 'default';
     };
     const leave = () => { if (!pressed) { end(); hovered = null; cursor.classList.remove('is-shown'); } };
-    const resetPose = () => controls?.reset();
+    const resetPose = () => { controls?.reset(); for (const side in handStep) delete handStep[side]; };
     host.addEventListener('pointermove', move); host.addEventListener('pointerdown', start); host.addEventListener('dblclick', resetPose);
     host.addEventListener('pointerup', end); host.addEventListener('pointercancel', end); host.addEventListener('pointerleave', leave);
     const draco = new DRACOLoader().setDecoderPath('/draco/');
@@ -240,7 +244,7 @@ export default function DualArmIK({ className }: { className?: string }) {
       renderer.domElement.remove(); cursor.remove();
     };
   }, []);
-  return <div className={`${className || ''} robot-interactive`} role="group" aria-label="Articulated robot. Hover a part to see what moves; drag it to move it, click a hand to open or close it, click a thumb to flip it, double-click to reset.">
+  return <div className={`${className || ''} robot-interactive`} role="group" aria-label="Articulated robot. Hover a part to see what moves; drag it to move it, click a hand to fold its fingers, open them, then turn its thumb (one per click); double-click to reset.">
     <div ref={hostRef} style={{ position: 'absolute', inset: 0 }} />
     {status && <p role="status" className="robot-loading">{status}</p>}
   </div>;
