@@ -4,8 +4,6 @@ import { segmentDistanceSquared } from './fingerClearance';
 // Slightly below the authored neutral hand's minimum link spacing (12.8 mm),
 // so beginning a small gesture does not abruptly relocate the thumb mount.
 const THUMB_CLEARANCE = .012;
-// Thumb curl while it travels the rail: a light bend that keeps it bent without pressing the tip into the palm.
-const THUMB_BENT = .25;
 
 export type RobotSelection = 'head' | 'torso' | 'base' | `arm_${string}` | `hand_${string}` | `finger_${string}` | `wheel_${string}` | `rail_${string}`;
 export type RobotMetadata = {
@@ -39,8 +37,8 @@ export function createRobotControls(model: THREE.Object3D, metadata: RobotMetada
   const flipped: Record<string, boolean> = {}, opened: Record<string, boolean> = {};
   const wheels: Array<{ group: THREE.Group; key: RobotSelection; radius: number }> = [];
   type Transform = { p: THREE.Vector3; q: THREE.Quaternion; s: THREE.Vector3 };
-  // The rail carrier travels round the circular rail: its two authored endpoints differ by a ~150° turn, so instead
-  // of sliding straight between them (which drives the thumb through the palm) it turns about the rail's own axis.
+  // The rail carrier travels round the circular rail, turning about the rail's own axis (found from the two
+  // authored endpoints, ~150° apart) instead of sliding straight between them through the palm.
   type Screw = { axis: THREE.Vector3; angle: number; pivot: THREE.Vector3; shift: number };
   const screwBetween = (from: Transform, to: Transform): Screw => {
     const turn = to.q.clone().multiply(from.q.clone().invert());
@@ -57,10 +55,38 @@ export function createRobotControls(model: THREE.Object3D, metadata: RobotMetada
     return { axis, angle, pivot, shift };
   };
   const screwTurn = new THREE.Quaternion();
-  // Carried round to the far end of the rail, the thumb would point straight out from the hand; as it travels it
-  // also folds about its base (local X) so at the far end it runs up the side of the palm and over it.
-  const THUMB_FOLD = { axis: new THREE.Vector3(1, 0, 0), angle: .7 };
-  const joints: Array<{ group: THREE.Group; rest: Transform; open: Transform; closed: Transform; rail: Transform; isRail: boolean; screw?: Screw; fold: boolean; finger: string; side: string }> = [];
+  // The thumb's far end is its start pose mirrored across the plane half way between the rail's two authored
+  // endpoints (the designed symmetry of the flip). A mirror is not a motion, so the far end is the rigid turn that best carries the
+  // thumb's joints onto their mirror images (least squares, Horn's quaternion method); the carrier then turns there
+  // as a screw. Everything is in the hand bone's frame, which is the rail carrier's parent.
+  const mirrorTurn = (bones: RobotMetadata['hands'][string], world: Map<string, THREE.Matrix4>, rest: Transform, railEnd: Transform): Screw => {
+    const toHand = world.get('DEF_hand')!.clone().invert();
+    const point = (name: string, end: 'head' | 'tail') => new THREE.Vector3().fromArray(bones.find(b => b.name === name)![end]).applyMatrix4(toHand);
+    const across = railEnd.p.clone().sub(rest.p).normalize(), centre = railEnd.p.clone().add(rest.p).multiplyScalar(.5);
+    const from = ['MCH_THUMB_RAIL', 'DEF_THUMB_BASE', 'DEF_THUMB_MID', 'DEF_THUMB_TIP'].flatMap(n => [point(n, 'head'), point(n, 'tail')]);
+    const to = from.map(v => v.clone().addScaledVector(across, -2 * v.clone().sub(centre).dot(across)));
+    const mean = (vs: THREE.Vector3[]) => vs.reduce((m, v) => m.add(v), new THREE.Vector3()).divideScalar(vs.length);
+    const a0 = mean(from), b0 = mean(to);
+    // Horn: the best rotation is the top eigenvector of a 4x4 matrix built from the cross-covariance.
+    const S = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
+    from.forEach((v, k) => {
+      const x = v.clone().sub(a0).toArray(), y = to[k].clone().sub(b0).toArray();
+      for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) S[i][j] += x[i] * y[j];
+    });
+    const [[xx, xy, xz], [yx, yy, yz], [zx, zy, zz]] = S;
+    const N = [[xx + yy + zz, yz - zy, zx - xz, xy - yx], [yz - zy, xx - yy - zz, xy + yx, zx + xz],
+      [zx - xz, xy + yx, -xx + yy - zz, yz + zy], [xy - yx, zx + xz, yz + zy, -xx - yy + zz]];
+    const shift = N.flat().reduce((sum, v) => sum + Math.abs(v), 0);
+    let q = [1, 0, 0, 0];
+    for (let it = 0; it < 500; it++) {   // power iteration on N + cI (shifted so the top eigenvalue dominates)
+      const r = N.map((row, i) => row.reduce((acc, value, j) => acc + value * q[j], 0) + shift * q[i]);
+      const len = Math.hypot(...r); q = r.map(v => v / len);
+    }
+    const turn = new THREE.Quaternion(q[1], q[2], q[3], q[0]);
+    const target = { p: rest.p.clone().sub(a0).applyQuaternion(turn).add(b0), q: turn.clone().multiply(rest.q), s: rest.s };
+    return screwBetween(rest, target);
+  };
+  const joints: Array<{ group: THREE.Group; rest: Transform; open: Transform; closed: Transform; rail: Transform; isRail: boolean; screw?: Screw; finger: string; side: string }> = [];
   const links: Array<{ group: THREE.Group; localTail: THREE.Vector3; a: THREE.Vector3; b: THREE.Vector3; side: string; thumb: boolean }> = [];
   const safeThumb: Record<string, { signature: string; curl: number; rail: number }> = {};
   const values: Record<string, number[]> = { head: [0, 0], torso: [0], base: [0, 0], arm_L: [0], arm_R: [0], hand_L: [0], hand_R: [0] };
@@ -107,7 +133,8 @@ export function createRobotControls(model: THREE.Object3D, metadata: RobotMetada
         };
         values[finger] ||= [0];
         const isRail = b.name === 'MCH_THUMB_RAIL', rest = { p: group.position.clone(), q: group.quaternion.clone(), s: group.scale.clone() }, rail = localPose('rail');
-        joints.push({ group, finger, side, isRail, fold: b.name === 'DEF_THUMB_BASE', rest, open: localPose('open'), closed: localPose('closed'), rail, screw: isRail ? screwBetween(rest, rail) : undefined });
+        const screw = isRail ? mirrorTurn(bones, world, rest, rail) : undefined;
+        joints.push({ group, finger, side, isRail, rest, open: localPose('open'), closed: localPose('closed'), rail, screw });
         if (b.name.endsWith('_MID') || b.name.endsWith('_TIP')) links.push({ group, localTail: new THREE.Vector3().fromArray(b.tail).applyMatrix4(world.get(b.name)!.clone().invert()), a: new THREE.Vector3(), b: new THREE.Vector3(), side, thumb: b.name.includes('THUMB') });
       }
     }
@@ -124,9 +151,8 @@ export function createRobotControls(model: THREE.Object3D, metadata: RobotMetada
   const toggleFlip = (side: string) => {
     if (!hands[side]) return;
     flipped[side] = flips[side] ? !flipped[side] : values[`rail_${side}`][0] < .5;
-    // The thumb travels bent (as when the hand is folded) rather than open, so it never straightens out on the way.
     flips[side] = { elapsed: 0, duration: 1.05,
-      from: [values[`rail_${side}`][0], values[`finger_${side}_THUMB`]?.[0] || 0], to: [flipped[side] ? 1 : 0, THUMB_BENT] };
+      from: [values[`rail_${side}`][0]], to: [flipped[side] ? 1 : 0] };
   };
   const grip = (side: string, closed: boolean) => {
     if (!hands[side]) return;
@@ -171,7 +197,6 @@ export function createRobotControls(model: THREE.Object3D, metadata: RobotMetada
     joint.group.position.lerpVectors(joint.rest.p, pose.p, t);
     joint.group.quaternion.slerpQuaternions(joint.rest.q, pose.q, t);
     joint.group.scale.lerpVectors(joint.rest.s, pose.s, t);
-    if (joint.fold) joint.group.quaternion.multiply(screwTurn.setFromAxisAngle(THUMB_FOLD.axis, THUMB_FOLD.angle * rail));
   };
   const clearance = (side: string) => {
     hands[side].updateWorldMatrix(true, true);
@@ -193,7 +218,6 @@ export function createRobotControls(model: THREE.Object3D, metadata: RobotMetada
     for (const [side, gesture] of Object.entries(flips)) {
       const t = advance(gesture);
       values[`rail_${side}`][0] = THREE.MathUtils.lerp(gesture.from[0], gesture.to[0], t);
-      values[`finger_${side}_THUMB`][0] = THREE.MathUtils.lerp(gesture.from[1], gesture.to[1], t);
       if (gesture.elapsed === gesture.duration) delete flips[side];
     }
     for (const [side, gesture] of Object.entries(grips)) {
