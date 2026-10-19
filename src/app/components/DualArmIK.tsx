@@ -237,7 +237,7 @@ export default function DualArmIK({ className }: { className?: string }) {
     };
     frame = requestAnimationFrame(tick);
     return () => {
-      disposed = true; apiRef.current = null; abort.abort(); cancelAnimationFrame(frame); observer.disconnect();
+      disposed = true; abort.abort(); cancelAnimationFrame(frame); observer.disconnect();
       host.removeEventListener('pointermove', move); host.removeEventListener('pointerdown', start); host.removeEventListener('dblclick', resetPose);
       host.removeEventListener('pointerup', end); host.removeEventListener('pointercancel', end); host.removeEventListener('pointerleave', leave);
       disposeModel(scene); draco.dispose(); normal.dispose(); marked.dispose(); target.dispose(); lines.dispose(); edge.dispose(); down.dispose(); plane.dispose(); renderer.dispose();
