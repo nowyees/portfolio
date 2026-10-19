@@ -37,7 +37,25 @@ export function createRobotControls(model: THREE.Object3D, metadata: RobotMetada
   const flipped: Record<string, boolean> = {}, opened: Record<string, boolean> = {};
   const wheels: Array<{ group: THREE.Group; key: RobotSelection; radius: number }> = [];
   type Transform = { p: THREE.Vector3; q: THREE.Quaternion; s: THREE.Vector3 };
-  const joints: Array<{ group: THREE.Group; rest: Transform; open: Transform; closed: Transform; rail: Transform; isRail: boolean; finger: string; side: string }> = [];
+  // The rail carrier travels round the circular rail: its two authored endpoints differ by a ~150° turn, so instead
+  // of sliding straight between them (which drives the thumb through the palm) it turns about the rail's own axis.
+  type Screw = { axis: THREE.Vector3; angle: number; pivot: THREE.Vector3; shift: number };
+  const screwBetween = (from: Transform, to: Transform): Screw => {
+    const turn = to.q.clone().multiply(from.q.clone().invert());
+    if (turn.w < 0) turn.set(-turn.x, -turn.y, -turn.z, -turn.w);
+    const angle = 2 * Math.acos(Math.min(1, turn.w)), sin = Math.sqrt(1 - turn.w * turn.w);
+    const axis = sin < 1e-6 ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(turn.x, turn.y, turn.z).divideScalar(sin);
+    const d = to.p.clone().sub(from.p), shift = d.dot(axis);
+    // In the plane across the axis, p1 = c + R(p0 - c): solve (I - R) u = -d for u = p0 - c.
+    const e1 = new THREE.Vector3().crossVectors(axis, Math.abs(axis.x) < .9 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 1, 0)).normalize();
+    const e2 = new THREE.Vector3().crossVectors(axis, e1);
+    const v1 = -d.dot(e1), v2 = -d.dot(e2), c = Math.cos(angle), s = Math.sin(angle), det = 2 * (1 - c);
+    const pivot = from.p.clone();
+    if (det > 1e-9) pivot.addScaledVector(e1, -((1 - c) * v1 - s * v2) / det).addScaledVector(e2, -(s * v1 + (1 - c) * v2) / det);
+    return { axis, angle, pivot, shift };
+  };
+  const screwTurn = new THREE.Quaternion();
+  const joints: Array<{ group: THREE.Group; rest: Transform; open: Transform; closed: Transform; rail: Transform; isRail: boolean; screw?: Screw; finger: string; side: string }> = [];
   const links: Array<{ group: THREE.Group; localTail: THREE.Vector3; a: THREE.Vector3; b: THREE.Vector3; side: string; thumb: boolean }> = [];
   const safeThumb: Record<string, { signature: string; curl: number; rail: number }> = {};
   const values: Record<string, number[]> = { head: [0, 0], torso: [0], base: [0, 0], arm_L: [0], arm_R: [0], hand_L: [0], hand_R: [0] };
@@ -83,7 +101,8 @@ export function createRobotControls(model: THREE.Object3D, metadata: RobotMetada
           pose.decompose(p, q, s); return { p, q, s };
         };
         values[finger] ||= [0];
-        joints.push({ group, finger, side, isRail: b.name === 'MCH_THUMB_RAIL', rest: { p: group.position.clone(), q: group.quaternion.clone(), s: group.scale.clone() }, open: localPose('open'), closed: localPose('closed'), rail: localPose('rail') });
+        const isRail = b.name === 'MCH_THUMB_RAIL', rest = { p: group.position.clone(), q: group.quaternion.clone(), s: group.scale.clone() }, rail = localPose('rail');
+        joints.push({ group, finger, side, isRail, rest, open: localPose('open'), closed: localPose('closed'), rail, screw: isRail ? screwBetween(rest, rail) : undefined });
         if (b.name.endsWith('_MID') || b.name.endsWith('_TIP')) links.push({ group, localTail: new THREE.Vector3().fromArray(b.tail).applyMatrix4(world.get(b.name)!.clone().invert()), a: new THREE.Vector3(), b: new THREE.Vector3(), side, thumb: b.name.includes('THUMB') });
       }
     }
@@ -132,6 +151,14 @@ export function createRobotControls(model: THREE.Object3D, metadata: RobotMetada
     soft.push({ mesh, base, morphs: Object.fromEntries(Object.entries(part.morphs).map(([name, offset]) => [name, new Int16Array(binary.slice(offset, offset + part.count * 6))])), scale: part.scale });
   }
   const applyJoint = (joint: typeof joints[number], curl: number, rail: number) => {
+    if (joint.screw) {
+      const { axis, angle, pivot, shift } = joint.screw;
+      screwTurn.setFromAxisAngle(axis, angle * rail);
+      joint.group.position.copy(joint.rest.p).sub(pivot).applyQuaternion(screwTurn).add(pivot).addScaledVector(axis, shift * rail);
+      joint.group.quaternion.multiplyQuaternions(screwTurn, joint.rest.q);
+      joint.group.scale.lerpVectors(joint.rest.s, joint.rail.s, rail);
+      return;
+    }
     const pose = joint.isRail ? joint.rail : curl < 0 ? joint.open : joint.closed;
     const t = joint.isRail ? rail : Math.abs(curl);
     joint.group.position.lerpVectors(joint.rest.p, pose.p, t);

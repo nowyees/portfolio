@@ -28,31 +28,38 @@ type TailClip = { fps: number; frames: number[]; bones: string[]; hold: number; 
 export const edgeShader = {
   vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0., 1.); }',
   fragmentShader: `
-    uniform sampler2D tNormal; uniform sampler2D tDepth; uniform vec2 texel; uniform float near; uniform float far; uniform float crease; uniform float dim;
+    uniform sampler2D tNormal; uniform sampler2D tDepth; uniform vec2 texel; uniform float near; uniform float far; uniform float crease;
     varying vec2 vUv;
     float viewZ(float d){ return near * far / (far - d * (far - near)); }
     void main(){
       vec4 c = texture2D(tNormal, vUv); float z = viewZ(texture2D(tDepth, vUv).x);
-      float depthEdge = 0., normalEdge = 0., coverage = c.a; bool neighbourMarked = false;
-      // Forward neighbours only, so each edge is marked on one side of it: lines one texel wide.
-      for (int i = 0; i < 4; i++) {
-        vec2 o = i == 0 ? vec2(1., 0.) : i == 1 ? vec2(0., 1.) : i == 2 ? vec2(.7, .7) : vec2(.7, -.7);
+      // A part drawn with alpha .75 (instead of 1) is highlighted: its lines are drawn bolder, in the same ink. A
+      // silhouette texel lies just outside the part, so it takes the mark from the part beside it.
+      bool marked = c.a > .6 && c.a < .9;
+      if (c.a < .5) for (int i = 0; i < 4; i++) {
+        vec2 o = i == 0 ? vec2(1., 0.) : i == 1 ? vec2(0., 1.) : i == 2 ? vec2(-1., 0.) : vec2(0., -1.);
+        float a = texture2D(tNormal, vUv + o * texel).a;
+        marked = marked || a > .6 && a < .9;
+      }
+      // Forward neighbours only, so each edge is marked on one side of it: lines one texel wide. A highlighted part
+      // also looks backwards and two texels out, which widens its lines.
+      int taps = marked ? 12 : 4;
+      float depthEdge = 0., normalEdge = 0., coverage = c.a;
+      for (int i = 0; i < 12; i++) {
+        if (i >= taps) break;
+        vec2 o = i == 0 ? vec2(1., 0.) : i == 1 ? vec2(0., 1.) : i == 2 ? vec2(.7, .7) : i == 3 ? vec2(.7, -.7)
+               : i == 4 ? vec2(-1., 0.) : i == 5 ? vec2(0., -1.) : i == 6 ? vec2(-.7, -.7) : i == 7 ? vec2(-.7, .7)
+               : i == 8 ? vec2(2., 0.) : i == 9 ? vec2(0., 2.) : i == 10 ? vec2(-2., 0.) : vec2(0., -2.);
         vec2 uv = vUv + o * texel;
         vec4 cn = texture2D(tNormal, uv); float zn = viewZ(texture2D(tDepth, uv).x);
         coverage = max(coverage, cn.a);
-        if (i < 2) neighbourMarked = neighbourMarked || cn.a > .6 && cn.a < .9; // diagonal samples blend texels
         if (c.a > .5 && cn.a > .5) {
           depthEdge = max(depthEdge, abs(zn - z) / z);
           normalEdge = max(normalEdge, 1. - dot(c.xyz * 2. - 1., cn.xyz * 2. - 1.));
         } else if (c.a > .5 || cn.a > .5) depthEdge = 1.;
       }
       float edge = max(smoothstep(.008, .03, depthEdge), smoothstep(crease, crease + .2, normalEdge)) * coverage;
-      // A part drawn with alpha .75 (instead of 1) is highlighted: it keeps full ink while every other line fades to
-      // a pale grey by dim (0 = no highlight), so the hovered part stands out without any colour.
-      // (A silhouette texel lies just outside the part, so it takes the mark from the part beside it.)
-      bool marked = c.a > .6 && c.a < .9 || c.a < .5 && neighbourMarked;
-      vec3 ink = marked ? vec3(.067) : vec3(mix(.067, .72, dim));
-      gl_FragColor = vec4(mix(vec3(1.), ink, edge), c.a > .5 ? 1. : edge);
+      gl_FragColor = vec4(mix(vec3(1.), vec3(.067), edge), c.a > .5 ? 1. : edge);
     }`,
 };
 
@@ -121,7 +128,7 @@ export default function AstroTail({ className }: { className?: string }) {
     const target = new THREE.WebGLRenderTarget(1, 1, { depthTexture: new THREE.DepthTexture(1, 1) });
     const edgeMaterial = new THREE.ShaderMaterial({
       ...edgeShader, transparent: true,
-      uniforms: { tNormal: { value: target.texture }, tDepth: { value: target.depthTexture }, texel: { value: new THREE.Vector2() }, near: { value: camera.near }, far: { value: camera.far }, crease: { value: .1 }, dim: { value: 0 } },
+      uniforms: { tNormal: { value: target.texture }, tDepth: { value: target.depthTexture }, texel: { value: new THREE.Vector2() }, near: { value: camera.near }, far: { value: camera.far }, crease: { value: .1 } },
     });
     const quadScene = new THREE.Scene(); quadScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), edgeMaterial));
     const lines = new THREE.WebGLRenderTarget(1, 1, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });

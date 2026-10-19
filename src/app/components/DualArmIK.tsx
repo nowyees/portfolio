@@ -38,15 +38,14 @@ export default function DualArmIK({ className }: { className?: string }) {
     // Tight depth range avoids z-fighting on the close CAD shell layers.
     const camera = new THREE.PerspectiveCamera(30, 1, 1, 10);
     camera.position.set(0, .78, 4); camera.lookAt(0, .78, 0);
-    // Every mesh draws view normals; a highlighted part draws them with alpha .75, which the edge pass keeps in full
-    // ink while the rest of the drawing fades to grey.
+    // Every mesh draws view normals; a highlighted part draws them with alpha .75, which the edge pass draws bolder.
     // (transparent + NoBlending: opaque materials have their alpha forced to 1, and blending would mix the normals.)
     const normal = new THREE.MeshNormalMaterial(), marked = new THREE.MeshNormalMaterial({ opacity: .75, transparent: true, blending: THREE.NoBlending });
     const target = new THREE.WebGLRenderTarget(1, 1, { depthTexture: new THREE.DepthTexture(1, 1) });
     const lines = new THREE.WebGLRenderTarget(1, 1);
     const edge = new THREE.ShaderMaterial({ ...edgeShader, transparent: true, uniforms: {
       tNormal: { value: target.texture }, tDepth: { value: target.depthTexture },
-      texel: { value: new THREE.Vector2() }, near: { value: camera.near }, far: { value: camera.far }, crease: { value: .12 }, dim: { value: 0 },
+      texel: { value: new THREE.Vector2() }, near: { value: camera.near }, far: { value: camera.far }, crease: { value: .12 },
     } });
     const down = new THREE.ShaderMaterial({ ...downsampleShader, transparent: true, uniforms: {
       tLines: { value: lines.texture }, pixel: { value: new THREE.Vector2() }, speck: { value: 2.4 },
@@ -227,8 +226,6 @@ export default function DualArmIK({ className }: { className?: string }) {
       controls?.update(dt);
       // The part being dragged stays red until released; otherwise the one under the cursor.
       highlight(pressed ? selection : hovered);
-      const dim = edge.uniforms.dim;
-      dim.value += ((shownHighlight ? 1 : 0) - dim.value) * (1 - Math.exp(-dt * 10));
       renderer.setRenderTarget(target); renderer.render(scene, camera);
       renderer.setRenderTarget(lines); renderer.render(edgeScene, quadCamera);
       renderer.setRenderTarget(null); renderer.render(screenScene, quadCamera);
