@@ -13,7 +13,7 @@ import bpy, json, math, sys, argparse
 from pathlib import Path
 from mathutils import Matrix, Vector
 
-p = argparse.ArgumentParser(); p.add_argument('--out', required=True)
+p = argparse.ArgumentParser(); p.add_argument('--out', required=True); p.add_argument('--ready')
 args = p.parse_args(sys.argv[sys.argv.index('--') + 1:]); out = Path(args.out)
 s = bpy.context.scene; s.frame_set(s.frame_start); deps = bpy.context.evaluated_depsgraph_get()
 source = [o for o in s.objects if o.type == 'MESH' and o.visible_get()]
@@ -83,12 +83,26 @@ def pose_at(body_offset, pitch=0., feet_rel=None):
             dy, dz = feet_rel[k[0]]; h = hip_at(k)
             f.location = Vector((rest[k].x, h.y + dy * length[k], h.z + dz * length[k]))
     return sample()
-# Crouch (still 1): low, nose dipped, legs gathered over planted feet.
-CROUCH = ((0, .6, -1.3), -.08)
-crouch = pose_at(*CROUCH)
+# Ready pose: the controller placement saved as the crouch in the source (--ready JSON of controller
+# locations/rotations, read from that save by the user; falls back to a generic crouch).
+ready = None
+if args.ready:
+    ready = json.loads(Path(args.ready).read_text(encoding='utf8'))
+def apply_ready():
+    body.location = Vector(ready['HORSE_CTRL_BODY']['loc']); body.rotation_euler = ready['HORSE_CTRL_BODY']['rot']
+    for k, f in feet.items(): f.location = Vector(ready['HORSE_CTRL_FOOT_' + k]['loc'])
+    return sample()
+crouch = apply_ready() if ready else pose_at((0, .6, -1.3), -.08)
+ready_body = body.location.copy(); ready_rot = body.rotation_euler.copy(); ready_feet = {k: f.location.copy() for k, f in feet.items()}
 # Push-off: the feet stay planted while the body is thrown forward and up, nose rising, the legs straightening.
 PUSH, PITCH, STEPS = Vector((0, -3.2, 1.6)), .26, 12
-push = [pose_at(Vector(CROUCH[0]).lerp(PUSH, n / STEPS), CROUCH[1] + (PITCH - CROUCH[1]) * n / STEPS) for n in range(STEPS + 1)]
+push = []
+for n in range(STEPS + 1):
+    t = n / STEPS
+    body.location = ready_body.lerp(body0 + PUSH, t)
+    body.rotation_euler = (ready_rot.x + (rot0.x + PITCH - ready_rot.x) * t, ready_rot.y + (rot0.y - ready_rot.y) * t, ready_rot.z + (rot0.z - ready_rot.z) * t)
+    for k, f in feet.items(): f.location = ready_feet[k]
+    push.append(sample())
 # In the air (still 2): nose up, hind legs stretched out behind and down, front legs hanging under the chest.
 flight = pose_at(PUSH, PITCH, {'F': (-.15, -.9), 'H': (1.0, -.55)})
 # Coming down: body levels, front legs reach forward for the ground, hind legs swing in under the body.

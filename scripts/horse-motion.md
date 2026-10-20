@@ -22,7 +22,7 @@ took off.
 
 ```text
 blender --background --factory-startup --disable-autoexec COPY.blend --python scripts/export-horse.py -- --out public/lab
-blender --background --factory-startup --disable-autoexec COPY.blend --python scripts/bake-horse-gait.py -- --out public/lab
+blender --background --factory-startup --disable-autoexec COPY.blend --python scripts/bake-horse-gait.py -- --out public/lab --ready scripts/horse-ready-pose.json
 ```
 
 Both read the source without saving it. `horse-ik.json` and `horse-motion.json` are no longer used at runtime.

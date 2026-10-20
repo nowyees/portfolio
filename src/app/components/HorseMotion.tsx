@@ -21,7 +21,7 @@ const WALK = { cadence: .85 };   // walk cycles per second, in place (as on a tr
 // pose (body level, front legs reaching forward and down, hind legs stretched back) off one side of the screen and back
 // in from the other, the landing pose (front legs reaching for the ground) and down where it took off. Seconds, and
 // the flight's peak height in model units.
-const LEAP = { crouch: .25, push: .2, flight: 1.3, land: .55, climb: .42, tilt: .16 };
+const LEAP = { crouch: 1, push: .2, flight: 1.3, land: .55, climb: .42, tilt: .16 };
 // climb: the angle (radians) it flies off at, up and away the way its head points; tilt: the extra nose-up turn of the
 // whole figure on the way out (the baked flying pose is already pitched up), so the head points along the path.
 
