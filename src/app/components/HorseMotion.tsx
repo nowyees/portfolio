@@ -21,7 +21,9 @@ const WALK = { cadence: .85 };   // walk cycles per second, in place (as on a tr
 // pose (body level, front legs reaching forward and down, hind legs stretched back) off one side of the screen and back
 // in from the other, the landing pose (front legs reaching for the ground) and down where it took off. Seconds, and
 // the flight's peak height in model units.
-const LEAP = { crouch: .25, push: .2, flight: 1.3, land: .35, hop: .3 };
+const LEAP = { crouch: .25, push: .2, flight: 1.3, land: .35, climb: .42, tilt: .16 };
+// climb: the angle (radians) it flies off at, up and away the way its head points; tilt: the extra nose-up turn of the
+// whole figure on the way out (the baked flying pose is already pitched up), so the head points along the path.
 
 /** The HORSE robot walks on the spot and leaps forward on a click, using poses baked from its Blender rig. */
 export default function HorseMotion({ className }: { className?: string }) {
@@ -103,8 +105,10 @@ export default function HorseMotion({ className }: { className?: string }) {
     }).catch(error => { if (!disposed) { console.error('HORSE motion:', error); setStatus('HORSE could not load. Please refresh.'); } });
 
     // Pose blending: interpolate between neighbouring baked frames, then between standing and walking.
+    // (b may be out: slerpQuaternions copies a into out first, so b's rotation is read before that.)
+    const qb = new THREE.Quaternion();
     const mix = (a: Pose, b: Pose, t: number, out: Pose) => {
-      out.p.lerpVectors(a.p, b.p, t); out.q.slerpQuaternions(a.q, b.q, t); out.s.lerpVectors(a.s, b.s, t); return out;
+      qb.copy(b.q); out.p.lerpVectors(a.p, b.p, t); out.q.slerpQuaternions(a.q, qb, t); out.s.lerpVectors(a.s, b.s, t); return out;
     };
     const tmpA: Pose = { p: new THREE.Vector3(), q: new THREE.Quaternion(), s: new THREE.Vector3() };
     const tmpB: Pose = { p: new THREE.Vector3(), q: new THREE.Quaternion(), s: new THREE.Vector3() };
@@ -116,9 +120,8 @@ export default function HorseMotion({ className }: { className?: string }) {
 
     let x = 0, phase = 0, activity = 0;
     let leap: { t: number; from: number; direction: number } | null = null;
-    // Off-screen bounds in model units; positions wrap round them so the leap re-enters from the far side.
+    // Off-screen bound in model units: past it the figure is out of view.
     const offEdge = () => (camera.right + radius) / modelScale;
-    const wrap = (v: number) => { const w = 2 * offEdge(); return ((v + offEdge()) % w + w) % w - offEdge(); };
     const ease = (t: number) => { t = THREE.MathUtils.clamp(t, 0, 1); return t * t * (3 - 2 * t); };
     const fire = () => {
       if (!shells.length || reducedMotion || leap) return;
@@ -144,19 +147,24 @@ export default function HorseMotion({ className }: { className?: string }) {
     const tick = (now: number) => {
       const dt = document.hidden ? 0 : Math.min(.04, last ? (now - last) / 1000 : 0); last = now;
       if (shells.length) {
-        let lift = 0, rootX = x, mode: 'move' | 'crouch' | 'push' | 'air' | 'land' = 'move', amount = 0;
+        let lift = 0, tilt = 0, rootX = x, mode: 'move' | 'crouch' | 'push' | 'air' | 'land' = 'move', amount = 0;
         if (leap) {
           leap.t += dt;
           const { crouch: c, push: p, flight: f, land: l } = LEAP, t = leap.t, d = leap.direction;
-          const flightDistance = 2 * offEdge() - reach.x;   // so that, with the landing's reach, it comes back round
+          const edge = offEdge(), landFrom = leap.from - d * reach.x, tan = Math.tan(LEAP.climb);
           if (t < c) { mode = 'crouch'; amount = ease(t / c); rootX = leap.from; }
-          else if (t < c + p) { mode = 'push'; amount = ease((t - c) / p); rootX = leap.from; }
+          else if (t < c + p) { mode = 'push'; amount = ease((t - c) / p); rootX = leap.from; tilt = LEAP.tilt * amount; }
           else if (t < c + p + f) {
             const u = (t - c - p) / f; mode = 'air'; amount = u;
-            rootX = wrap(leap.from + d * flightDistance * u); lift = LEAP.hop * Math.sin(Math.PI * u);
+            if (u < .5) {   // out along the diagonal, off the far side of the screen
+              const s = u / .5; rootX = leap.from + d * (edge * 1.3 - d * leap.from) * s; lift = Math.abs(rootX - leap.from) * tan; tilt = LEAP.tilt;
+            } else {        // back in from the near side, coming down the same slope to the landing spot
+              const s = (u - .5) / .5, start = -d * edge * 1.3; rootX = start + (landFrom - start) * s;
+              lift = Math.abs(landFrom - rootX) * tan; tilt = -LEAP.climb * (1 - ease((s - .6) / .4)) - .26;
+            }
           } else {
             const u = ease((t - c - p - f) / l); mode = 'land'; amount = u;   // the legs gather under the body
-            rootX = wrap(leap.from + d * (flightDistance + reach.x * u));
+            rootX = landFrom + d * reach.x * u; tilt = -.26 * (1 - u);
           }
           if (!reducedMotion) phase = (phase + dt * WALK.cadence) % 1;   // the walk carries on under the landing
           activity = 1;
@@ -181,7 +189,7 @@ export default function HorseMotion({ className }: { className?: string }) {
           } else if (mode === 'land') mix(landing[i], pose, amount, pose);   // straight back into the walk
           shell.matrix.compose(pose.p, pose.q, pose.s);
         });
-        modelRoot.position.set(rootX * modelScale, lift * modelScale, 0);
+        modelRoot.position.set(rootX * modelScale, lift * modelScale, 0); modelRoot.rotation.z = tilt;
         host.dataset.motionState = leap ? 'leaping' : 'walking';
       }
       renderer.setRenderTarget(target); renderer.render(scene, camera); renderer.setRenderTarget(lines); renderer.render(edgeScene, quadCamera);
