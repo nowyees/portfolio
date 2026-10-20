@@ -22,7 +22,7 @@ const WALK = { cadence: .85 };   // walk cycles per second, in place (as on a tr
 // pose (body level, front legs reaching forward and down, hind legs stretched back) off one side of the screen and back
 // in from the other, the landing pose (front legs reaching for the ground) and down where it took off. Seconds, and
 // the flight's peak height in model units.
-const LEAP = { crouch: 1, push: .2, flight: 1.3, land: .55, climb: .42, tilt: .16 };
+const LEAP = { crouch: 1, hold: 1, push: .2, flight: 1.3, land: .55, climb: .42, tilt: .16 };
 // climb: the angle (radians) it flies off at, up and away the way its head points; tilt: the extra nose-up turn of the
 // whole figure on the way out (the baked flying pose is already pitched up), so the head points along the path.
 
@@ -173,7 +173,9 @@ export default function HorseMotion({ className }: { className?: string }) {
         let lift = 0, tilt = 0, rootX = x, mode: 'move' | 'crouch' | 'push' | 'air' | 'land' = 'move', amount = 0;
         if (leap) {
           leap.t += dt;
-          const { crouch: c, push: p, flight: f, land: l } = LEAP, t = leap.t, d = leap.direction;
+          // the ready pose is taken (crouch), held (hold), then the leap runs as if it started after the hold
+          const { crouch: c, push: p, flight: f, land: l } = LEAP, d = leap.direction;
+          const t = leap.t < c ? leap.t : Math.max(c, leap.t - LEAP.hold);
           const edge = offEdge(), landFrom = leap.from - d * reach.x, tan = Math.tan(LEAP.climb);
           if (t < c) { mode = 'crouch'; amount = ease(t / c); rootX = leap.from; }
           else if (t < c + p) { mode = 'push'; amount = ease((t - c) / p); rootX = leap.from; tilt = LEAP.tilt * amount; }
