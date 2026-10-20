@@ -14,6 +14,7 @@ type Gait = {
   walk: { frames: number; poses: number[][][] };
   leap: { reach: number[]; push: number[][][]; flight: number[][]; landing: number[][] };
 };
+type Rig = { bones: Record<string, { parent: string | null; head: number[] }>; parts: Array<{ name: string; bone: string }> };
 type Pose = { p: THREE.Vector3; q: THREE.Quaternion; s: THREE.Vector3 };
 
 const WALK = { cadence: .85 };   // walk cycles per second, in place (as on a treadmill)
@@ -73,16 +74,18 @@ export default function HorseMotion({ className }: { className?: string }) {
     const disposeModel = (object: THREE.Object3D) => object.traverse(o => {
       if (o instanceof THREE.Mesh) { o.geometry.dispose(); (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => m.dispose()); }
     });
-    const decompose = (values: number[]): Pose => {
-      const p = new THREE.Vector3(), q = new THREE.Quaternion(), s = new THREE.Vector3();
-      new THREE.Matrix4().fromArray(values).decompose(p, q, s); return { p, q, s };
-    };
     let shells: THREE.Object3D[] = [], stand: Pose[] = [], crouch: Pose[] = [], walk: Pose[][] = [];
     let push: Pose[][] = [], flying: Pose[] = [], landing: Pose[] = [];
     const reach = new THREE.Vector3();
+    // Shells ride rigid bones. Poses are blended per bone relative to its parent (the leg roots count as children of
+    // the body bone, which they are constrained to), so joints stay together however far apart two poses are.
+    // Each bone's pose is kept as its rotation plus where its joint (rest head) sits, so blends turn about the joint.
+    let groups: Array<{ parent: number; shells: number[]; head: THREE.Vector3 }> = [];
     Promise.all([loader.loadAsync('/lab/horse.glb'), fetch('/lab/horse-gait.json', { signal: abort.signal }).then(r => {
       if (!r.ok) throw new Error('HORSE poses unavailable'); return r.json() as Promise<Gait>;
-    })]).then(([gltf, gait]) => {
+    }), fetch('/lab/horse-ik.json', { signal: abort.signal }).then(r => {
+      if (!r.ok) throw new Error('HORSE rig unavailable'); return r.json() as Promise<Rig>;
+    })]).then(([gltf, gait, rig]) => {
       if (disposed) { disposeModel(gltf.scene); return; }
       modelRoot.add(gltf.scene);
       // Normals re-split at 38° (as the other pieces), so only real creases draw.
@@ -94,10 +97,29 @@ export default function HorseMotion({ className }: { className?: string }) {
         const object = gltf.scene.getObjectByName(name); if (!object) throw new Error(`Missing HORSE shell ${name}`);
         object.matrixAutoUpdate = false; return object;
       });
-      stand = gait.stand.map(decompose); crouch = gait.crouch.map(decompose);
-      walk = gait.walk.poses.map(frame => frame.map(decompose));
-      push = gait.leap.push.map(sample => sample.map(decompose));
-      flying = gait.leap.flight.map(decompose); landing = gait.leap.landing.map(decompose);
+      const boneOf = gait.parts.map(name => rig.parts.find(p => p.name === name)!.bone);
+      const names = [...new Set(boneOf)], body = 'Bone.026';
+      const parentOf = (name: string) => {
+        for (let b = rig.bones[name].parent; b; b = rig.bones[b].parent) if (names.includes(b)) return b;
+        return name === body ? null : body;
+      };
+      const depth = (name: string): number => { const p = parentOf(name); return p ? depth(p) + 1 : 0; };
+      names.sort((a, b) => depth(a) - depth(b));
+      groups = names.map(name => ({ parent: parentOf(name) ? names.indexOf(parentOf(name)!) : -1, shells: boneOf.flatMap((b, i) => b === name ? [i] : []),
+        head: new THREE.Vector3().fromArray(rig.bones[name].head) }));
+      const world = new THREE.Matrix4(), inv = new THREE.Matrix4();
+      const toLocal = (set: number[][]) => {
+        const W = groups.map(g => new THREE.Matrix4().fromArray(set[g.shells[0]]));
+        return groups.map((g, k) => {
+          world.copy(W[k]); if (g.parent >= 0) world.premultiply(inv.copy(W[g.parent]).invert());
+          const pose = { p: new THREE.Vector3(), q: new THREE.Quaternion(), s: new THREE.Vector3() }; world.decompose(pose.p, pose.q, pose.s);
+          pose.p.copy(g.head).applyMatrix4(world);   // the joint, in the parent's frame
+          return pose;
+        });
+      };
+      stand = toLocal(gait.stand); crouch = toLocal(gait.crouch);
+      walk = gait.walk.poses.map(toLocal); push = gait.leap.push.map(toLocal);
+      flying = toLocal(gait.leap.flight); landing = toLocal(gait.leap.landing);
       reach.fromArray(gait.leap.reach);
       const bounds = new THREE.Box3().setFromObject(gltf.scene);
       radius = bounds.getBoundingSphere(new THREE.Sphere()).radius; resize();
@@ -144,6 +166,7 @@ export default function HorseMotion({ className }: { className?: string }) {
     host.addEventListener('pointerdown', start); host.addEventListener('pointermove', move); host.addEventListener('pointerup', end); host.addEventListener('pointercancel', end);
 
     const pose: Pose = { p: new THREE.Vector3(), q: new THREE.Quaternion(), s: new THREE.Vector3() };
+    const worlds = Array.from({ length: 16 }, () => new THREE.Matrix4()), pivot = new THREE.Matrix4();
     const tick = (now: number) => {
       const dt = document.hidden ? 0 : Math.min(.04, last ? (now - last) / 1000 : 0); last = now;
       if (shells.length) {
@@ -180,7 +203,7 @@ export default function HorseMotion({ className }: { className?: string }) {
           rootX = x = 0;
         }
         const walkFrame = phase * walk.length;
-        shells.forEach((shell, i) => {
+        groups.forEach((group, i) => {
           sampleAt(walk, walkFrame, i, tmpA, true);
           mix(stand[i], tmpA, activity, pose);
           if (mode === 'crouch') mix(pose, crouch[i], amount, pose);
@@ -194,7 +217,9 @@ export default function HorseMotion({ className }: { className?: string }) {
             if (amount < .3) mix(landing[i], crouch[i], ease(amount / .3), pose);
             else mix(crouch[i], pose, ease((amount - .3) / .7), pose);
           }
-          shell.matrix.compose(pose.p, pose.q, pose.s);
+          worlds[i].compose(pose.p, pose.q, pose.s).multiply(pivot.makeTranslation(-group.head.x, -group.head.y, -group.head.z));
+          if (group.parent >= 0) worlds[i].premultiply(worlds[group.parent]);
+          for (const s of group.shells) shells[s].matrix.copy(worlds[i]);
         });
         modelRoot.position.set(rootX * modelScale, lift * modelScale, 0); modelRoot.rotation.z = tilt;
         host.dataset.motionState = leap ? 'leaping' : 'walking';
