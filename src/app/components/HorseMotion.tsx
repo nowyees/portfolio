@@ -3,19 +3,16 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { edgeShader, downsampleShader } from './AstroTail';
+import { createHorseRunner, type HorseRig } from '../../lib/horseIK';
 
-type HorseClip = { fps: number; first: number; last: number; bounds: { min: number[]; max: number[] }; parts: Array<{ name: string; poses: number[][] }> };
-
-/** Original HORSE scene-range motion, evaluated in Blender; actual 3D shells, not video. */
+/** The source HORSE chains solve live foot targets, driven by cursor pursuit. */
 export default function HorseMotion({ className }: { className?: string }) {
   const hostRef = useRef<HTMLDivElement>(null);
-  const playingRef = useRef(true);
-  const [playing, setPlaying] = useState(true);
+  const targetRef = useRef(0);
   const [status, setStatus] = useState('Loading HORSE…');
-  const toggle = () => { playingRef.current = !playingRef.current; setPlaying(playingRef.current); };
   useEffect(() => {
     const host = hostRef.current!;
-    let disposed = false, frame = 0, last = 0, elapsed = 0;
+    let disposed = false, frame = 0, last = 0;
     let renderer: THREE.WebGLRenderer;
     try { renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false }); }
     catch { setStatus('3D is unavailable on this device.'); return; }
@@ -36,7 +33,7 @@ export default function HorseMotion({ className }: { className?: string }) {
     const plane = new THREE.PlaneGeometry(2, 2), quadCamera = new THREE.Camera();
     const edgeScene = new THREE.Scene(), screenScene = new THREE.Scene();
     edgeScene.add(new THREE.Mesh(plane, edge)); screenScene.add(new THREE.Mesh(plane, down));
-    let radius = 1.9;
+    let radius = 1.9, modelScale = 1;
     const resize = () => {
       const w = Math.max(1, host.clientWidth), h = Math.max(1, host.clientHeight);
       const dpr = Math.min(window.devicePixelRatio || 1, 1.5), ratio = dpr * 2;
@@ -47,57 +44,55 @@ export default function HorseMotion({ className }: { className?: string }) {
       // for the guide/header and caption on narrow phones.
       const aspect = w / h, half = Math.max(radius / .76, radius / (.82 * aspect));
       camera.left = -half * aspect; camera.right = half * aspect; camera.top = half; camera.bottom = -half; camera.updateProjectionMatrix();
+      modelScale = w < 600 ? .72 : .9; modelRoot.scale.setScalar(modelScale);
+      const travel = Math.max(.2, camera.right * .85 - radius * modelScale);
+      targetRef.current = THREE.MathUtils.clamp(targetRef.current, -travel, travel);
     };
     const observer = new ResizeObserver(resize); observer.observe(host); resize();
-    type Pose = { p: THREE.Vector3; q: THREE.Quaternion; s: THREE.Vector3 };
-    let parts: Array<{ object: THREE.Object3D; poses: Pose[] }> = [], clip: HorseClip | null = null;
+    let runner: ReturnType<typeof createHorseRunner> | null = null;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const abort = new AbortController(), draco = new DRACOLoader().setDecoderPath('/draco/');
     const loader = new GLTFLoader().setDRACOLoader(draco);
     const disposeModel = (object: THREE.Object3D) => object.traverse(o => {
       if (o instanceof THREE.Mesh) { o.geometry.dispose(); (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => m.dispose()); }
     });
-    Promise.all([loader.loadAsync('/lab/horse.glb'), fetch('/lab/horse-motion.json', { signal: abort.signal }).then(r => {
-      if (!r.ok) throw new Error('HORSE motion unavailable'); return r.json() as Promise<HorseClip>;
+    Promise.all([loader.loadAsync('/lab/horse.glb'), fetch('/lab/horse-ik.json', { signal: abort.signal }).then(r => {
+      if (!r.ok) throw new Error('HORSE IK unavailable'); return r.json() as Promise<HorseRig>;
     })]).then(([gltf, data]) => {
       if (disposed) { disposeModel(gltf.scene); return; }
-      clip = data; modelRoot.add(gltf.scene);
-      parts = data.parts.map(part => {
-        const object = gltf.scene.getObjectByName(part.name); if (!object) throw new Error('Missing HORSE shell');
-        return { object, poses: part.poses.map(matrix => {
-          const p = new THREE.Vector3(), q = new THREE.Quaternion(), s = new THREE.Vector3(); new THREE.Matrix4().fromArray(matrix).decompose(p, q, s); return { p, q, s };
-        }) };
-      });
-      const bounds = new THREE.Box3(new THREE.Vector3().fromArray(data.bounds.min), new THREE.Vector3().fromArray(data.bounds.max));
+      modelRoot.add(gltf.scene); runner = createHorseRunner(gltf.scene, data);
+      const bounds = new THREE.Box3().setFromObject(gltf.scene);
       radius = bounds.getBoundingSphere(new THREE.Sphere()).radius; resize();
-      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { playingRef.current = false; setPlaying(false); }
       setStatus('');
     }).catch(error => { if (!disposed) { console.error('HORSE motion:', error); setStatus('HORSE could not load. Please refresh.'); } });
-    let pressed = false, dragged = false, startX = 0, startY = 0, startYaw = 0, startPitch = 0, yaw = 0, pitch = 0;
+    let pressed = false;
+    const aim = (event: PointerEvent) => {
+      const rect = host.getBoundingClientRect();
+      const travel = Math.max(.2, camera.right * .85 - radius * modelScale);
+      targetRef.current = THREE.MathUtils.clamp(((event.clientX - rect.left) / rect.width * 2 - 1) * camera.right, -travel, travel);
+    };
     const start = (event: PointerEvent) => {
-      if (!clip || event.button !== 0 || pressed) return;
-      pressed = true; dragged = false; startX = event.clientX; startY = event.clientY; startYaw = yaw; startPitch = pitch;
-      host.setPointerCapture(event.pointerId); host.style.cursor = 'grabbing';
+      if (!runner || event.button !== 0 || pressed) return;
+      pressed = true; aim(event); host.setPointerCapture(event.pointerId);
     };
     const move = (event: PointerEvent) => {
-      if (!pressed) return;
-      const dx = event.clientX - startX, dy = event.clientY - startY;
-      if (!dragged && Math.hypot(dx, dy) < 6) return;
-      dragged = true; yaw = startYaw + dx * .008; pitch = THREE.MathUtils.clamp(startPitch + dy * .005, -.65, .65);
+      if (event.pointerType === 'mouse' || pressed) aim(event);
     };
     const end = (event: PointerEvent) => {
-      if (pressed && !dragged && event.type === 'pointerup' && Math.hypot(event.clientX - startX, event.clientY - startY) < 6) toggle();
-      pressed = false; host.style.cursor = 'grab';
+      pressed = false;
     };
-    host.style.cursor = 'grab';
+    host.style.cursor = 'crosshair';
     host.addEventListener('pointerdown', start); host.addEventListener('pointermove', move); host.addEventListener('pointerup', end); host.addEventListener('pointercancel', end);
     const tick = (now: number) => {
       const dt = Math.min(.04, last ? (now - last) / 1000 : 0); last = now;
-      if (playingRef.current && clip && !document.hidden) elapsed += dt;
-      if (clip) {
-        const count = clip.last - clip.first + 1, f = (elapsed * clip.fps) % count, i = Math.floor(f), j = (i + 1) % count, t = f - i;
-        for (const part of parts) { part.object.position.lerpVectors(part.poses[i].p, part.poses[j].p, t); part.object.quaternion.slerpQuaternions(part.poses[i].q, part.poses[j].q, t); part.object.scale.lerpVectors(part.poses[i].s, part.poses[j].s, t); }
+      if (runner) {
+        const travel = Math.max(.2, camera.right * .85 - radius * modelScale);
+        targetRef.current = THREE.MathUtils.clamp(targetRef.current, -travel, travel);
+        const state = runner.update(document.hidden ? 0 : dt, targetRef.current / modelScale, reducedMotion);
+        modelRoot.position.x = state.x * modelScale; modelRoot.rotation.y = state.heading;
+        host.dataset.motionState = Math.abs(state.velocity) > .04 ? 'running' : 'standing';
+        host.dataset.ikError = String(Math.max(...Object.values(state.errors)));
       }
-      const ease = 1 - Math.exp(-dt * 12); modelRoot.rotation.y = THREE.MathUtils.lerp(modelRoot.rotation.y, yaw, ease); modelRoot.rotation.x = THREE.MathUtils.lerp(modelRoot.rotation.x, pitch, ease);
       renderer.setRenderTarget(target); renderer.render(scene, camera); renderer.setRenderTarget(lines); renderer.render(edgeScene, quadCamera); renderer.setRenderTarget(null); renderer.render(screenScene, quadCamera);
       frame = requestAnimationFrame(tick);
     };
@@ -108,8 +103,8 @@ export default function HorseMotion({ className }: { className?: string }) {
       disposeModel(scene); draco.dispose(); normal.dispose(); target.dispose(); lines.dispose(); edge.dispose(); down.dispose(); plane.dispose(); renderer.dispose(); renderer.domElement.remove();
     };
   }, []);
-  return <div className={`${className || ''} horse-interactive`} role="group" aria-label="HORSE robotic motion. Drag to rotate; click to pause or play.">
+  return <div className={`${className || ''} horse-interactive`} role="group" tabIndex={0} aria-label="HORSE live IK. Move the cursor or drag to make it run after you. Keyboard A/D to run left/right." onKeyDown={event => { if (event.key.toLowerCase() === 'a') targetRef.current -= 1; if (event.key.toLowerCase() === 'd') targetRef.current += 1; }}>
     <div ref={hostRef} style={{ position: 'absolute', inset: 0 }} />
-    {status ? <p role="status" className="robot-loading">{status}</p> : <button className="horse-play" type="button" aria-label={playing ? 'Pause HORSE motion' : 'Play HORSE motion'} onClick={toggle}>{playing ? 'Pause' : 'Play'}</button>}
+    {status && <p role="status" className="robot-loading">{status}</p>}
   </div>;
 }
