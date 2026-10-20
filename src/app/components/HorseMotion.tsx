@@ -90,7 +90,8 @@ export default function HorseMotion({ className }: { className?: string }) {
         targetRef.current = THREE.MathUtils.clamp(targetRef.current, -travel, travel);
         const state = runner.update(document.hidden ? 0 : dt, targetRef.current / modelScale, reducedMotion);
         modelRoot.position.x = state.x * modelScale; modelRoot.rotation.y = state.heading;
-        host.dataset.motionState = Math.abs(state.velocity) > .04 ? 'running' : 'standing';
+        host.dataset.motionState = Math.abs(state.velocity) > .02 ? 'walking' : 'standing';
+        host.dataset.swingingFeet = state.swinging.join(',');
         host.dataset.ikError = String(Math.max(...Object.values(state.errors)));
       }
       renderer.setRenderTarget(target); renderer.render(scene, camera); renderer.setRenderTarget(lines); renderer.render(edgeScene, quadCamera); renderer.setRenderTarget(null); renderer.render(screenScene, quadCamera);
@@ -103,7 +104,7 @@ export default function HorseMotion({ className }: { className?: string }) {
       disposeModel(scene); draco.dispose(); normal.dispose(); target.dispose(); lines.dispose(); edge.dispose(); down.dispose(); plane.dispose(); renderer.dispose(); renderer.domElement.remove();
     };
   }, []);
-  return <div className={`${className || ''} horse-interactive`} role="group" tabIndex={0} aria-label="HORSE live IK. Move the cursor or drag to make it run after you. Keyboard A/D to run left/right." onKeyDown={event => { if (event.key.toLowerCase() === 'a') targetRef.current -= 1; if (event.key.toLowerCase() === 'd') targetRef.current += 1; }}>
+  return <div className={`${className || ''} horse-interactive`} role="group" tabIndex={0} aria-label="HORSE live IK. Its original low wide pose, walking one foot at a time. Move the cursor or drag to guide it. Keyboard A/D to walk left/right." onKeyDown={event => { if (event.key.toLowerCase() === 'a') targetRef.current -= 1; if (event.key.toLowerCase() === 'd') targetRef.current += 1; }}>
     <div ref={hostRef} style={{ position: 'absolute', inset: 0 }} />
     {status && <p role="status" className="robot-loading">{status}</p>}
   </div>;

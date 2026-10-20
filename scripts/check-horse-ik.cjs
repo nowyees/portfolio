@@ -6,10 +6,15 @@ const {createHorseRunner}=compiled.exports;
 const metadata=JSON.parse(fs.readFileSync(path.join(root,'public/lab/horse-ik.json')));
 const objects=Object.fromEntries(metadata.parts.map(p=>[p.name,new THREE.Group()]));
 const runner=createHorseRunner({getObjectByName:name=>objects[name]},metadata);
+runner.update(0,0);
+const identity = new THREE.Matrix4().elements;
+for(const object of Object.values(objects)) assert.ok(object.matrix.elements.every((n,i)=>Math.abs(n-identity[i])<1e-4),'Idle must preserve the original wide reference pose');
 let maxError=0, moving=0, maxX=0, last;
 for(let frame=0;frame<2400;frame++){
- const target=frame<300?0:frame<900?1.5:frame<1500?-1.5:0;
+ const target=frame<300?0:frame<900?.6:frame<1500?-.6:0;
  const state=runner.update(1/60,target);last=state;
+ assert.ok(state.swinging.length <= 1, 'Only one foot may be in swing at a time');
+ assert.ok(Math.abs(state.velocity) <= .140001, 'Walk must stay slow and deliberate');
  maxX=Math.max(maxX,Math.abs(state.x));if(Math.abs(state.velocity)>.1)moving++;
  for(const leg of metadata.legs){
   const points=state.feet[leg.id];assert.ok(points.every(p=>p.toArray().every(Number.isFinite)));
@@ -22,8 +27,8 @@ for(let frame=0;frame<2400;frame++){
  for(const object of Object.values(objects))assert.ok(object.matrix.elements.every(Number.isFinite));
 }
 assert.ok(maxError<.001,`Foot target error ${maxError}`);
-assert.ok(moving>100 && maxX>1.4,'Must actually run to the target');
+assert.ok(moving>100 && maxX>.55,'Must actually walk to the target');
 assert.ok(Math.abs(last.x)<.01 && Math.abs(last.velocity)<.01,'Must settle at the cursor');
 const idle=createHorseRunner({getObjectByName:name=>objects[name]},metadata);
 for(let i=0;i<120;i++)assert.equal(idle.update(1/60,2,true).x,0,'Reduced motion must not chase');
-console.log(`Passed: live 2/3-link IK, 2400 pursuit/turn/stop frames, native limb lengths, max foot error ${maxError.toExponential(2)}, reduced motion.`);
+console.log(`Passed: original wide reference pose, one-foot-at-a-time walk, 2400 pursuit/turn/stop frames, native limb lengths, max foot error ${maxError.toExponential(2)}, reduced motion.`);

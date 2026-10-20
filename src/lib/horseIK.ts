@@ -53,37 +53,44 @@ export function createHorseRunner(model: THREE.Object3D, metadata: HorseRig) {
   });
   const legs = metadata.legs.map(l => {
     const rest = l.bones.map(b => V(metadata.bones[b].head)); rest.push(V(metadata.bones[l.bones.at(-1)!].tail));
-    return { ...l, rest, pole: V(l.pole), offset: l.id === 'FR' || l.id === 'HL' ? 0 : .5 };
+    // The bind-pose knee, rather than the remote Blender helper, preserves the
+    // exact wide low silhouette shown in the reference. Walk one foot at a time.
+    const order: Record<string, number> = { HR: 0, FR: .25, HL: .5, FL: .75 };
+    return { ...l, rest, pole: rest[1].clone(), offset: order[l.id] };
   });
   let x = 0, velocity = 0, phase = 0, heading = 0, facingLeft = false, activity = 0;
   const bodyPivot = new THREE.Vector3(0, .2, 0), body = new THREE.Matrix4();
   const errors: Record<string, number> = {};
   const update = (dt: number, targetX: number, reducedMotion = false) => {
     dt = clamp(dt, 0, .05);
-    const desired = reducedMotion ? 0 : clamp((targetX - x) * 3.4, -1.65, 1.65);
+    const desired = reducedMotion ? 0 : clamp((targetX - x) * 1.8, -.14, .14);
     velocity = THREE.MathUtils.lerp(velocity, desired, 1 - Math.exp(-dt * 16)); x += velocity * dt;
     if (Math.abs(targetX - x) < .005 && Math.abs(velocity) < .02) { x = targetX; velocity = 0; }
     if (Math.abs(velocity) > .1) facingLeft = velocity < 0;
     heading = THREE.MathUtils.lerp(heading, facingLeft ? Math.PI : 0, 1 - Math.exp(-dt * 7));
-    const speed = Math.abs(velocity), stride = .62 + Math.min(speed, 1.65) * .13;
-    activity = THREE.MathUtils.lerp(activity, clamp(speed * 3, 0, 1), 1 - Math.exp(-dt * 8));
-    phase = (phase + speed * dt * .58 / stride) % 1;
-    const bob = Math.sin(phase * Math.PI * 4) * .025 * activity;
-    const pitch = -Math.min(speed, 1.5) * .025 * activity;
+    const speed = Math.abs(velocity), stride = .20;
+    activity = THREE.MathUtils.lerp(activity, clamp(speed * 10, 0, 1), 1 - Math.exp(-dt * 8));
+    phase = (phase + speed * dt * .78 / stride) % 1;
+    // A quiet weight transfer, not the bounce/lean of the previous trot.
+    const bob = (-.06 + Math.sin(phase * Math.PI * 8) * .004) * activity;
+    const pitch = 0;
     body.makeTranslation(bodyPivot.x, bodyPivot.y + bob, bodyPivot.z)
       .multiply(new THREE.Matrix4().makeRotationZ(pitch)).multiply(new THREE.Matrix4().makeTranslation(-bodyPivot.x, -bodyPivot.y, -bodyPivot.z));
     const deltas: Record<string, THREE.Matrix4> = {};
     const feet: Record<string, THREE.Vector3[]> = {};
+    const swinging: string[] = [];
     for (const leg of legs) {
-      const p = (phase + leg.offset) % 1, stance = .58;
+      const p = (phase + leg.offset) % 1, stance = .78;
       const u = p < stance ? p / stance : (p - stance) / (1 - stance);
       const swing = p >= stance;
-      // Stance moves backward at exactly the forward travel rate. Swing brings
-      // the target forward above the floor; left/right diagonals alternate.
+      if (swing && activity > .01) swinging.push(leg.id);
+      // 78% stance leaves only one foot airborne at once. Keep each original
+      // front/back spread instead of recentering all four feet under the body.
       const step = swing ? -.5 + (u * u * (3 - 2 * u)) : .5 - u;
       const hip = leg.rest[0].clone().applyMatrix4(body);
-      const foot = new THREE.Vector3(leg.rest[0].x + (leg.id.startsWith('F') ? .05 : -.05) + step * stride * activity,
-        -.66 + (swing ? Math.sin(Math.PI * u) * .24 * activity : 0), leg.rest.at(-1)!.z);
+      const anchor = leg.rest.at(-1)!;
+      const foot = new THREE.Vector3(anchor.x + step * stride * activity,
+        anchor.y + (swing ? Math.sin(Math.PI * u) ** 2 * .065 * activity : 0), anchor.z);
       const points = solveHorseLeg(leg.rest, hip, foot, leg.pole.clone().applyMatrix4(body)); feet[leg.id] = points;
       errors[leg.id] = points.at(-1)!.distanceTo(foot);
       leg.bones.forEach((bone, i) => {
@@ -94,7 +101,7 @@ export function createHorseRunner(model: THREE.Object3D, metadata: HorseRig) {
     }
     const delta = (name: string): THREE.Matrix4 => deltas[name] ||= metadata.bones[name].parent ? delta(metadata.bones[name].parent!) : body.clone();
     for (const binding of bindings) binding.object.matrix.copy(delta(binding.bone));
-    return { x, velocity, heading, activity, phase, feet, errors };
+    return { x, velocity, heading, activity, phase, feet, errors, swinging };
   };
   return { update };
 }
