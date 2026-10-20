@@ -7,14 +7,16 @@ All poses are baked in Blender by `bake-horse-gait.py`, so every knee is bent by
 targets rather than by a browser solver:
 
 - `stand`: the controllers at rest.
-- `walk`: 48 frames of an in-place lateral-sequence gait (one foot in the air at a time, each foot stepping about
-  where it stands); the browser plays it at the pace of the body's travel, one stride per cycle.
+- `walk`: 48 frames of an in-place lateral-sequence gait (one foot in the air at a time; each pair's feet step about
+  the pair's mid point half a cycle apart, so they cross); the browser plays it at the pace of the body's travel.
+- `crouch`: the body sunk and drawn back over planted feet, before a leap.
 - `leap`: 25 samples of the body controller pushed forward and up while the feet stay planted, as when it is dragged
   in the viewport, so the legs stretch out behind.
 
 In the browser the figure walks after the cursor (A/D on the keyboard). A click/tap (or Space) leaps the way it
-faces: push-off into the stretched pose, a short flight holding it, then a landing in which the pose gathers back
-while the root moves on by the same reach, so the feet arrive under the body. With no room ahead it turns first.
+faces: a short crouch, the push-off into the stretched pose, a flight that leaves one side of the screen and comes
+back in from the other, then a landing (the pose gathers back as the root moves on by the same reach) where it
+took off.
 
 ```text
 blender --background --factory-startup --disable-autoexec COPY.blend --python scripts/export-horse.py -- --out public/lab

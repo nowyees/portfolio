@@ -39,9 +39,10 @@ body = ob['HORSE_CTRL_BODY']; body0 = body.location.copy()
 feet = {k: ob['HORSE_CTRL_FOOT_' + k] for k in ('FR', 'FL', 'HR', 'HL')}
 rest = {k: f.location.copy() for k, f in feet.items()}
 stand = sample()   # controllers at rest, no action: the pose to stand in
-# Forward is -Y. Each foot steps about where it stands, keeping the low, wide stance.
-centre = {k: rest[k].y for k in feet}
-STRIDE, LIFT, STANCE, FRAMES = 2.6, .45, .75, 48
+# Forward is -Y. Each pair steps about its own mid point with its feet half a cycle apart, so they cross.
+centre = {k: (rest[k[0] + 'R'].y + rest[k[0] + 'L'].y) / 2 for k in feet}
+STRIDE, STANCE, FRAMES = 3.4, .75, 48
+LIFT = {'F': .3, 'H': .5}   # the two-bone front legs fold flat if lifted as high as the hind legs
 OFFSET = {'HR': 0., 'FR': .25, 'HL': .5, 'FL': .75}   # lateral sequence: one foot airborne at a time
 def smooth(t): return t * t * (3 - 2 * t)
 walk = []
@@ -52,20 +53,22 @@ for n in range(FRAMES):
         if u < STANCE:   # on the ground, sliding back under the body
             y, z = -STRIDE / 2 + STRIDE * (u / STANCE), 0.
         else:            # lifted and carried forward
-            w = (u - STANCE) / (1 - STANCE); y, z = STRIDE / 2 - STRIDE * smooth(w), LIFT * math.sin(math.pi * w)
+            w = (u - STANCE) / (1 - STANCE); y, z = STRIDE / 2 - STRIDE * smooth(w), LIFT[k[0]] * math.sin(math.pi * w)
         f.location = Vector((rest[k].x, centre[k] + y, rest[k].z + z))
     body.location = body0 + Vector((0, 0, -.12 + .06 * math.cos(phase * math.pi * 8)))
     walk.append(sample())
 for k, f in feet.items(): f.location = rest[k]
+# Crouch before a leap: the body sinks and draws back a little over planted feet.
+body.location = body0 + Vector((0, .5, -1.1)); crouch = sample(); body.location = body0
 LEAP = Vector((0, -7.5, 1.6)); STEPS = 24
 leap = []
 for n in range(STEPS + 1):
     t = n / STEPS
-    body.location = body0 + LEAP * t + Vector((0, 0, -.5 * math.sin(math.pi * min(1, t * 3)) * (1 - t)))   # crouch, then push
+    body.location = body0 + LEAP * t
     leap.append(sample())
 body.location = body0
 data = {'version': 1, 'parts': [f'horse_part_{i}' for i in range(len(source))],
         'walk': {'frames': FRAMES, 'stride': STRIDE * scale, 'poses': walk},
-        'stand': stand, 'leap': {'samples': STEPS + 1, 'reach': [-LEAP.y * scale, LEAP.z * scale, 0], 'poses': leap}}
+        'stand': stand, 'crouch': crouch, 'leap': {'samples': STEPS + 1, 'reach': [-LEAP.y * scale, LEAP.z * scale, 0], 'poses': leap}}
 (out / 'horse-gait.json').write_text(json.dumps(data, separators=(',', ':')), encoding='utf8')
 print('HORSE_GAIT', len(source), FRAMES, STEPS + 1, 'scale', scale, flush=True)
