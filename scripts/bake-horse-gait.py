@@ -93,8 +93,9 @@ if args.ready:
     ready = json.loads(Path(args.ready).read_text(encoding='utf8'))
 def apply_ready():
     body.location = Vector(ready['HORSE_CTRL_BODY']['loc']); body.rotation_euler = ready['HORSE_CTRL_BODY']['rot']
-    for k, f in feet.items(): f.location = Vector(ready['HORSE_CTRL_FOOT_' + k]['loc'])
+    for k, f in feet.items(): f.location = Vector(ready['HORSE_CTRL_FOOT_' + k]['loc']); f.rotation_euler = ready['HORSE_CTRL_FOOT_' + k]['rot']
     return sample()
+foot_rot0 = {k: f.rotation_euler.copy() for k, f in feet.items()}
 crouch = apply_ready() if ready else pose_at((0, .6, -1.3), -.08)
 ready_body = body.location.copy(); ready_rot = body.rotation_euler.copy(); ready_feet = {k: f.location.copy() for k, f in feet.items()}
 # Push-off: the feet stay planted while the body is thrown forward and up, nose rising, the legs straightening.
@@ -106,6 +107,7 @@ for n in range(STEPS + 1):
     body.rotation_euler = (ready_rot.x + (rot0.x + PITCH - ready_rot.x) * t, ready_rot.y + (rot0.y - ready_rot.y) * t, ready_rot.z + (rot0.z - ready_rot.z) * t)
     for k, f in feet.items(): f.location = ready_feet[k]
     push.append(sample())
+for k, f in feet.items(): f.rotation_euler = foot_rot0[k]
 # In the air (still 2): nose up, hind legs stretched out behind and down, front legs hanging under the chest.
 flight = pose_at(PUSH, PITCH, {'F': (-.15, -.9), 'H': (1.0, -.55)})
 # Coming down: body levels, front legs reach forward for the ground, hind legs swing in under the body.
