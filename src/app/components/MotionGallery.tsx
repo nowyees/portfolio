@@ -15,8 +15,8 @@ const pieces: Array<{ id: string; title: string; note: string; guide: Guide; Pie
     pointer: ['선이 굵어지는 부분을 끌어서 움직여 보세요', 'Drag a part whose lines turn bold to move it'],
     touch: ['로봇의 부분을 끌어서 움직여 보세요', 'Drag a part of the robot to move it'] } },
   { id: 'horse', title: 'Motion study', note: 'HORSE', Piece: HorseMotion, guide: {
-    pointer: ['마우스를 따라 걷고, 클릭하면 앞으로 튀어나가요', 'Move to walk · Click to leap forward'],
-    touch: ['쓸어서 걷고, 탭하면 앞으로 튀어나가요', 'Drag to walk · Tap to leap forward'] } },
+    pointer: ['클릭하면 앞으로 뛰어올라요', 'Click to make it leap'],
+    touch: ['탭하면 앞으로 뛰어올라요', 'Tap to make it leap'] } },
 ];
 
 export default function MotionGallery() {

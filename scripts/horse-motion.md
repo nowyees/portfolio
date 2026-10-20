@@ -9,14 +9,14 @@ targets rather than by a browser solver:
 - `stand`: the controllers at rest.
 - `walk`: 48 frames of the trot from the quadruped_ik reference rig's Auto_Walk drivers: diagonal pairs (FL+HR,
   FR+HL) half a cycle apart, each pair's feet about one shared mid point so they cross, half the cycle on the ground,
-  eased swing with ramped lift, and a light body bob; the browser plays one cycle per stride travelled.
+  eased swing with ramped lift, and a light body bob, with the body raised so the crouched rest legs open up; the
+  browser plays it on the spot, like a treadmill.
 - `crouch`: the body sunk and drawn back over planted feet, before a leap.
 - `leap`: the push-off (13 samples of the body thrown forward and up over planted feet), then key poses for the
   flight (body level, front legs reaching forward and down, hind legs stretched back) and the landing (front legs
   reaching for the ground, hind legs swinging in), with the feet placed relative to the hips.
 
-In the browser the figure walks after the cursor (A/D on the keyboard). A click/tap (or Space) leaps the way it
-faces: a short crouch, the push-off into the stretched pose, a flight that leaves one side of the screen and comes
+In the browser the figure walks on the spot. A click/tap (or Space) leaps forward: a short crouch, the push-off into the stretched pose, a flight that leaves one side of the screen and comes
 back in from the other, then a landing (the pose gathers back as the root moves on by the same reach) where it
 took off.
 

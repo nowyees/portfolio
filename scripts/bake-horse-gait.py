@@ -44,7 +44,7 @@ stand = sample()   # controllers at rest, no action: the pose to stand in
 # ground sliding back under the body, half carried forward (eased over its middle 70%) with a lift that ramps in and
 # out over 20% at each end; the body bobs twice a cycle. Forward is -Y. STRIDE is the body's travel per cycle.
 centre = {k: (rest[k[0] + 'R'].y + rest[k[0] + 'L'].y) / 2 for k in feet}
-STRIDE, STANCE, FRAMES, BOB, LOWER = 8.0, .5, 48, .08, -.25
+STRIDE, STANCE, FRAMES, BOB, LOWER = 4.5, .5, 48, .08, 1.1   # body raised so the crouched legs open up
 LIFT = {'F': .55, 'H': .75}
 OFFSET = {'FL': 0., 'HR': 0., 'FR': .5, 'HL': .5}
 def smooth(t): t = min(max(t, 0), 1); return t * t * (3 - 2 * t)
@@ -63,6 +63,7 @@ for n in range(FRAMES):
     body.location = body0 + Vector((0, 0, LOWER + BOB * (math.cos(4 * math.pi * phase) - 1)))
     walk.append(sample())
 for k, f in feet.items(): f.location = rest[k]
+body.location = body0; bpy.context.view_layer.update()
 
 # Leap, built from key poses (body offset, then per-foot targets relative to the hip above it, as fractions of that
 # leg's rest hip-to-foot length; forward is -Y). The body stays level throughout; only the legs change.
