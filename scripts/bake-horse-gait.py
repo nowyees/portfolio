@@ -44,11 +44,11 @@ stand = sample()   # controllers at rest, no action: the pose to stand in
 # ground sliding back under the body, half carried forward (eased over its middle 70%) with a lift that ramps in and
 # out over 20% at each end; the body bobs twice a cycle. Forward is -Y. STRIDE is the body's travel per cycle.
 centre = {k: (rest[k[0] + 'R'].y + rest[k[0] + 'L'].y) / 2 for k in feet}
-STRIDE, STANCE, FRAMES, BOB, LOWER = 6.5, .5, 48, .08, 0.   # around the body pose set in the source file
+STRIDE, STANCE, FRAMES, BOB, LOWER = 10, .5, 48, .08, 0.   # around the body pose set in the source file
 LIFT = {'F': .55, 'H': .75}
 OFFSET = {'FL': 0., 'HR': 0., 'FR': .5, 'HL': .5}
 def smooth(t): t = min(max(t, 0), 1); return t * t * (3 - 2 * t)
-walk = []
+walk = []; miss = 0.
 for n in range(FRAMES):
     phase = n / FRAMES
     for k, f in feet.items():
@@ -62,6 +62,9 @@ for n in range(FRAMES):
         f.location = Vector((rest[k].x, centre[k] + x, rest[k].z + z))
     body.location = body0 + Vector((0, 0, LOWER + BOB * (math.cos(4 * math.pi * phase) - 1)))
     walk.append(sample())
+    # how far each foot falls short of its target (the leg can't reach): reported, to keep the stride in reach
+    tips = {'FR': 'Bone.001', 'FL': 'Bone.007', 'HR': 'Bone.019', 'HL': 'Bone.014'}
+    miss = max(miss, max(((arm.matrix_world @ arm.pose.bones[b].tail) - feet[k].matrix_world.translation).length for k, b in tips.items()))
 for k, f in feet.items(): f.location = rest[k]
 body.location = body0; bpy.context.view_layer.update()
 
@@ -113,4 +116,4 @@ data = {'version': 1, 'parts': [f'horse_part_{i}' for i in range(len(source))],
         'stand': stand, 'crouch': crouch,
         'leap': {'reach': [-PUSH.y * scale, PUSH.z * scale, 0], 'push': push, 'flight': flight, 'landing': landing}}
 (out / 'horse-gait.json').write_text(json.dumps(data, separators=(',', ':')), encoding='utf8')
-print('HORSE_GAIT', len(source), FRAMES, len(push), 'scale', scale, {k: round(v, 2) for k, v in length.items()}, flush=True)
+print('HORSE_GAIT', 'walk reach miss', round(miss, 3), len(source), FRAMES, len(push), 'scale', scale, {k: round(v, 2) for k, v in length.items()}, flush=True)
