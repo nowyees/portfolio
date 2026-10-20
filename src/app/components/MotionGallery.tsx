@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router';
 import SiteShell from './SiteShell';
 import AstroTail from './AstroTail';
 import DualArmIK from './DualArmIK';
+import HorseMotion from './HorseMotion';
 
 // Rigged pieces you can move, one at a time; the arrows (or ← →) step through them.
 type Guide = { pointer: [string, string]; touch: [string, string] };   // [Korean, English]
@@ -13,6 +14,9 @@ const pieces: Array<{ id: string; title: string; note: string; guide: Guide; Pie
   { id: 'dual-arm-ik', title: 'Motion study', note: 'Dual-arm IK', Piece: DualArmIK, guide: {
     pointer: ['선이 굵어지는 부분을 끌어서 움직여 보세요', 'Drag a part whose lines turn bold to move it'],
     touch: ['로봇의 부분을 끌어서 움직여 보세요', 'Drag a part of the robot to move it'] } },
+  { id: 'horse', title: 'Motion study', note: 'HORSE', Piece: HorseMotion, guide: {
+    pointer: ['끌어서 회전하고, 클릭해서 멈춰 보세요', 'Drag to rotate · Click to pause or play'],
+    touch: ['쓸어서 회전하고, 탭해서 멈춰 보세요', 'Drag to rotate · Tap to pause or play'] } },
 ];
 
 export default function MotionGallery() {
