@@ -9,6 +9,7 @@ import { createHorseRunner, type HorseRig } from '../../lib/horseIK';
 export default function HorseMotion({ className }: { className?: string }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const targetRef = useRef(0);
+  const launchRef = useRef<(() => void) | null>(null);
   const [status, setStatus] = useState('Loading HORSE…');
   useEffect(() => {
     const host = hostRef.current!;
@@ -65,7 +66,16 @@ export default function HorseMotion({ className }: { className?: string }) {
       radius = bounds.getBoundingSphere(new THREE.Sphere()).radius; resize();
       setStatus('');
     }).catch(error => { if (!disposed) { console.error('HORSE motion:', error); setStatus('HORSE could not load. Please refresh.'); } });
-    let pressed = false;
+    let pressed = false, dragged = false, downX = 0, downY = 0, lastHeading = 0;
+    const fire = () => {
+      if (!runner || reducedMotion) return;
+      // A click launches forward in the direction the figure faces; clicking
+      // the rear half of its body must not accidentally reverse the leap.
+      const direction = Math.cos(lastHeading) < 0 ? -1 : 1;
+      const travel = Math.max(.2, camera.right * .85 - radius * modelScale);
+      runner.launch(direction, travel / modelScale);
+    };
+    launchRef.current = fire;
     const aim = (event: PointerEvent) => {
       const rect = host.getBoundingClientRect();
       const travel = Math.max(.2, camera.right * .85 - radius * modelScale);
@@ -73,12 +83,14 @@ export default function HorseMotion({ className }: { className?: string }) {
     };
     const start = (event: PointerEvent) => {
       if (!runner || event.button !== 0 || pressed) return;
-      pressed = true; aim(event); host.setPointerCapture(event.pointerId);
+      pressed = true; dragged = false; downX = event.clientX; downY = event.clientY; aim(event); host.setPointerCapture(event.pointerId);
     };
     const move = (event: PointerEvent) => {
+      if (pressed && Math.hypot(event.clientX - downX, event.clientY - downY) >= 6) dragged = true;
       if (event.pointerType === 'mouse' || pressed) aim(event);
     };
     const end = (event: PointerEvent) => {
+      if (pressed && !dragged && event.type === 'pointerup' && Math.hypot(event.clientX - downX, event.clientY - downY) < 6) fire();
       pressed = false;
     };
     host.style.cursor = 'crosshair';
@@ -89,9 +101,12 @@ export default function HorseMotion({ className }: { className?: string }) {
         const travel = Math.max(.2, camera.right * .85 - radius * modelScale);
         targetRef.current = THREE.MathUtils.clamp(targetRef.current, -travel, travel);
         const state = runner.update(document.hidden ? 0 : dt, targetRef.current / modelScale, reducedMotion);
-        modelRoot.position.x = state.x * modelScale; modelRoot.rotation.y = state.heading;
-        host.dataset.motionState = Math.abs(state.velocity) > .02 ? 'walking' : 'standing';
+        lastHeading = state.heading;
+        if (state.landed) targetRef.current = state.x * modelScale;
+        modelRoot.position.set(state.x * modelScale, state.y * modelScale, 0); modelRoot.rotation.y = state.heading;
+        host.dataset.motionState = state.leaping ? 'leaping' : Math.abs(state.velocity) > .02 ? 'walking' : 'standing';
         host.dataset.swingingFeet = state.swinging.join(',');
+        host.dataset.leapExtension = String(state.stretch);
         host.dataset.ikError = String(Math.max(...Object.values(state.errors)));
       }
       renderer.setRenderTarget(target); renderer.render(scene, camera); renderer.setRenderTarget(lines); renderer.render(edgeScene, quadCamera); renderer.setRenderTarget(null); renderer.render(screenScene, quadCamera);
@@ -99,12 +114,12 @@ export default function HorseMotion({ className }: { className?: string }) {
     };
     frame = requestAnimationFrame(tick);
     return () => {
-      disposed = true; abort.abort(); cancelAnimationFrame(frame); observer.disconnect();
+      disposed = true; launchRef.current = null; abort.abort(); cancelAnimationFrame(frame); observer.disconnect();
       host.removeEventListener('pointerdown', start); host.removeEventListener('pointermove', move); host.removeEventListener('pointerup', end); host.removeEventListener('pointercancel', end);
       disposeModel(scene); draco.dispose(); normal.dispose(); target.dispose(); lines.dispose(); edge.dispose(); down.dispose(); plane.dispose(); renderer.dispose(); renderer.domElement.remove();
     };
   }, []);
-  return <div className={`${className || ''} horse-interactive`} role="group" tabIndex={0} aria-label="HORSE live IK. Its original low wide pose, walking one foot at a time. Move the cursor or drag to guide it. Keyboard A/D to walk left/right." onKeyDown={event => { if (event.key.toLowerCase() === 'a') targetRef.current -= 1; if (event.key.toLowerCase() === 'd') targetRef.current += 1; }}>
+  return <div className={`${className || ''} horse-interactive`} role="group" tabIndex={0} aria-label="HORSE live IK. Move the cursor to walk with crossing strides. Click to launch forward. Keyboard A/D to walk, Space to leap." onKeyDown={event => { if (event.key.toLowerCase() === 'a') targetRef.current -= 1; if (event.key.toLowerCase() === 'd') targetRef.current += 1; if (event.key === ' ' && !event.repeat) { event.preventDefault(); launchRef.current?.(); } }}>
     <div ref={hostRef} style={{ position: 'absolute', inset: 0 }} />
     {status && <p role="status" className="robot-loading">{status}</p>}
   </div>;

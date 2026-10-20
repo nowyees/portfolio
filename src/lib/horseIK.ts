@@ -59,21 +59,43 @@ export function createHorseRunner(model: THREE.Object3D, metadata: HorseRig) {
     return { ...l, rest, pole: rest[1].clone(), offset: order[l.id] };
   });
   let x = 0, velocity = 0, phase = 0, heading = 0, facingLeft = false, activity = 0;
+  let leap: { elapsed: number; from: number; to: number; direction: number } | null = null;
+  const smooth = (t: number) => { t = clamp(t, 0, 1); return t * t * (3 - 2 * t); };
+  const launch = (direction: number, limit = Infinity) => {
+    if (leap) return false;
+    direction = direction < 0 ? -1 : 1;
+    leap = { elapsed: 0, from: x, to: clamp(x + direction * 1.25, -limit, limit), direction };
+    facingLeft = direction < 0; return true;
+  };
   const bodyPivot = new THREE.Vector3(0, .2, 0), body = new THREE.Matrix4();
   const errors: Record<string, number> = {};
   const update = (dt: number, targetX: number, reducedMotion = false) => {
     dt = clamp(dt, 0, .05);
-    const desired = reducedMotion ? 0 : clamp((targetX - x) * 1.8, -.14, .14);
+    const beforeX = x;
+    if (reducedMotion) leap = null;
+    const desired = reducedMotion ? 0 : clamp((targetX - x) * 1.8, -.38, .38);
     velocity = THREE.MathUtils.lerp(velocity, desired, 1 - Math.exp(-dt * 16)); x += velocity * dt;
     if (Math.abs(targetX - x) < .005 && Math.abs(velocity) < .02) { x = targetX; velocity = 0; }
-    if (Math.abs(velocity) > .1) facingLeft = velocity < 0;
+    let hop = 0, stretch = 0, charge = 0, landed = false;
+    const leaping = !!leap;
+    if (leap) {
+      leap.elapsed += dt;
+      const t = leap.elapsed, flight = clamp((t - .14) / .76, 0, 1);
+      x = THREE.MathUtils.lerp(leap.from, leap.to, 1 - (1 - flight) ** 3);
+      velocity = dt > 0 ? (x - beforeX) / dt : 0;
+      hop = Math.sin(Math.PI * flight) * .56;
+      charge = t < .14 ? Math.sin(Math.PI * t / .28) : (1 - smooth(flight / .18));
+      stretch = smooth(flight / .18) * (1 - smooth((flight - .58) / .42));
+      facingLeft = leap.direction < 0;
+      if (t >= 1.04) { x = leap.to; velocity = 0; leap = null; hop = stretch = charge = 0; landed = true; }
+    } else if (Math.abs(velocity) > .1) facingLeft = velocity < 0;
     heading = THREE.MathUtils.lerp(heading, facingLeft ? Math.PI : 0, 1 - Math.exp(-dt * 7));
-    const speed = Math.abs(velocity), stride = .20;
+    const speed = Math.abs(velocity), stride = .76;
     activity = THREE.MathUtils.lerp(activity, clamp(speed * 10, 0, 1), 1 - Math.exp(-dt * 8));
     phase = (phase + speed * dt * .78 / stride) % 1;
     // A quiet weight transfer, not the bounce/lean of the previous trot.
-    const bob = (-.06 + Math.sin(phase * Math.PI * 8) * .004) * activity;
-    const pitch = 0;
+    const bob = (-.065 + Math.sin(phase * Math.PI * 8) * .008) * activity - charge * .10;
+    const pitch = stretch * .10;
     body.makeTranslation(bodyPivot.x, bodyPivot.y + bob, bodyPivot.z)
       .multiply(new THREE.Matrix4().makeRotationZ(pitch)).multiply(new THREE.Matrix4().makeTranslation(-bodyPivot.x, -bodyPivot.y, -bodyPivot.z));
     const deltas: Record<string, THREE.Matrix4> = {};
@@ -89,8 +111,16 @@ export function createHorseRunner(model: THREE.Object3D, metadata: HorseRig) {
       const step = swing ? -.5 + (u * u * (3 - 2 * u)) : .5 - u;
       const hip = leg.rest[0].clone().applyMatrix4(body);
       const anchor = leg.rest.at(-1)!;
-      const foot = new THREE.Vector3(anchor.x + step * stride * activity,
-        anchor.y + (swing ? Math.sin(Math.PI * u) ** 2 * .065 * activity : 0), anchor.z);
+      const pair = legs.filter(other => other.id[0] === leg.id[0]);
+      const centerX = pair.reduce((sum, other) => sum + other.rest.at(-1)!.x, 0) / pair.length;
+      // Both feet share the same fore/aft travel interval. Half-cycle opposition
+      // makes L/R actually pass each other instead of wiggling at separate anchors.
+      const foot = new THREE.Vector3(THREE.MathUtils.lerp(anchor.x, centerX + step * stride, activity),
+        anchor.y + (swing ? Math.sin(Math.PI * u) ** 2 * .13 * activity : 0), anchor.z);
+      if (leaping) {
+        const airborne = new THREE.Vector3(hip.x - (leg.id.startsWith('F') ? .99 : 1.45), hip.y - .42, anchor.z);
+        foot.lerp(airborne, stretch);
+      }
       const points = solveHorseLeg(leg.rest, hip, foot, leg.pole.clone().applyMatrix4(body)); feet[leg.id] = points;
       errors[leg.id] = points.at(-1)!.distanceTo(foot);
       leg.bones.forEach((bone, i) => {
@@ -101,7 +131,7 @@ export function createHorseRunner(model: THREE.Object3D, metadata: HorseRig) {
     }
     const delta = (name: string): THREE.Matrix4 => deltas[name] ||= metadata.bones[name].parent ? delta(metadata.bones[name].parent!) : body.clone();
     for (const binding of bindings) binding.object.matrix.copy(delta(binding.bone));
-    return { x, velocity, heading, activity, phase, feet, errors, swinging };
+    return { x, y: hop, velocity, heading, activity, phase, feet, errors, swinging, leaping, landed, stretch };
   };
-  return { update };
+  return { update, launch };
 }
