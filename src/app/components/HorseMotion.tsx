@@ -12,21 +12,16 @@ type Gait = {
   stand: number[][];
   crouch: number[][];
   walk: { frames: number; poses: number[][][] };
-  leap: { reach: number[]; push: number[][][]; flight: number[][]; landing: number[][] };
 };
 type Rig = { bones: Record<string, { parent: string | null; head: number[] }>; parts: Array<{ name: string; bone: string }> };
 type Pose = { p: THREE.Vector3; q: THREE.Quaternion; s: THREE.Vector3 };
 
 const WALK = { cadence: .85 };   // walk cycles per second, in place (as on a treadmill)
-// Leap: a short crouch, the push-off baked in Blender (body thrown forward and up over planted feet), then the flying
-// pose (body level, front legs reaching forward and down, hind legs stretched back) off one side of the screen and back
-// in from the other, the landing pose (front legs reaching for the ground) and down where it took off. Seconds, and
-// the flight's peak height in model units.
-const LEAP = { crouch: 1, hold: 1, push: .2, flight: 1.3, land: .55, climb: .42, tilt: .16 };
-// climb: the angle (radians) it flies off at, up and away the way its head points; tilt: the extra nose-up turn of the
-// whole figure on the way out (the baked flying pose is already pitched up), so the head points along the path.
+// A click: the ready pose saved in HORSE.blend, taken over `crouch` seconds, held, then left over `rise`.
+const READY = { crouch: 1, hold: 1, rise: 1 };
 
-/** The HORSE robot walks on the spot and leaps forward on a click, using poses baked from its Blender rig. */
+/** The HORSE robot walks on the spot and, on a click, crouches into its ready pose and rises again, using poses
+ *  baked from its Blender rig. */
 export default function HorseMotion({ className }: { className?: string }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const launchRef = useRef<(() => void) | null>(null);
@@ -75,8 +70,6 @@ export default function HorseMotion({ className }: { className?: string }) {
       if (o instanceof THREE.Mesh) { o.geometry.dispose(); (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => m.dispose()); }
     });
     let shells: THREE.Object3D[] = [], stand: Pose[] = [], crouch: Pose[] = [], walk: Pose[][] = [];
-    let push: Pose[][] = [], flying: Pose[] = [], landing: Pose[] = [];
-    const reach = new THREE.Vector3();
     // Shells ride rigid bones. Poses are blended per bone relative to its parent (the leg roots count as children of
     // the body bone, which they are constrained to), so joints stay together however far apart two poses are.
     // Each bone's pose is kept as its rotation plus where its joint (rest head) sits, so blends turn about the joint.
@@ -118,9 +111,7 @@ export default function HorseMotion({ className }: { className?: string }) {
         });
       };
       stand = toLocal(gait.stand); crouch = toLocal(gait.crouch);
-      walk = gait.walk.poses.map(toLocal); push = gait.leap.push.map(toLocal);
-      flying = toLocal(gait.leap.flight); landing = toLocal(gait.leap.landing);
-      reach.fromArray(gait.leap.reach);
+      walk = gait.walk.poses.map(toLocal);
       const bounds = new THREE.Box3().setFromObject(gltf.scene);
       radius = bounds.getBoundingSphere(new THREE.Sphere()).radius; resize();
       setStatus('');
@@ -133,21 +124,18 @@ export default function HorseMotion({ className }: { className?: string }) {
       qb.copy(b.q); out.p.lerpVectors(a.p, b.p, t); out.q.slerpQuaternions(a.q, qb, t); out.s.lerpVectors(a.s, b.s, t); return out;
     };
     const tmpA: Pose = { p: new THREE.Vector3(), q: new THREE.Quaternion(), s: new THREE.Vector3() };
-    const tmpB: Pose = { p: new THREE.Vector3(), q: new THREE.Quaternion(), s: new THREE.Vector3() };
     const sampleAt = (set: Pose[][], f: number, i: number, out: Pose, loop: boolean) => {
       const n = set.length, k = Math.floor(f), t = f - k;
       const a = loop ? ((k % n) + n) % n : THREE.MathUtils.clamp(k, 0, n - 1), b = loop ? (a + 1) % n : Math.min(a + 1, n - 1);
       return mix(set[a][i], set[b][i], t, out);
     };
 
-    let x = 0, phase = 0, activity = 0;
-    let leap: { t: number; from: number; direction: number } | null = null;
-    // Off-screen bound in model units: past it the figure is out of view.
-    const offEdge = () => (camera.right + radius) / modelScale;
+    let phase = 0, activity = 0;
+    let ready: { t: number } | null = null;
     const ease = (t: number) => { t = THREE.MathUtils.clamp(t, 0, 1); return t * t * (3 - 2 * t); };
     const fire = () => {
-      if (!shells.length || reducedMotion || leap) return;
-      leap = { t: 0, from: x, direction: 1 };   // the way it faces (to the right)
+      if (!shells.length || reducedMotion || ready) return;
+      ready = { t: 0 };
     };
     launchRef.current = fire;
     let pressed = false, dragged = false, downX = 0, downY = 0;
@@ -170,61 +158,30 @@ export default function HorseMotion({ className }: { className?: string }) {
     const tick = (now: number) => {
       const dt = document.hidden ? 0 : Math.min(.04, last ? (now - last) / 1000 : 0); last = now;
       if (shells.length) {
-        let lift = 0, tilt = 0, rootX = x, mode: 'move' | 'crouch' | 'push' | 'air' | 'land' = 'move', amount = 0;
-        if (leap) {
-          leap.t += dt;
-          // the ready pose is taken (crouch), held (hold), then the leap runs as if it started after the hold
-          const { crouch: c, push: p, flight: f, land: l } = LEAP, d = leap.direction;
-          const t = leap.t < c ? leap.t : Math.max(c, leap.t - LEAP.hold);
-          const edge = offEdge(), landFrom = leap.from - d * reach.x, tan = Math.tan(LEAP.climb);
-          if (t < c) { mode = 'crouch'; amount = ease(t / c); rootX = leap.from; }
-          else if (t < c + p) { mode = 'push'; amount = ease((t - c) / p); rootX = leap.from; tilt = LEAP.tilt * amount; }
-          else if (t < c + p + f) {
-            const u = (t - c - p) / f; mode = 'air'; amount = u;
-            if (u < .5) {   // out along the diagonal, off the far side of the screen
-              const s = u / .5; rootX = leap.from + d * (edge * 1.3 - d * leap.from) * s; lift = Math.abs(rootX - leap.from) * tan; tilt = LEAP.tilt;
-            } else {        // back in from the near side, coming down the same slope to the landing spot
-              const s = (u - .5) / .5, start = -d * edge * 1.3; rootX = start + (landFrom - start) * s;
-              // falling: a parabola that steepens towards the ground, the nose levelling and the front legs
-              // reaching forward just before touchdown
-              const height = edge * 1.3 * tan;
-              lift = height * (1 - s) * (1 - s); tilt = -(.3 + .25 * (1 - s)) * (1 - ease((s - .55) / .45));
-            }
-          } else {
-            // touchdown: the reaching legs take the weight and give (a short dip into the crouch), then walk on
-            const u = (t - c - p - f) / l; mode = 'land'; amount = u;
-            rootX = landFrom + d * reach.x * ease(u); lift = -.04 * Math.sin(Math.PI * Math.min(1, u / .6));
-          }
-          if (!reducedMotion) phase = (phase + dt * WALK.cadence) % 1;   // the walk carries on under the landing
+        let mode: 'move' | 'crouch' = 'move', amount = 0;
+        if (ready) {
+          // a click: lower into the ready pose, hold it, rise back into the walk (which carries on underneath)
+          ready.t += dt;
+          const { crouch: c, hold: h, rise: r } = READY, t = ready.t;
+          mode = 'crouch'; amount = t < c ? ease(t / c) : t < c + h ? 1 : 1 - ease((t - c - h) / r);
+          if (!reducedMotion) phase = (phase + dt * WALK.cadence) % 1;
           activity = 1;
-          if (t >= c + p + f + l) { x = rootX = leap.from; leap = null; mode = 'move'; }
+          if (t >= c + h + r) { ready = null; mode = 'move'; }
         } else {
           // Always walking on the spot; reduced motion holds a standing pose.
           if (!reducedMotion) phase = (phase + dt * WALK.cadence) % 1;
           activity = reducedMotion ? 0 : THREE.MathUtils.lerp(activity, 1, 1 - Math.exp(-dt * 4));
-          rootX = x = 0;
         }
         const walkFrame = phase * walk.length;
         groups.forEach((group, i) => {
           sampleAt(walk, walkFrame, i, tmpA, true);
           mix(stand[i], tmpA, activity, pose);
           if (mode === 'crouch') mix(pose, crouch[i], amount, pose);
-          else if (mode === 'push') mix(crouch[i], sampleAt(push, amount * (push.length - 1), i, tmpB, false), amount, pose);
-          else if (mode === 'air') {
-            // tuck into the flying pose early, reach for the ground late
-            const end = push[push.length - 1][i];
-            if (amount < .3) mix(end, flying[i], ease(amount / .3), pose);
-            else mix(flying[i], landing[i], ease((amount - .65) / .35), pose);
-          } else if (mode === 'land') {
-            if (amount < .3) mix(landing[i], crouch[i], ease(amount / .3), pose);
-            else mix(crouch[i], pose, ease((amount - .3) / .7), pose);
-          }
           worlds[i].compose(pose.p, pose.q, pose.s).multiply(pivot.makeTranslation(-group.head.x, -group.head.y, -group.head.z));
           if (group.parent >= 0) worlds[i].premultiply(worlds[group.parent]);
           for (const s of group.shells) shells[s].matrix.copy(worlds[i]);
         });
-        modelRoot.position.set(rootX * modelScale, lift * modelScale, 0); modelRoot.rotation.z = tilt;
-        host.dataset.motionState = leap ? 'leaping' : 'walking';
+        host.dataset.motionState = ready ? 'ready' : 'walking';
       }
       renderer.setRenderTarget(target); renderer.render(scene, camera); renderer.setRenderTarget(lines); renderer.render(edgeScene, quadCamera);
       renderer.setRenderTarget(null); renderer.render(screenScene, quadCamera);
@@ -237,7 +194,7 @@ export default function HorseMotion({ className }: { className?: string }) {
       disposeModel(scene); draco.dispose(); normal.dispose(); target.dispose(); lines.dispose(); edge.dispose(); down.dispose(); plane.dispose(); renderer.dispose(); renderer.domElement.remove();
     };
   }, []);
-  return <div className={`${className || ''} horse-interactive`} role="group" tabIndex={0} aria-label="HORSE, walking on the spot. Click, tap or press Space to make it leap." onKeyDown={event => { if (event.key === ' ' && !event.repeat) { event.preventDefault(); launchRef.current?.(); } }}>
+  return <div className={`${className || ''} horse-interactive`} role="group" tabIndex={0} aria-label="HORSE, walking on the spot. Click, tap or press Space to make it crouch ready and rise again." onKeyDown={event => { if (event.key === ' ' && !event.repeat) { event.preventDefault(); launchRef.current?.(); } }}>
     <div ref={hostRef} style={{ position: 'absolute', inset: 0 }} />
     {status && <p role="status" className="robot-loading">{status}</p>}
   </div>;

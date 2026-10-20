@@ -16,9 +16,8 @@ targets rather than by a browser solver:
   flight (nose up, hind legs stretched back and down, front legs hanging under the chest) and the landing (front legs
   reaching for the ground, hind legs swinging in), with the feet placed relative to the hips.
 
-In the browser the figure walks on the spot. A click/tap (or Space) leaps forward: a short crouch, the push-off into the stretched pose, a flight that leaves one side of the screen and comes
-back in from the other, then a landing (the pose gathers back as the root moves on by the same reach) where it
-took off.
+In the browser the figure walks on the spot. A click/tap (or Space) lowers it into the ready pose over a second,
+holds it for a second and lets it rise back into the walk over a second. The leap poses are still baked but unused.
 
 ```text
 blender --background --factory-startup --disable-autoexec COPY.blend --python scripts/export-horse.py -- --out public/lab
