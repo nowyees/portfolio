@@ -44,7 +44,7 @@ stand = sample()   # controllers at rest, no action: the pose to stand in
 # ground sliding back under the body, half carried forward (eased over its middle 70%) with a lift that ramps in and
 # out over 20% at each end; the body bobs twice a cycle. Forward is -Y. STRIDE is the body's travel per cycle.
 centre = {k: (rest[k[0] + 'R'].y + rest[k[0] + 'L'].y) / 2 for k in feet}
-STRIDE, STANCE, FRAMES, BOB, LOWER = 4.5, .5, 48, .08, 1.1   # body raised so the crouched legs open up
+STRIDE, STANCE, FRAMES, BOB, LOWER = 6.5, .5, 48, .08, 1.0   # body raised: the tall, open-legged walk of still 3
 LIFT = {'F': .55, 'H': .75}
 OFFSET = {'FL': 0., 'HR': 0., 'FR': .5, 'HL': .5}
 def smooth(t): t = min(max(t, 0), 1); return t * t * (3 - 2 * t)
@@ -65,29 +65,34 @@ for n in range(FRAMES):
 for k, f in feet.items(): f.location = rest[k]
 body.location = body0; bpy.context.view_layer.update()
 
-# Leap, built from key poses (body offset, then per-foot targets relative to the hip above it, as fractions of that
-# leg's rest hip-to-foot length; forward is -Y). The body stays level throughout; only the legs change.
+# Leap, built from key poses after the reference stills: body offset and pitch (radians, nose up positive), then
+# per-foot targets relative to the hip above it, as fractions of that leg's rest hip-to-foot length (forward is -Y).
 pb = arm.pose.bones
 hip = {'FR': 'Bone', 'FL': 'Bone.002', 'HR': 'Bone.017', 'HL': 'Bone.012'}
 def hip_at(k): return arm.matrix_world @ pb[hip[k]].head
 hips0 = {k: hip_at(k) for k in feet}
 length = {k: (rest[k] - hips0[k]).length for k in feet}
-def pose_at(body_offset, feet_rel=None):
+body.rotation_mode = 'XYZ'; rot0 = body.rotation_euler.copy()
+def pose_at(body_offset, pitch=0., feet_rel=None):
     body.location = body0 + Vector(body_offset)
+    body.rotation_euler = (rot0.x + pitch, rot0.y, rot0.z)   # +X turn lifts the head
+    bpy.context.view_layer.update()
     for k, f in feet.items():
         if feet_rel is None: f.location = rest[k]
         else:
-            dy, dz = feet_rel[k[0]]; h = hips0[k] + Vector(body_offset)
+            dy, dz = feet_rel[k[0]]; h = hip_at(k)
             f.location = Vector((rest[k].x, h.y + dy * length[k], h.z + dz * length[k]))
     return sample()
-crouch = pose_at((0, .5, -1.1))
-# Push-off: the feet stay planted while the body is thrown forward and up, straightening the legs behind it.
-PUSH = Vector((0, -3.2, 1.0)); STEPS = 12
-push = [pose_at(PUSH * (n / STEPS)) for n in range(STEPS + 1)]
-# In the air (the reference still): front legs reaching forward and down under the chest, hind legs stretched back.
-flight = pose_at(PUSH, {'F': (-.5, -.95), 'H': (1.25, -.4)})
-# Coming down: front legs reach further forward for the ground, hind legs swing in under the body.
-landing = pose_at(PUSH, {'F': (-.75, -.85), 'H': (.35, -.95)})
+# Crouch (still 1): low, nose dipped, legs gathered over planted feet.
+CROUCH = ((0, .6, -1.3), -.08)
+crouch = pose_at(*CROUCH)
+# Push-off: the feet stay planted while the body is thrown forward and up, nose rising, the legs straightening.
+PUSH, PITCH, STEPS = Vector((0, -3.2, 1.6)), .26, 12
+push = [pose_at(Vector(CROUCH[0]).lerp(PUSH, n / STEPS), CROUCH[1] + (PITCH - CROUCH[1]) * n / STEPS) for n in range(STEPS + 1)]
+# In the air (still 2): nose up, hind legs stretched out behind and down, front legs hanging under the chest.
+flight = pose_at(PUSH, PITCH, {'F': (-.15, -.9), 'H': (1.0, -.55)})
+# Coming down: body levels, front legs reach forward for the ground, hind legs swing in under the body.
+landing = pose_at(PUSH, .02, {'F': (-.55, -.85), 'H': (.3, -.95)})
 pose_at((0, 0, 0))
 data = {'version': 1, 'parts': [f'horse_part_{i}' for i in range(len(source))],
         'walk': {'frames': FRAMES, 'stride': STRIDE * scale, 'poses': walk},
