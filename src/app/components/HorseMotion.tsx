@@ -21,7 +21,7 @@ const WALK = { cadence: .85 };   // walk cycles per second, in place (as on a tr
 // pose (body level, front legs reaching forward and down, hind legs stretched back) off one side of the screen and back
 // in from the other, the landing pose (front legs reaching for the ground) and down where it took off. Seconds, and
 // the flight's peak height in model units.
-const LEAP = { crouch: .25, push: .2, flight: 1.3, land: .35, climb: .42, tilt: .16 };
+const LEAP = { crouch: .25, push: .2, flight: 1.3, land: .55, climb: .42, tilt: .16 };
 // climb: the angle (radians) it flies off at, up and away the way its head points; tilt: the extra nose-up turn of the
 // whole figure on the way out (the baked flying pose is already pitched up), so the head points along the path.
 
@@ -160,11 +160,15 @@ export default function HorseMotion({ className }: { className?: string }) {
               const s = u / .5; rootX = leap.from + d * (edge * 1.3 - d * leap.from) * s; lift = Math.abs(rootX - leap.from) * tan; tilt = LEAP.tilt;
             } else {        // back in from the near side, coming down the same slope to the landing spot
               const s = (u - .5) / .5, start = -d * edge * 1.3; rootX = start + (landFrom - start) * s;
-              lift = Math.abs(landFrom - rootX) * tan; tilt = -LEAP.climb * (1 - ease((s - .6) / .4)) - .26;
+              // falling: a parabola that steepens towards the ground, the nose levelling and the front legs
+              // reaching forward just before touchdown
+              const height = edge * 1.3 * tan;
+              lift = height * (1 - s) * (1 - s); tilt = -(.3 + .25 * (1 - s)) * (1 - ease((s - .55) / .45));
             }
           } else {
-            const u = ease((t - c - p - f) / l); mode = 'land'; amount = u;   // the legs gather under the body
-            rootX = landFrom + d * reach.x * u; tilt = -.26 * (1 - u);
+            // touchdown: the reaching legs take the weight and give (a short dip into the crouch), then walk on
+            const u = (t - c - p - f) / l; mode = 'land'; amount = u;
+            rootX = landFrom + d * reach.x * ease(u); lift = -.04 * Math.sin(Math.PI * Math.min(1, u / .6));
           }
           if (!reducedMotion) phase = (phase + dt * WALK.cadence) % 1;   // the walk carries on under the landing
           activity = 1;
@@ -186,7 +190,10 @@ export default function HorseMotion({ className }: { className?: string }) {
             const end = push[push.length - 1][i];
             if (amount < .3) mix(end, flying[i], ease(amount / .3), pose);
             else mix(flying[i], landing[i], ease((amount - .65) / .35), pose);
-          } else if (mode === 'land') mix(landing[i], pose, amount, pose);   // straight back into the walk
+          } else if (mode === 'land') {
+            if (amount < .3) mix(landing[i], crouch[i], ease(amount / .3), pose);
+            else mix(crouch[i], pose, ease((amount - .3) / .7), pose);
+          }
           shell.matrix.compose(pose.p, pose.q, pose.s);
         });
         modelRoot.position.set(rootX * modelScale, lift * modelScale, 0); modelRoot.rotation.z = tilt;

@@ -44,7 +44,7 @@ stand = sample()   # controllers at rest, no action: the pose to stand in
 # ground sliding back under the body, half carried forward (eased over its middle 70%) with a lift that ramps in and
 # out over 20% at each end; the body bobs twice a cycle. Forward is -Y. STRIDE is the body's travel per cycle.
 centre = {k: (rest[k[0] + 'R'].y + rest[k[0] + 'L'].y) / 2 for k in feet}
-STRIDE, STANCE, FRAMES, BOB, LOWER = 6.5, .5, 48, .08, 1.0   # body raised: the tall, open-legged walk of still 3
+STRIDE, STANCE, FRAMES, BOB, LOWER = 6.5, .5, 48, .08, 0.   # around the body pose set in the source file
 LIFT = {'F': .55, 'H': .75}
 OFFSET = {'FL': 0., 'HR': 0., 'FR': .5, 'HL': .5}
 def smooth(t): t = min(max(t, 0), 1); return t * t * (3 - 2 * t)
@@ -92,7 +92,7 @@ push = [pose_at(Vector(CROUCH[0]).lerp(PUSH, n / STEPS), CROUCH[1] + (PITCH - CR
 # In the air (still 2): nose up, hind legs stretched out behind and down, front legs hanging under the chest.
 flight = pose_at(PUSH, PITCH, {'F': (-.15, -.9), 'H': (1.0, -.55)})
 # Coming down: body levels, front legs reach forward for the ground, hind legs swing in under the body.
-landing = pose_at(PUSH, .02, {'F': (-.55, -.85), 'H': (.3, -.95)})
+landing = pose_at(PUSH, -.06, {'F': (-.45, -.95), 'H': (.35, -.9)})
 pose_at((0, 0, 0))
 data = {'version': 1, 'parts': [f'horse_part_{i}' for i in range(len(source))],
         'walk': {'frames': FRAMES, 'stride': STRIDE * scale, 'poses': walk},
