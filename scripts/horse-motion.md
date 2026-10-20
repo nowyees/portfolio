@@ -7,11 +7,13 @@ All poses are baked in Blender by `bake-horse-gait.py`, so every knee is bent by
 targets rather than by a browser solver:
 
 - `stand`: the controllers at rest.
-- `walk`: 48 frames of an in-place lateral-sequence gait (one foot in the air at a time; each pair's feet step about
-  the pair's mid point half a cycle apart, so they cross); the browser plays it at the pace of the body's travel.
+- `walk`: 48 frames of the trot from the quadruped_ik reference rig's Auto_Walk drivers: diagonal pairs (FL+HR,
+  FR+HL) half a cycle apart, each pair's feet about one shared mid point so they cross, half the cycle on the ground,
+  eased swing with ramped lift, and a light body bob; the browser plays one cycle per stride travelled.
 - `crouch`: the body sunk and drawn back over planted feet, before a leap.
-- `leap`: 25 samples of the body controller pushed forward and up while the feet stay planted, as when it is dragged
-  in the viewport, so the legs stretch out behind.
+- `leap`: the push-off (13 samples of the body thrown forward and up over planted feet), then key poses for the
+  flight (body level, front legs reaching forward and down, hind legs stretched back) and the landing (front legs
+  reaching for the ground, hind legs swinging in), with the feet placed relative to the hips.
 
 In the browser the figure walks after the cursor (A/D on the keyboard). A click/tap (or Space) leaps the way it
 faces: a short crouch, the push-off into the stretched pose, a flight that leaves one side of the screen and comes

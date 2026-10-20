@@ -12,15 +12,16 @@ type Gait = {
   stand: number[][];
   crouch: number[][];
   walk: { frames: number; stride: number; poses: number[][][] };
-  leap: { samples: number; reach: number[]; poses: number[][][] };
+  leap: { reach: number[]; push: number[][][]; flight: number[][]; landing: number[][] };
 };
 type Pose = { p: THREE.Vector3; q: THREE.Quaternion; s: THREE.Vector3 };
 
-const WALK = { speed: .38, follow: 1.8, stance: .75 };        // top speed (units/s), pursuit gain, stance share of a cycle
-// Leap: a short crouch, then the push-off baked in Blender (the body thrown forward over planted feet, legs stretching
-// out behind). It flies off one side of the screen, comes back in from the other and lands where it took off, the
-// feet gathering under the body. Seconds, and the flight's peak height in model units.
-const LEAP = { crouch: .28, push: .22, flight: 1.3, land: .4, hop: .35 };
+const WALK = { speed: .45, follow: 1.8 };   // top speed (units/s) and pursuit gain; one baked cycle covers one stride
+// Leap: a short crouch, the push-off baked in Blender (body thrown forward and up over planted feet), then the flying
+// pose (body level, front legs reaching forward and down, hind legs stretched back) off one side of the screen and back
+// in from the other, the landing pose (front legs reaching for the ground) and down where it took off. Seconds, and
+// the flight's peak height in model units.
+const LEAP = { crouch: .25, push: .2, flight: 1.3, land: .35, hop: .3 };
 
 /** The HORSE robot walks after the cursor and leaps forward on a click, using poses baked from its Blender rig. */
 export default function HorseMotion({ className }: { className?: string }) {
@@ -77,7 +78,8 @@ export default function HorseMotion({ className }: { className?: string }) {
       const p = new THREE.Vector3(), q = new THREE.Quaternion(), s = new THREE.Vector3();
       new THREE.Matrix4().fromArray(values).decompose(p, q, s); return { p, q, s };
     };
-    let shells: THREE.Object3D[] = [], stand: Pose[] = [], crouch: Pose[] = [], walk: Pose[][] = [], leapPoses: Pose[][] = [];
+    let shells: THREE.Object3D[] = [], stand: Pose[] = [], crouch: Pose[] = [], walk: Pose[][] = [];
+    let push: Pose[][] = [], flying: Pose[] = [], landing: Pose[] = [];
     let stride = 1, reach = new THREE.Vector3();
     Promise.all([loader.loadAsync('/lab/horse.glb'), fetch('/lab/horse-gait.json', { signal: abort.signal }).then(r => {
       if (!r.ok) throw new Error('HORSE poses unavailable'); return r.json() as Promise<Gait>;
@@ -95,7 +97,8 @@ export default function HorseMotion({ className }: { className?: string }) {
       });
       stand = gait.stand.map(decompose); crouch = gait.crouch.map(decompose);
       walk = gait.walk.poses.map(frame => frame.map(decompose));
-      leapPoses = gait.leap.poses.map(sample => sample.map(decompose));
+      push = gait.leap.push.map(sample => sample.map(decompose));
+      flying = gait.leap.flight.map(decompose); landing = gait.leap.landing.map(decompose);
       stride = gait.walk.stride; reach.fromArray(gait.leap.reach);
       const bounds = new THREE.Box3().setFromObject(gltf.scene);
       radius = bounds.getBoundingSphere(new THREE.Sphere()).radius; resize();
@@ -150,7 +153,7 @@ export default function HorseMotion({ className }: { className?: string }) {
       const dt = document.hidden ? 0 : Math.min(.04, last ? (now - last) / 1000 : 0); last = now;
       if (shells.length) {
         const goal = THREE.MathUtils.clamp(targetRef.current, -travel(), travel()) / modelScale;
-        let lift = 0, rootX = x, mode: 'move' | 'crouch' | 'push' | 'air' = 'move', amount = 0;
+        let lift = 0, rootX = x, mode: 'move' | 'crouch' | 'push' | 'air' | 'land' = 'move', amount = 0;
         if (leap) {
           leap.t += dt;
           const { crouch: c, push: p, flight: f, land: l } = LEAP, t = leap.t, d = leap.direction;
@@ -158,10 +161,10 @@ export default function HorseMotion({ className }: { className?: string }) {
           if (t < c) { mode = 'crouch'; amount = ease(t / c); rootX = leap.from; }
           else if (t < c + p) { mode = 'push'; amount = ease((t - c) / p); rootX = leap.from; }
           else if (t < c + p + f) {
-            const u = (t - c - p) / f; mode = 'air'; amount = 1;
+            const u = (t - c - p) / f; mode = 'air'; amount = u;
             rootX = wrap(leap.from + d * flightDistance * u); lift = LEAP.hop * Math.sin(Math.PI * u);
           } else {
-            const u = ease((t - c - p - f) / l); mode = 'air'; amount = 1 - u;   // the stretch gathers as it lands
+            const u = ease((t - c - p - f) / l); mode = 'land'; amount = u;   // the legs gather under the body
             rootX = wrap(leap.from + d * (flightDistance + reach.x * u));
           }
           activity = Math.max(0, activity - dt * 6); velocity = 0;
@@ -172,18 +175,22 @@ export default function HorseMotion({ className }: { className?: string }) {
           if (Math.abs(goal - x) < .004 && Math.abs(velocity) < .01) velocity = 0;
           x += velocity * dt; rootX = x;
           if (Math.abs(velocity) > .03) facing = velocity < 0 ? -1 : 1;
-          // One cycle carries the body one stride (feet slide a stride back during the stance share of the cycle).
-          phase = (phase + Math.abs(velocity) * dt * WALK.stance / stride) % 1;
+          phase = (phase + Math.abs(velocity) * dt / stride) % 1;   // one cycle per stride travelled
           activity = THREE.MathUtils.lerp(activity, THREE.MathUtils.clamp(Math.abs(velocity) * 12, 0, 1), 1 - Math.exp(-dt * 6));
         }
         heading = THREE.MathUtils.lerp(heading, facing < 0 ? Math.PI : 0, 1 - Math.exp(-dt * 7));
-        const walkFrame = phase * walk.length, leapSample = amount * (leapPoses.length - 1);
+        const walkFrame = phase * walk.length;
         shells.forEach((shell, i) => {
           sampleAt(walk, walkFrame, i, tmpA, true);
           mix(stand[i], tmpA, activity, pose);
           if (mode === 'crouch') mix(pose, crouch[i], amount, pose);
-          else if (mode === 'push') mix(crouch[i], sampleAt(leapPoses, leapSample, i, tmpB, false), amount, pose);
-          else if (mode === 'air') sampleAt(leapPoses, leapSample, i, pose, false);
+          else if (mode === 'push') mix(crouch[i], sampleAt(push, amount * (push.length - 1), i, tmpB, false), amount, pose);
+          else if (mode === 'air') {
+            // tuck into the flying pose early, reach for the ground late
+            const end = push[push.length - 1][i];
+            if (amount < .3) mix(end, flying[i], ease(amount / .3), pose);
+            else mix(flying[i], landing[i], ease((amount - .65) / .35), pose);
+          } else if (mode === 'land') mix(landing[i], stand[i], amount, pose);
           shell.matrix.compose(pose.p, pose.q, pose.s);
         });
         modelRoot.position.set(rootX * modelScale, lift * modelScale, 0); modelRoot.rotation.y = heading;

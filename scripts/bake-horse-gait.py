@@ -39,36 +39,58 @@ body = ob['HORSE_CTRL_BODY']; body0 = body.location.copy()
 feet = {k: ob['HORSE_CTRL_FOOT_' + k] for k in ('FR', 'FL', 'HR', 'HL')}
 rest = {k: f.location.copy() for k, f in feet.items()}
 stand = sample()   # controllers at rest, no action: the pose to stand in
-# Forward is -Y. Each pair steps about its own mid point with its feet half a cycle apart, so they cross.
+# Walk: the trot of the quadruped_ik reference rig (its Auto_Walk drivers). Diagonal pairs move together (FL+HR,
+# FR+HL, half a cycle apart); each pair's feet share one mid point, so left and right cross. Half the cycle on the
+# ground sliding back under the body, half carried forward (eased over its middle 70%) with a lift that ramps in and
+# out over 20% at each end; the body bobs twice a cycle. Forward is -Y. STRIDE is the body's travel per cycle.
 centre = {k: (rest[k[0] + 'R'].y + rest[k[0] + 'L'].y) / 2 for k in feet}
-STRIDE, STANCE, FRAMES = 3.4, .75, 48
-LIFT = {'F': .3, 'H': .5}   # the two-bone front legs fold flat if lifted as high as the hind legs
-OFFSET = {'HR': 0., 'FR': .25, 'HL': .5, 'FL': .75}   # lateral sequence: one foot airborne at a time
-def smooth(t): return t * t * (3 - 2 * t)
+STRIDE, STANCE, FRAMES, BOB, LOWER = 8.0, .5, 48, .08, -.25
+LIFT = {'F': .55, 'H': .75}
+OFFSET = {'FL': 0., 'HR': 0., 'FR': .5, 'HL': .5}
+def smooth(t): t = min(max(t, 0), 1); return t * t * (3 - 2 * t)
 walk = []
 for n in range(FRAMES):
     phase = n / FRAMES
     for k, f in feet.items():
-        u = (phase + OFFSET[k]) % 1
-        if u < STANCE:   # on the ground, sliding back under the body
-            y, z = -STRIDE / 2 + STRIDE * (u / STANCE), 0.
-        else:            # lifted and carried forward
-            w = (u - STANCE) / (1 - STANCE); y, z = STRIDE / 2 - STRIDE * smooth(w), LIFT[k[0]] * math.sin(math.pi * w)
-        f.location = Vector((rest[k].x, centre[k] + y, rest[k].z + z))
-    body.location = body0 + Vector((0, 0, -.12 + .06 * math.cos(phase * math.pi * 8)))
+        q = (phase + OFFSET[k]) % 1
+        if q < STANCE: x, z = STRIDE * (q - STANCE / 2), 0.
+        else:
+            w = (q - STANCE) / (1 - STANCE)
+            x = STRIDE * (STANCE / 2 + (w * (1 - STANCE)) - smooth((w - .15) / .7))
+            z = LIFT[k[0]] * smooth(w / .2) * smooth((1 - w) / .2)
+        # stance slides the foot back (+Y) under the forward-moving body; swing carries it forward again
+        f.location = Vector((rest[k].x, centre[k] + x, rest[k].z + z))
+    body.location = body0 + Vector((0, 0, LOWER + BOB * (math.cos(4 * math.pi * phase) - 1)))
     walk.append(sample())
 for k, f in feet.items(): f.location = rest[k]
-# Crouch before a leap: the body sinks and draws back a little over planted feet.
-body.location = body0 + Vector((0, .5, -1.1)); crouch = sample(); body.location = body0
-LEAP = Vector((0, -7.5, 1.6)); STEPS = 24
-leap = []
-for n in range(STEPS + 1):
-    t = n / STEPS
-    body.location = body0 + LEAP * t
-    leap.append(sample())
-body.location = body0
+
+# Leap, built from key poses (body offset, then per-foot targets relative to the hip above it, as fractions of that
+# leg's rest hip-to-foot length; forward is -Y). The body stays level throughout; only the legs change.
+pb = arm.pose.bones
+hip = {'FR': 'Bone', 'FL': 'Bone.002', 'HR': 'Bone.017', 'HL': 'Bone.012'}
+def hip_at(k): return arm.matrix_world @ pb[hip[k]].head
+hips0 = {k: hip_at(k) for k in feet}
+length = {k: (rest[k] - hips0[k]).length for k in feet}
+def pose_at(body_offset, feet_rel=None):
+    body.location = body0 + Vector(body_offset)
+    for k, f in feet.items():
+        if feet_rel is None: f.location = rest[k]
+        else:
+            dy, dz = feet_rel[k[0]]; h = hips0[k] + Vector(body_offset)
+            f.location = Vector((rest[k].x, h.y + dy * length[k], h.z + dz * length[k]))
+    return sample()
+crouch = pose_at((0, .5, -1.1))
+# Push-off: the feet stay planted while the body is thrown forward and up, straightening the legs behind it.
+PUSH = Vector((0, -3.2, 1.0)); STEPS = 12
+push = [pose_at(PUSH * (n / STEPS)) for n in range(STEPS + 1)]
+# In the air (the reference still): front legs reaching forward and down under the chest, hind legs stretched back.
+flight = pose_at(PUSH, {'F': (-.5, -.95), 'H': (1.25, -.4)})
+# Coming down: front legs reach further forward for the ground, hind legs swing in under the body.
+landing = pose_at(PUSH, {'F': (-.75, -.85), 'H': (.35, -.95)})
+pose_at((0, 0, 0))
 data = {'version': 1, 'parts': [f'horse_part_{i}' for i in range(len(source))],
         'walk': {'frames': FRAMES, 'stride': STRIDE * scale, 'poses': walk},
-        'stand': stand, 'crouch': crouch, 'leap': {'samples': STEPS + 1, 'reach': [-LEAP.y * scale, LEAP.z * scale, 0], 'poses': leap}}
+        'stand': stand, 'crouch': crouch,
+        'leap': {'reach': [-PUSH.y * scale, PUSH.z * scale, 0], 'push': push, 'flight': flight, 'landing': landing}}
 (out / 'horse-gait.json').write_text(json.dumps(data, separators=(',', ':')), encoding='utf8')
-print('HORSE_GAIT', len(source), FRAMES, STEPS + 1, 'scale', scale, flush=True)
+print('HORSE_GAIT', len(source), FRAMES, len(push), 'scale', scale, {k: round(v, 2) for k, v in length.items()}, flush=True)
