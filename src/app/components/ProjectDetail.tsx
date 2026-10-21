@@ -68,7 +68,7 @@ export default function ProjectDetail() {
     <Link to="/projects">All projects</Link>
     {next && <Link to={'/project/' + next.category + '/' + next.id}>Next Project<br /><em>{next.title} ↗︎</em></Link>}
   </footer>;
-  // Projects written up from the portfolio slides read as a story; their films follow it.
+  // Projects written up from the portfolio slides read as a story, with their films as its last chapter.
   const story = storyFor(project.title);
   if (story) {
     const films = media.filter(item => item.type === 'video' || isVideoUrl(item.url));
@@ -79,11 +79,7 @@ export default function ProjectDetail() {
             <h1>{project.title}</h1>
             <p className="detail-year">{project.year}</p>
           </header>
-          <ProjectStory story={story} title={project.title} />
-          {films.length > 0 && <section className="story-films" aria-label={project.title + ' films'}>
-            <div className="story-texts has-1"><div className="story-text"><h2>Film</h2></div></div>
-            {films.map((item, i) => <video key={item.url} src={item.url} poster={item.thumbnailUrl} controls muted playsInline preload="metadata" aria-label={project.title + ' film ' + (i + 1)} />)}
-          </section>}
+          <ProjectStory story={story} title={project.title} films={films.map(item => ({ url: item.url, poster: item.thumbnailUrl }))} />
           {project.showExternalLink && project.externalLink && <p className="story-link"><a className="detail-external-link" href={project.externalLink} target="_blank" rel="noopener noreferrer">View publication ↗︎</a></p>}
           {footer}
         </main>
