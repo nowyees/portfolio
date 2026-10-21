@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
-import { toCreasedNormals } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { creasedNormals } from '../../lib/creasedNormals';
 import { edgeShader, downsampleShader } from './AstroTail';
 import { createRobotControls, type RobotMetadata, type RobotSelection } from '../../lib/robotControls';
 
@@ -177,7 +177,7 @@ export default function DualArmIK({ className }: { className?: string }) {
       scene.traverse(o => {
         if (!(o instanceof THREE.Mesh) || o.material === normal) return;
         (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => m.dispose()); o.material = normal;
-        const creased = toCreasedNormals(o.geometry, THREE.MathUtils.degToRad(38));
+        const creased = creasedNormals(o.geometry, THREE.MathUtils.degToRad(38));
         o.geometry.dispose(); o.geometry = creased;
       });
       for (const name of ['arms_body', 'arms_hand_L', 'arms_hand_R']) {

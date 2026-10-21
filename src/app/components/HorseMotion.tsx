@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
-import { toCreasedNormals } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { creasedNormals } from '../../lib/creasedNormals';
 import { edgeShader, downsampleShader } from './AstroTail';
 
 // Poses baked in Blender by scripts/bake-horse-gait.py, so every knee is bent by the rig's own IK and pole targets.
@@ -95,7 +95,7 @@ export default function HorseMotion({ className }: { className?: string }) {
       // Normals re-split at 38° (as the other pieces), so only real creases draw.
       gltf.scene.traverse(o => {
         if (!(o instanceof THREE.Mesh)) return;
-        const creased = toCreasedNormals(o.geometry, THREE.MathUtils.degToRad(38)); o.geometry.dispose(); o.geometry = creased;
+        const creased = creasedNormals(o.geometry, THREE.MathUtils.degToRad(38)); o.geometry.dispose(); o.geometry = creased;
       });
       shells = gait.parts.map(name => {
         const object = gltf.scene.getObjectByName(name); if (!object) throw new Error(`Missing HORSE shell ${name}`);
