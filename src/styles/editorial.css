@@ -264,7 +264,7 @@
 .story-hero-title p { font:400 12px/1.2 var(--story-sans); text-transform:uppercase; letter-spacing:.08em; opacity:.8; }
 .story-hero-title h1 { margin-top:8px; font:500 clamp(56px,10vw,168px)/.9 var(--story-sans); }
 .story-intro { padding-top:clamp(80px,13vh,150px); align-items:start; }
-.story-lead { font:500 clamp(22px,2.2vw,34px)/1.45 var(--story-sans); word-break:keep-all; }
+.story-lead { font:500 clamp(22px,2.2vw,34px)/1.45 var(--story-sans); word-break:keep-all; text-box:trim-start cap alphabetic; }   /* its first line's capitals start level with the facts' top rule */
 .story-lead-en { margin-top:24px; max-width:60ch; font:400 15px/1.6 var(--story-sans); color:var(--story-muted); }
 .story-intro-image { margin-top:clamp(48px,8vh,96px); }
 .story-facts { position:sticky; top:96px; margin:0; border-top:1px solid var(--story-ink); }
