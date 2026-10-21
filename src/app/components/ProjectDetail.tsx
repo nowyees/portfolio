@@ -75,7 +75,6 @@ export default function ProjectDetail() {
     return (
       <SiteShell active="projects">
         <main className="project-detail is-story">
-          <h1 className="sr-only">{project.title}</h1>
           <ProjectStory story={story} year={project.year} films={films.map(item => ({ url: item.url, poster: item.thumbnailUrl }))} />
           {project.showExternalLink && project.externalLink && <p className="story-link"><a className="detail-external-link" href={project.externalLink} target="_blank" rel="noopener noreferrer">View publication ↗︎</a></p>}
           {footer}

@@ -1,17 +1,16 @@
 // Long-form project pages, written from the portfolio slides (Figma "취창폴", page "web"). A project whose title has
 // a story here gets it in place of the plain gallery; its films (videos in the project's media) close the story.
-// Images are cut from the slides at the size they are laid out there, under /public/projects/<slug>/.
+// Images use original Figma fills, with responsive WebP derivatives under /public/projects/<slug>/.
 
-export type StoryImage = { src: string; w: number; h: number; caption?: string };
+export type StoryImage = { src: string; w: number; h: number; caption?: string; srcSet?: string };
 export type StoryText = { title: string; body: string; num?: string };
 // A row of images shown at one height. The page's content runs over the right ten of twelve columns; a row spans
 // `span` of those ten (all of them by default), from the left or, with `align: 'end'`, from the right.
 export type StoryRow = { images: StoryImage[]; span?: number; align?: 'start' | 'end' };
 // Sections in a row with the same `chapter` read as one chapter. Each kind lays its part out differently:
-// stack — text, then rows of images; feature — one image across the content columns, then its text (and rows after);
-// pinned — the images hold still while the texts beside them scroll past, each bringing in its own images;
-// compare — two or more things side by side, each an image over its text; strip — text, then images that slide
-// sideways as the page scrolls down.
+// stack — text and image rows; feature — a large image with its description below;
+// pinned — legacy data name for the mechanism studies, now read as regular image/text spreads;
+// compare — modes side by side; strip — process images, now a regular responsive grid.
 export type StorySection = { chapter: string } & (
   | { kind?: 'stack'; texts: StoryText[]; rows: StoryRow[] }
   | { kind: 'feature'; image: StoryImage; text: StoryText; after?: StoryRow[] }
@@ -31,7 +30,29 @@ export type ProjectStory = {
 const img = (slug: string) => (name: string, w: number, h: number, caption?: string): StoryImage =>
   ({ src: `/projects/${slug}/${name}.jpg`, w, h, caption });
 
-const l = img('lunaris');
+// Native dimensions, not dimensions of the image on a presentation slide. No asset is upscaled.
+const originals: Record<string, [number, number]> = {
+  cover: [3840, 2160], intro: [2880, 1620], 'astronaut-01': [800, 1213],
+  'astronaut-02': [1200, 1206], 'astronaut-03': [730, 735], artemis: [2912, 1632],
+  anchoring: [2160, 3840], 'nature-01': [1080, 1350], 'nature-02': [405, 768],
+  'nature-03': [1712, 2576], tail: [2560, 1440], 'gripper-joints': [2160, 3840],
+  'gripper-spine': [2160, 2840], 'gripper-blueprint': [1584, 304], 'bone-hero': [3840, 3840],
+  'motor-cable': [2160, 3840], companion: [2700, 2160], 'flow-mode': [2880, 2880],
+  'bike-mode': [1920, 1920], arm: [3840, 3840], 'arm-detail': [2880, 2025],
+  'proto-01': [1024, 576], 'proto-02': [1024, 576], 'proto-03': [4096, 2731],
+  'proto-04': [1024, 683], 'exhibition-01': [4096, 2731],
+  'exhibition-02': [1024, 683], 'exhibition-03': [1024, 683],
+};
+const l = (name: string, w: number, h: number, caption?: string): StoryImage => {
+  const source = name === 'pivoting' ? 'intro' : name;
+  const native = originals[source];
+  // Two original fills are blank in Figma's download. Keep their existing crops until originals are supplied.
+  if (!native) return img('lunaris')(name, w, h, caption);
+  const fullWidth = Math.min(native[0], 3200), base = `/projects/lunaris/${source}`;
+  return { src: `${base}.webp`, w: native[0], h: native[1], caption,
+    srcSet: [...[640, 1280].filter(size => size < fullWidth).map(size => `${base}-${size}.webp ${size}w`),
+      `${base}.webp ${fullWidth}w`].join(', ') };
+};
 const lunaris: ProjectStory = {
   name: 'Lunaris',
   hero: l('cover', 1210, 1046),
@@ -42,18 +63,18 @@ const lunaris: ProjectStory = {
     ['Exhibition', 'Hongik univ. · COEX · Dezeen · DDP'],
   ],
   intro: {
-    ko: '우주에서의 움직임을 보조하기 위해서 꼬리형 디바이스와 운송수단으로 이용할 수 있는 컴페니언 로봇 모빌리티 총 2가지로 구성된 프로젝트입니다.',
-    en: 'This project consists of two main components: a tail-like device designed to assist movement in zero-gravity, and a companion robot that functions as a mobility unit.',
-    image: l('intro', 1160, 1080),
+    ko: '무중력에서 몸의 방향을 바꾸는 꼬리형 디바이스와, 이동과 작업을 함께 돕는 컴페니언 로봇. 우주에서의 움직임을 두 가지 제품으로 제안합니다.',
+    en: 'A wearable tail for orientation in zero gravity. A companion robot for movement and work. Two approaches to mobility beyond Earth.',
   },
   kickers: { Background: 'Why', 'Tail Device': 'Product 01', 'Companion Robot': 'Product 02', Process: 'How', Exhibition: 'Show' },
   sections: [
-    { chapter: 'Background', texts: [{ title: 'Artemis project', body: '무중력 공간에서 인간은 스스로 회전 관성을 제어할 수 없어 자세 유지조차 불가능합니다. 이를 보조해 온 EVA 장비나 로봇 팔은 거대하고 조작이 어렵습니다. 아르테미스 미션과 함께 본격화될 우주 건설 시대를 위해, 이러한 신체적·장비적 한계를 극복할 개인용 자세 제어 모빌리티를 제안하고자 합니다.' }], rows: [
-      { images: [l('astronaut-01', 215, 450, '01'), l('astronaut-02', 215, 450, '02'), l('astronaut-03', 215, 450, '03')], span: 4 },
-      { images: [l('artemis', 684, 215)], span: 6, align: 'end' },
+    { chapter: 'Background', texts: [{ title: 'Artemis project', body: '무중력 환경에서는 몸의 방향을 바꾸고 원하는 자세를 유지하는 일이 쉽지 않습니다. 기존 EVA 장비와 로봇 팔의 크기, 조작 방식에서 출발해 우주 건설 환경에서 개인이 사용할 수 있는 자세 제어 장치를 구상했습니다.' }], rows: [
+      { images: [l('astronaut-01', 215, 450), l('astronaut-02', 215, 450), l('astronaut-03', 215, 450)], span: 5 },
+      { images: [l('artemis', 684, 215, '우주 건설 환경 — 컨셉 이미지')], span: 5, align: 'end' },
     ] },
-    { chapter: 'Background', texts: [{ title: 'Biomimicry', body: '무중력 환경에서의 자세 제어 솔루션으로 자연의 꼬리 메커니즘을 모티프로 삼았습니다. 꼬리의 회전 반동을 이용해 신체 각도를 조절하고, 필요 시 구조물을 파지(Gripping)하여 몸을 고정할 수 있도록 설계했습니다. 이는 퇴화된 인간의 신체 기능을 기술적으로 복원하여 우주 활동성을 극대화한 것입니다.' }], rows: [
-      { images: [l('anchoring', 399, 521, '01  Anchoring'), l('pivoting', 399, 521, '02  Pivoting')], span: 6 },
+    { chapter: 'Background', texts: [{ title: 'Biomimicry', body: '동물이 꼬리로 균형을 잡고 몸을 지지하는 방식에 주목했습니다. 꼬리의 회전 반동으로 몸의 각도를 바꾸는 Pivoting, 구조물을 감싸 몸을 고정하는 Anchoring을 하나의 장치에 담았습니다.' }], rows: [
+      { images: [l('anchoring', 399, 521, 'Anchoring — 구조물에 몸 고정하기')], span: 4 },
+      { images: [l('pivoting', 399, 521, 'Pivoting — 회전 반동으로 방향 바꾸기')], span: 6, align: 'end' },
       { images: [l('nature-01', 215, 333), l('nature-02', 218, 333), l('nature-03', 215, 333)], span: 4, align: 'end' },
     ] },
     { chapter: 'Tail Device', kind: 'feature', image: l('tail', 1859, 560),
