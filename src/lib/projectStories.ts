@@ -19,13 +19,11 @@ export type StorySection = { chapter: string } & (
   | { kind: 'compare'; text?: StoryText; items: Array<{ text: StoryText; image: StoryImage }> }
   | { kind: 'strip'; text: StoryText; images: StoryImage[] }
 );
-export type StoryStat = { value: number; decimals?: number; unit?: string; label: string };
 export type ProjectStory = {
   name: string;   // the title as written (the project list keeps it in capitals)
   hero: StoryImage;
   facts: Array<[string, string]>;
   intro: { ko: string; en?: string; image?: StoryImage };
-  stats?: StoryStat[];
   kickers?: Record<string, string>;   // a small line above a chapter's name, e.g. "Product 01"
   sections: StorySection[];
 };
@@ -48,13 +46,6 @@ const lunaris: ProjectStory = {
     en: 'This project consists of two main components: a tail-like device designed to assist movement in zero-gravity, and a companion robot that functions as a mobility unit.',
     image: l('intro', 1160, 1080),
   },
-  stats: [
-    { value: 1.7, decimals: 1, unit: 'm', label: 'Tail length' },
-    { value: 8, unit: '-way', label: 'Cable drive, bone structure' },
-    { value: 4, unit: '-way', label: 'Cable drive, gripper' },
-    { value: 3, label: 'Joints per finger' },
-    { value: 2, label: 'Modes — flow & bike' },
-  ],
   kickers: { Background: 'Why', 'Tail Device': 'Product 01', 'Companion Robot': 'Product 02', Process: 'How', Exhibition: 'Show' },
   sections: [
     { chapter: 'Background', texts: [{ title: 'Artemis project', body: '무중력 공간에서 인간은 스스로 회전 관성을 제어할 수 없어 자세 유지조차 불가능합니다. 이를 보조해 온 EVA 장비나 로봇 팔은 거대하고 조작이 어렵습니다. 아르테미스 미션과 함께 본격화될 우주 건설 시대를 위해, 이러한 신체적·장비적 한계를 극복할 개인용 자세 제어 모빌리티를 제안하고자 합니다.' }], rows: [

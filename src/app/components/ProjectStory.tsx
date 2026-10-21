@@ -156,7 +156,7 @@ function Part({ section, title }: { section: StorySection; title: string }) {
   }
 }
 
-// A project told from its portfolio slides, in chapters: an overview (cover, introduction, facts, key numbers),
+// A project told from its portfolio slides, in chapters: an overview (cover, introduction, facts),
 // the story's chapters, then its films. An index in the left columns (a line at the top on phones) shows which
 // chapter is being read and jumps between them. Text rises into place and images open up as they scroll in.
 export default function ProjectStory({ story, year, films = [] }: { story: Story; year?: string; films?: Film[] }) {
@@ -179,24 +179,9 @@ export default function ProjectStory({ story, year, films = [] }: { story: Story
     parts.forEach(el => reading.observe(el));
     const hero = new IntersectionObserver(([entry]) => setPastHero(!entry.isIntersecting), { rootMargin: '0px 0px -40% 0px' });
     hero.observe(root.querySelector('.story-hero')!);
-    // Key numbers count up from zero as they come into view.
-    const count = (el: HTMLElement) => {
-      const value = Number(el.dataset.value), decimals = Number(el.dataset.decimals || 0);
-      if (reduce) { el.textContent = value.toFixed(decimals); return; }
-      const begin = performance.now();
-      const step = (now: number) => {
-        const t = Math.min(1, (now - begin) / 1400), eased = 1 - Math.pow(1 - t, 3);
-        el.textContent = (value * eased).toFixed(decimals);
-        if (t < 1) requestAnimationFrame(step);
-      };
-      requestAnimationFrame(step);
-    };
-    const shown = root.querySelectorAll<HTMLElement>('.story-rv, .story-media:not(.is-in), [data-value]');
+    const shown = root.querySelectorAll<HTMLElement>('.story-rv, .story-media:not(.is-in)');
     const io = new IntersectionObserver(entries => entries.forEach(entry => {
-      if (!entry.isIntersecting) return;
-      const el = entry.target as HTMLElement;
-      if (el.dataset.value) count(el); else el.classList.add('is-in');
-      io.unobserve(el);
+      if (entry.isIntersecting) { entry.target.classList.add('is-in'); io.unobserve(entry.target); }
     }), { rootMargin: '0px 0px -12% 0px', threshold: .01 });
     shown.forEach(el => io.observe(el));
     // Drift: each image's inner layer moves against the scroll by a share of its distance from the screen's middle.
@@ -262,14 +247,6 @@ export default function ProjectStory({ story, year, films = [] }: { story: Story
             {story.facts.map(([term, value], i) => <div className="story-rv" style={{ transitionDelay: `${(i + 1) * .08}s` }} key={term}><dt>{term}</dt><dd>{value}</dd></div>)}
           </dl>
         </div>
-        {story.stats && <div className="story-grid">
-          <ul className="story-stats" style={{ gridColumn: `${CONTENT_START} / ${CONTENT_END}` }}>
-            {story.stats.map((stat, i) => <li key={stat.label} className="story-rv" style={{ transitionDelay: `${i * .08}s` }}>
-              <strong><span data-value={stat.value} data-decimals={stat.decimals || 0}>{(0).toFixed(stat.decimals || 0)}</span>{stat.unit && <small>{stat.unit}</small>}</strong>
-              <em>{stat.label}</em>
-            </li>)}
-          </ul>
-        </div>}
       </section>
 
       {chapters.map((chapter, c) => (
