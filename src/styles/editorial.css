@@ -263,14 +263,14 @@
 .story-hero-title { position:absolute; z-index:1; left:clamp(18px,2.4vw,40px); bottom:clamp(16px,2.6vw,40px); color:#fff; }
 .story-hero-title p { font:400 12px/1.2 var(--story-sans); text-transform:uppercase; letter-spacing:.08em; opacity:.8; }
 .story-hero-title h1 { margin-top:8px; font:500 clamp(56px,10vw,168px)/.9 var(--story-sans); }
-.story-intro { padding-top:clamp(80px,13vh,150px); align-items:start; }
+.story-intro { padding-top:clamp(80px,13vh,150px); align-items:stretch; }
 .story-lead { font:500 clamp(22px,2.2vw,34px)/1.45 var(--story-sans); word-break:keep-all; text-box:trim-start cap alphabetic; }   /* its first line's capitals start level with the facts' top rule */
-.story-lead-en { margin-top:24px; max-width:60ch; font:400 15px/1.6 var(--story-sans); color:var(--story-muted); }
-.story-intro-image { margin-top:clamp(48px,8vh,96px); }
-.story-facts { position:sticky; top:96px; margin:0; border-top:1px solid var(--story-ink); }
-.story-facts > div { padding:14px 0 15px; border-bottom:1px solid var(--story-rule); }
+.story-lead-en { margin-top:24px; max-width:60ch; font:400 15px/1.6 var(--story-sans); color:var(--story-muted); text-box:trim-end alphabetic; }   /* ends on its last baseline */
+.story-intro-image { margin-top:clamp(56px,9vh,110px); }
+.story-facts { display:flex; flex-direction:column; justify-content:space-between; gap:14px; margin:0; padding:14px 0; border-block:1px solid var(--story-ink); }
+.story-facts > div { display:grid; grid-template-columns:96px minmax(0,1fr); align-items:baseline; }   /* term and value on one line */
 .story-facts dt { font:400 11px/1.2 var(--story-sans); text-transform:uppercase; letter-spacing:.07em; color:var(--story-muted); }
-.story-facts dd { margin:7px 0 0; font:400 14px/1.45 var(--story-sans); }
+.story-facts dd { margin:0; font:400 14px/1.4 var(--story-sans); }
 
 /* Chapters open with a rule, their number and kicker, and their name; parts follow at an even rhythm. */
 .story-chapter-head { padding-top:clamp(150px,24vh,280px); }
@@ -323,6 +323,10 @@
 .story-films video { display:block; width:100%; max-height:84svh; background:#111; }
 .story-link { text-align:center; padding-top:40px; }
 
+@media (max-width:1360px) and (min-width:901px) {
+  .story-intro .story-intro-main { grid-column:3 / 8!important; }
+  .story-facts { grid-column:8 / 13!important; }   /* room for the facts to stay as short as the introduction */
+}
 @media (max-width:900px) {
   .project-detail.is-story { --story-pad:18px; --story-gap:12px; }
   .story-grid { grid-template-columns:minmax(0,1fr); }
@@ -333,7 +337,7 @@
   .story-now span { color:var(--story-ink); }
   .story-hero { margin:52px var(--story-pad) 0; }
   .story-hero .story-media { height:72svh; }
-  .story-facts { position:static; margin-top:48px; }
+  .story-facts { margin-top:48px; }
     .story-row.is-long { flex-wrap:wrap; }
   .story-row.is-long .story-figure:first-child { flex:1 1 100%!important; }
   .story-compare-item + .story-compare-item { margin-top:56px; }

@@ -238,13 +238,13 @@ export default function ProjectStory({ story, year, films = [] }: { story: Story
           <div className="story-intro-main" style={{ gridColumn: `${CONTENT_START} / 9` }}>
             <p className="story-lead story-rv">{story.intro.ko}</p>
             {story.intro.en && <p className="story-lead-en story-rv" style={{ transitionDelay: '.12s' }}>{story.intro.en}</p>}
-            {story.intro.image && <div className="story-intro-image"><Figure image={story.intro.image} alt={story.name} drift={.04} /></div>}
           </div>
+          {/* the facts run the height of the introduction beside them (the year is on the cover) */}
           <dl className="story-facts" style={{ gridColumn: `10 / ${CONTENT_END}` }}>
-            {year && <div className="story-rv"><dt>Year</dt><dd>{year}</dd></div>}
-            {story.facts.map(([term, value], i) => <div className="story-rv" style={{ transitionDelay: `${(i + 1) * .08}s` }} key={term}><dt>{term}</dt><dd>{value}</dd></div>)}
+            {story.facts.map(([term, value], i) => <div className="story-rv" style={{ transitionDelay: `${i * .08}s` }} key={term}><dt>{term}</dt><dd>{value}</dd></div>)}
           </dl>
         </div>
+        {story.intro.image && <div className="story-grid"><div className="story-intro-image" style={{ gridColumn: `${CONTENT_START} / 9` }}><Figure image={story.intro.image} alt={story.name} drift={.04} /></div></div>}
       </section>
 
       {chapters.map((chapter, c) => (
