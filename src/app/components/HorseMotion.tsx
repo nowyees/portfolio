@@ -75,11 +75,12 @@ export default function HorseMotion({ className }: { className?: string }) {
     // Each bone's pose is kept as its rotation plus where its joint (rest head) sits, so blends turn about the joint.
     let groups: Array<{ parent: number; shells: number[]; head: THREE.Vector3 }> = [];
     // Every hoof is two halves, toe and heel, hinged at the ankle; they ride the ankle but not the shin's tilt.
-    // On the ground the hoof sits level. Off it, it tips as one with the stride: the heel lifts as the foot goes back
+    // On the ground the hoof sits level (its toe's sole flat; on some legs the model has the hoof tilted as it stands,
+    // so level is measured from the sole, not taken as it is modelled). Off it, it tips as one with the stride: the heel lifts as the foot goes back
     // and leaves the ground, and comes down again (a little past level) as it swings forward to land, levelling out
     // as it nears the ground. The ground stops each half on its own: a half that would go through it is turned back
     // about the ankle only as far as it must to rest on it, so the half that lands first bends first.
-    let hooves: Array<{ group: number; phase: number; ankle: THREE.Vector3; low: number; lift: number; ground: number; halves: Array<{ shell: number; outline: THREE.Vector2[] }> }> = [];
+    let hooves: Array<{ group: number; phase: number; ankle: THREE.Vector3; low: number; lift: number; level: number; ground: number; halves: Array<{ shell: number; outline: THREE.Vector2[] }> }> = [];
     // most the heel lifts as the foot leaves the ground, and drops as it comes down to land (radians)
     const HOOF = { heelUp: .45, heelDown: .15 };
     // where each foot is in the walk cycle when the cycle starts (as baked: the diagonal pairs half a cycle apart)
@@ -133,11 +134,20 @@ export default function HorseMotion({ className }: { className?: string }) {
         });
         groups[group].shells = groups[group].shells.filter(i => !below.includes(i));
         const halves = below.map(shell => ({ shell, outline: outlineOf(shell, ankle) }));
+        // Level: the turn that lays the toe half's sole flat: the longest edge along the underside of its outline (the
+        // outline runs along the underside heel to toe, then back over the top).
+        const toe = halves.reduce((a, b) => Math.max(...b.outline.map(v => v.x)) > Math.max(...a.outline.map(v => v.x)) ? b : a).outline;
+        let level = 0, longest = 0;
+        toe.forEach((a, i) => {
+          const b = toe[(i + 1) % toe.length], slope = Math.atan2(b.y - a.y, b.x - a.x);
+          if (b.x > a.x && Math.abs(slope) < .7 && a.distanceTo(b) > longest) { longest = a.distanceTo(b); level = -slope; }
+        });
         // The ground: where the sole sits, level, with the ankle as low as it comes in the walk (or standing).
         const heights = gait.walk.poses.map(set => ankle.clone().applyMatrix4(new THREE.Matrix4().fromArray(set[shin])).y);
         const low = Math.min(ankle.y, ...heights), lift = Math.max(...heights) - low;
-        const sole = Math.min(...halves.flatMap(h => h.outline.map(v => v.y)));
-        return { group, phase: footPhase[name], ankle, low, lift, ground: low + sole, halves };
+        const c = Math.cos(level), sn = Math.sin(level);
+        const sole = Math.min(...halves.flatMap(h => h.outline.map(v => v.x * sn + v.y * c)));
+        return { group, phase: footPhase[name], ankle, low, lift, level, ground: low + sole, halves };
       });
       const world = new THREE.Matrix4(), inv = new THREE.Matrix4();
       const toLocal = (set: number[][]) => {
@@ -236,11 +246,12 @@ export default function HorseMotion({ className }: { className?: string }) {
               return at.y + outline.reduce((low, v) => Math.min(low, v.x * sn + v.y * c), Infinity) - hoof.ground;
             };
             // tipped as the hoof is, unless that goes through the ground: then turned back toward level just enough
-            let angle = tip;
-            if (above(tip) < 0) {
-              if (above(0) < 0) angle = 0;
+            const { level } = hoof;
+            let angle = level + tip;
+            if (above(angle) < 0) {
+              if (above(level) < 0) angle = level;
               else {
-                let through = tip, clear = 0;
+                let through = angle, clear = level;
                 for (let n = 0; n < 16; n++) { const m = (through + clear) / 2; if (above(m) < 0) through = m; else clear = m; }
                 angle = clear;
               }
