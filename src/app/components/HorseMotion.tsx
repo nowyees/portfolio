@@ -74,12 +74,12 @@ export default function HorseMotion({ className }: { className?: string }) {
     // the body bone, which they are constrained to), so joints stay together however far apart two poses are.
     // Each bone's pose is kept as its rotation plus where its joint (rest head) sits, so blends turn about the joint.
     let groups: Array<{ parent: number; shells: number[]; head: THREE.Vector3 }> = [];
-    // The hind hooves ride the shin bone, so they would tilt with it and land toe-first. They are kept level instead:
-    // each follows its ankle (the shin's tail) but keeps its rest orientation, so the sole meets the ground flat. A hoof
-    // is two halves hinged at the ankle, designed to spread so it can sit flat on anything: lifted, the toe and heel
-    // halves hang down towards each other; set down, they spread flat again.
-    let hooves: Array<{ group: number; ankle: THREE.Vector3; halves: Array<{ shell: number; side: number }> }> = [];
-    const HOOF = { droop: .38, lift: .05 };   // radians each half hangs when lifted, ankle height (units) for full hang
+    // A hind hoof is two halves (toe and heel) hinged at the ankle, built to spread so it sits flat on whatever it
+    // meets. Each half rides the shin as authored until it touches the ground; then the ground presses it, turning it
+    // about the ankle only as far as needed to rest on the ground. So a toe-first landing presses the toe half flat
+    // first, and once the heel half also reaches the ground both lie pressed flat.
+    let hooves: Array<{ group: number; ankle: THREE.Vector3; halves: Array<{ shell: number; corners: THREE.Vector3[] }> }> = [];
+    let ground = 0;   // the hooves' lowest point at rest: the ground
     Promise.all([loader.loadAsync('/lab/horse.glb'), fetch('/lab/horse-gait.json', { signal: abort.signal }).then(r => {
       if (!r.ok) throw new Error('HORSE poses unavailable'); return r.json() as Promise<Gait>;
     }), fetch('/lab/horse-ik.json', { signal: abort.signal }).then(r => {
@@ -106,6 +106,7 @@ export default function HorseMotion({ className }: { className?: string }) {
       names.sort((a, b) => depth(a) - depth(b));
       groups = names.map(name => ({ parent: parentOf(name) ? names.indexOf(parentOf(name)!) : -1, shells: boneOf.flatMap((b, i) => b === name ? [i] : []),
         head: new THREE.Vector3().fromArray(rig.bones[name].head) }));
+      ground = Infinity;
       hooves = ['Bone.014', 'Bone.019'].filter(name => names.includes(name)).map(name => {
         const ankle = new THREE.Vector3().fromArray(rig.bones[name].tail), group = names.indexOf(name);
         const below = groups[group].shells.filter(i => {
@@ -113,8 +114,14 @@ export default function HorseMotion({ className }: { className?: string }) {
           return geometry.boundingBox!.getCenter(new THREE.Vector3()).y < ankle.y;
         });
         groups[group].shells = groups[group].shells.filter(i => !below.includes(i));
-        // the toe half lies ahead of the ankle (+x, the way it faces), the heel half behind
-        return { group, ankle, halves: below.map(shell => ({ shell, side: (shells[shell] as THREE.Mesh).geometry.boundingBox!.getCenter(new THREE.Vector3()).x > ankle.x ? 1 : -1 })) };
+        return { group, ankle, halves: below.map(shell => {
+          const box = (shells[shell] as THREE.Mesh).geometry.boundingBox!;
+          ground = Math.min(ground, box.min.y);
+          // corners of its outline in the side view, relative to the ankle
+          const corners = [[box.min.x, box.min.y], [box.max.x, box.min.y], [box.min.x, box.max.y], [box.max.x, box.max.y]]
+            .map(([x, y]) => new THREE.Vector3(x - ankle.x, y - ankle.y, 0));
+          return { shell, corners };
+        }) };
       });
       const world = new THREE.Matrix4(), inv = new THREE.Matrix4();
       const toLocal = (set: number[][]) => {
@@ -199,10 +206,16 @@ export default function HorseMotion({ className }: { className?: string }) {
         });
         for (const hoof of hooves) {
           const at = ankleNow.copy(hoof.ankle).applyMatrix4(worlds[hoof.group]);
-          const hang = HOOF.droop * ease((at.y - hoof.ankle.y) / HOOF.lift);
-          for (const { shell, side } of hoof.halves) {
-            // about the ankle: carried to where the ankle is now, turned so its far end hangs down
-            shells[shell].matrix.makeTranslation(at.x, at.y, at.z).multiply(pivot.makeRotationZ(-side * hang))
+          const e = worlds[hoof.group].elements, carried = Math.atan2(e[1], e[0]);   // the shin's turn in the side view
+          for (const { shell, corners } of hoof.halves) {
+            const lowest = (angle: number) => {
+              const c = Math.cos(angle), s = Math.sin(angle);
+              return at.y + Math.min(...corners.map(v => v.x * s + v.y * c));
+            };
+            // from the carried angle towards flat (0), the first angle that keeps the half on or above the ground
+            let angle = carried;
+            for (let k = 1; k <= 24 && lowest(angle) < ground - 1e-4; k++) angle = carried * (1 - k / 24);
+            shells[shell].matrix.makeTranslation(at.x, at.y, at.z).multiply(pivot.makeRotationZ(angle))
               .multiply(hinge.makeTranslation(-hoof.ankle.x, -hoof.ankle.y, -hoof.ankle.z));
           }
         }
