@@ -81,7 +81,7 @@ export default function ProjectDetail() {
           </header>
           <ProjectStory story={story} title={project.title} />
           {films.length > 0 && <section className="story-films" aria-label={project.title + ' films'}>
-            <p className="story-label"><span>{String(story.sections.length + 1).padStart(2, '0')}</span>Film</p>
+            <div className="story-texts has-1"><div className="story-text"><h2>Film</h2></div></div>
             {films.map((item, i) => <video key={item.url} src={item.url} poster={item.thumbnailUrl} controls muted playsInline preload="metadata" aria-label={project.title + ' film ' + (i + 1)} />)}
           </section>}
           {project.showExternalLink && project.externalLink && <p className="story-link"><a className="detail-external-link" href={project.externalLink} target="_blank" rel="noopener noreferrer">View publication ↗︎</a></p>}

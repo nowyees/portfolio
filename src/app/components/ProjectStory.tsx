@@ -1,8 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import type { ProjectStory as Story, StoryImage, StoryRow } from '../../lib/projectStories';
 
-// A project told section by section from its portfolio slides: images in rows, each section's title and text
-// beneath. As the page scrolls, text rises into place, images open out of a slightly inset frame while settling from
+// A project told section by section from its portfolio slides: each section's title and text, then its images in
+// rows. As the page scrolls, text rises into place, images open out of a slightly inset frame while settling from
 // a small zoom, and the larger images drift a little against the scroll.
 export default function ProjectStory({ story, title }: { story: Story; title: string }) {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -68,8 +68,6 @@ export default function ProjectStory({ story, title }: { story: Story; title: st
       </section>
       {story.sections.map(section => (
         <section className="story-section" key={section.num}>
-          <p className="story-label story-rv"><span>{section.num}</span>{section.label}</p>
-          <div className="story-rows">{section.rows.map((r, k) => row(r, section.texts[0]?.title || section.label, k))}</div>
           <div className={`story-texts has-${section.texts.length}`}>
             {section.texts.map((text, i) => (
               <div className="story-text" key={text.title}>
@@ -78,6 +76,7 @@ export default function ProjectStory({ story, title }: { story: Story; title: st
               </div>
             ))}
           </div>
+          <div className="story-rows">{section.rows.map((r, k) => row(r, section.texts[0]?.title || section.label, k))}</div>
         </section>
       ))}
     </div>
