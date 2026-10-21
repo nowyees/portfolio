@@ -93,7 +93,11 @@ if args.ready:
     ready = json.loads(Path(args.ready).read_text(encoding='utf8'))
 def apply_ready():
     body.location = Vector(ready['HORSE_CTRL_BODY']['loc']); body.rotation_euler = ready['HORSE_CTRL_BODY']['rot']
-    for k, f in feet.items(): f.location = Vector(ready['HORSE_CTRL_FOOT_' + k]['loc']); f.rotation_euler = ready['HORSE_CTRL_FOOT_' + k]['rot']
+    # the feet where the save has them, but all four set down on the ground the walk stands on (as saved, they are at
+    # different heights, so some would hang above it)
+    for k, f in feet.items():
+        x, y, _ = ready['HORSE_CTRL_FOOT_' + k]['loc']
+        f.location = Vector((x, y, rest[k].z)); f.rotation_euler = ready['HORSE_CTRL_FOOT_' + k]['rot']
     return sample()
 foot_rot0 = {k: f.rotation_euler.copy() for k, f in feet.items()}
 crouch = apply_ready() if ready else pose_at((0, .6, -1.3), -.08)
