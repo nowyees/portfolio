@@ -4,8 +4,7 @@ import type { ProjectStory as Story, StoryImage, StoryRow, StorySection, StoryTe
 type Film = { url: string; poster?: string };
 
 // The page runs on twelve columns: the chapter index sits in the first two and everything else lines up on the
-// right ten — text on six of them (3–8), facts on the last three (10–12), images on any run of the ten, or across
-// the whole page.
+// right ten — text on six of them (3–8), facts on the last three (10–12), the cover and images on any run of the ten.
 const CONTENT_START = 3, CONTENT_END = 13;
 const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -121,8 +120,7 @@ function Part({ section, title }: { section: StorySection; title: string }) {
   const chapter = section.chapter;
   switch (section.kind) {
     case 'feature': return <div className="story-part">
-      {/* across the whole page when the image is large enough for it, else across the content columns */}
-      <div className="story-grid"><div className="story-feature" style={{ gridColumn: section.image.w >= 1400 ? '1 / -1' : `${CONTENT_START} / ${CONTENT_END}` }}><Figure image={section.image} alt={`${title} — ${section.text.title}`} drift={.05} /></div></div>
+      <div className="story-grid"><div className="story-feature" style={{ gridColumn: `${CONTENT_START} / ${CONTENT_END}` }}><Figure image={section.image} alt={`${title} — ${section.text.title}`} drift={.05} /></div></div>
       <div className="story-grid"><Copy text={section.text} chapter={chapter} style={{ gridColumn: `${CONTENT_START} / 9` }} /></div>
       {section.after && <div className="story-grid story-rows">{section.after.map((row, k) => <Row key={k} row={row} alt={`${title} — ${section.text.title}`} />)}</div>}
     </div>;
@@ -217,7 +215,7 @@ export default function ProjectStory({ story, year, films = [] }: { story: Story
 
   return (
     <div className="story" ref={rootRef}>
-      <nav className={'story-index' + (pastHero ? ' is-shown' : '')} aria-label={`${story.name} chapters`}>
+      <nav className="story-index" aria-label={`${story.name} chapters`}>
         <ol>
           {index.map((name, i) => <li key={name}>
             <button type="button" className={i === current ? 'is-current' : undefined} aria-current={i === current ? 'true' : undefined} onClick={() => jump(i)}>

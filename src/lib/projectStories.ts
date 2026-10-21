@@ -8,7 +8,7 @@ export type StoryText = { title: string; body: string; num?: string };
 // `span` of those ten (all of them by default), from the left or, with `align: 'end'`, from the right.
 export type StoryRow = { images: StoryImage[]; span?: number; align?: 'start' | 'end' };
 // Sections in a row with the same `chapter` read as one chapter. Each kind lays its part out differently:
-// stack — text, then rows of images; feature — one image across the page, then its text (and rows after);
+// stack — text, then rows of images; feature — one image across the content columns, then its text (and rows after);
 // pinned — the images hold still while the texts beside them scroll past, each bringing in its own images;
 // compare — two or more things side by side, each an image over its text; strip — text, then images that slide
 // sideways as the page scrolls down.
