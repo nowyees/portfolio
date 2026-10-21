@@ -3,6 +3,8 @@ import { Link, useParams } from 'react-router';
 import SiteShell from './SiteShell';
 import { usePortfolio, imageUrl } from '../../lib/usePortfolio';
 import { isVideoUrl } from '../../lib/storageService';
+import { storyFor } from '../../lib/projectStories';
+import ProjectStory from './ProjectStory';
 
 export default function ProjectDetail() {
   const { category, id } = useParams();
@@ -62,6 +64,32 @@ export default function ProjectDetail() {
     moveGallery(event.clientX < rect.left + rect.width * .5 ? -1 : 1);
   };
   const next = projects[(projects.indexOf(project) + 1) % projects.length];
+  const footer = <footer className="detail-footer">
+    <Link to="/projects">All projects</Link>
+    {next && <Link to={'/project/' + next.category + '/' + next.id}>Next Project<br /><em>{next.title} ↗︎</em></Link>}
+  </footer>;
+  // Projects written up from the portfolio slides read as a story; their films follow it.
+  const story = storyFor(project.title);
+  if (story) {
+    const films = media.filter(item => item.type === 'video' || isVideoUrl(item.url));
+    return (
+      <SiteShell active="projects">
+        <main className="project-detail is-story">
+          <header className="detail-intro">
+            <h1>{project.title}</h1>
+            <p className="detail-year">{project.year}</p>
+          </header>
+          <ProjectStory story={story} title={project.title} />
+          {films.length > 0 && <section className="story-films" aria-label={project.title + ' films'}>
+            <p className="story-label"><span>{String(story.sections.length + 1).padStart(2, '0')}</span>Film</p>
+            {films.map((item, i) => <video key={item.url} src={item.url} poster={item.thumbnailUrl} controls muted playsInline preload="metadata" aria-label={project.title + ' film ' + (i + 1)} />)}
+          </section>}
+          {project.showExternalLink && project.externalLink && <p className="story-link"><a className="detail-external-link" href={project.externalLink} target="_blank" rel="noopener noreferrer">View publication ↗︎</a></p>}
+          {footer}
+        </main>
+      </SiteShell>
+    );
+  }
   const renderMedia = (items: typeof media, startIndex = 0) => items.map((item, index) => {
     const mediaIndex = startIndex + index;
     return <div className={'detail-media-item is-' + (item.layout || 'full')} key={item.url + mediaIndex}>
@@ -126,10 +154,7 @@ export default function ProjectDetail() {
           <p className="detail-description">{project.desc}</p>
           {project.showExternalLink && project.externalLink && <a className="detail-external-link" href={project.externalLink} target="_blank" rel="noopener noreferrer">View publication ↗︎</a>}
         </section>}
-        <footer className="detail-footer">
-          <Link to="/projects">All projects</Link>
-          {next && <Link to={'/project/' + next.category + '/' + next.id}>Next Project<br /><em>{next.title} ↗︎</em></Link>}
-        </footer>
+        {footer}
       </main>
     </SiteShell>
   );
