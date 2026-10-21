@@ -10,7 +10,14 @@ node scripts/prepare-lunaris-assets.mjs <original-png-directory>
 
 The full web derivative is capped at 3200px wide, quality 88; 640px and 1280px
 variants are generated only when smaller than the source. Alpha is preserved.
-`projectStories.ts` records source dimensions and responsive candidates.
+`projectStories.ts` records source dimensions, responsive candidates and independent
+display frames. The authored frame ratios from the original story are preserved;
+source pixels are fitted/cropped inside them, never stretched. The cover has an
+adaptive viewport-height frame; drawings use contain where edge labels must stay visible.
+
+Pinned mechanism studies and the horizontal process sequence are restored on
+desktop. Mobile uses inline mechanism studies and native horizontal scrolling;
+reduced-motion preferences also receive a non-pinned presentation.
 
 | Original PNG name | Figma source node |
 | --- | --- |
@@ -32,7 +39,7 @@ variants are generated only when smaller than the source. Alpha is preserved.
 
 Only gripper-spine is trimmed: 1000px of unused top canvas is removed from the
 2160×3840 original. Other derivatives retain the original canvas and proportions.
-The cover uses the complete 16:9 render instead of the old portrait slide crop.
+The full 16:9 cover source is retained, with the crop chosen in the web frame.
 
 ## Originals still needed
 

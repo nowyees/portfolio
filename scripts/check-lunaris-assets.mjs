@@ -12,6 +12,7 @@ function walk(value) {
 walk(storyFor('LUNARIS'));
 let files = 0;
 for (const image of images.values()) {
+  if (image.frame && (!(image.frame.w > 0) || !(image.frame.h > 0))) throw new Error(`Invalid display frame: ${image.src}`);
   const candidates = image.srcSet ? image.srcSet.split(', ').map(part => part.split(' ')) : [[image.src]];
   for (const [src, descriptor] of candidates) {
     const path = resolve('public', src.slice(1));
@@ -25,5 +26,10 @@ for (const image of images.values()) {
     if (Math.abs(height - width * image.h / image.w) > 1) throw new Error(`Wrong aspect ratio: ${src}`);
     files++;
   }
+}
+for (const [name, w, h] of [['tail', 1859, 560], ['flow-mode', 450, 685], ['bike-mode', 450, 685],
+  ['gripper-joints', 333, 477], ['proto-01', 685, 568], ['proto-03', 450, 568]]) {
+  const image = images.get(`/projects/lunaris/${name}.webp`);
+  if (image?.frame?.w !== w || image?.frame?.h !== h) throw new Error(`Designed frame changed: ${name}`);
 }
 console.log(`PASS: ${images.size} unique images, ${files} valid files; responsive widths and aspect ratios match.`);

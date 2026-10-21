@@ -5,16 +5,23 @@ type Film = { url: string; poster?: string };
 const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const pad = (n: number) => String(n).padStart(2, '0');
 const content = { gridColumn: '3 / 13' };
+const ratioOf = (image: StoryImage) => (image.frame?.w || image.w) / (image.frame?.h || image.h);
 
-function Figure({ image, alt, priority = false, sizes = '(max-width: 900px) calc(100vw - 36px), 78vw' }:
-  { image: StoryImage; alt: string; priority?: boolean; sizes?: string }) {
-  return <figure className="story-figure">
-    <div className="story-media">
-      <img src={image.src} srcSet={image.srcSet} sizes={image.srcSet ? sizes : undefined}
+function Figure({ image, alt, priority = false, delay = 0, drift = false, revealed = false, style,
+  sizes = '(max-width: 900px) calc(100vw - 36px), 78vw' }:
+  { image: StoryImage; alt: string; priority?: boolean; sizes?: string; delay?: number;
+    drift?: boolean; revealed?: boolean; style?: React.CSSProperties }) {
+  return <figure className="story-figure" style={{ flex: `${ratioOf(image)} 1 0`, ...style }}>
+    <div className={'story-media' + (revealed ? ' is-in' : '')}
+      style={{ aspectRatio: String(ratioOf(image)), transitionDelay: `${delay}s` }}>
+      <div className="story-reveal-zoom"><div className={'story-image-plane' + (drift ? ' has-drift' : '')}>
+        <img className={image.naturalCanvas ? 'is-natural-canvas' : undefined}
+        src={image.src} srcSet={image.srcSet} sizes={image.srcSet ? sizes : undefined}
         alt={alt} width={image.w} height={image.h} loading={priority ? 'eager' : 'lazy'}
-        decoding="async" />
+        style={{ objectPosition: image.position, transform: image.transform, objectFit: image.fit }} decoding="async" />
+      </div></div>
     </div>
-    {image.caption && <figcaption>{image.caption}</figcaption>}
+    {image.caption && <figcaption className="story-rv">{image.caption}</figcaption>}
   </figure>;
 }
 
@@ -22,7 +29,7 @@ function Row({ row, alt }: { row: StoryRow; alt: string }) {
   const span = row.span || 10, start = row.align === 'end' ? 13 - span : 3;
   return <div className={'story-row' + (row.images.length > 1 ? ' is-multiple' : '')}
     style={{ gridColumn: `${start} / ${start + span}` }}>
-    {row.images.map((image, i) => <Figure key={image.src} image={image}
+    {row.images.map((image, i) => <Figure key={image.src} image={image} delay={i * .1}
       alt={image.caption || `${alt} — ${i + 1}`}
       sizes={`(max-width: 900px) ${row.images.length > 1 ? '46vw' : '92vw'}, ${Math.round(span / 12 * 100 / row.images.length)}vw`} />)}
   </div>;
@@ -31,8 +38,91 @@ function Row({ row, alt }: { row: StoryRow; alt: string }) {
 function Copy({ text, chapter }: { text: StoryText; chapter: string }) {
   const showTitle = text.title.toLowerCase() !== chapter.toLowerCase();
   return <div className={'story-copy' + (!showTitle ? ' is-caption' : '')}>
-    {showTitle && <h3>{text.title}</h3>}
-    <p>{text.body}</p>
+    {showTitle && <h3 className="story-rv">{text.title}</h3>}
+    <p className="story-rv">{text.body}</p>
+  </div>;
+}
+
+function Pinned({ steps, chapter, title }: {
+  steps: Extract<StorySection, { kind: 'pinned' }>['steps']; chapter: string; title: string;
+}) {
+  const root = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState(0);
+  useEffect(() => {
+    const items = Array.from(root.current!.querySelectorAll<HTMLElement>('.story-pin-step'));
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const line = window.innerHeight * .5;
+      let current = 0;
+      items.forEach((el, i) => { if (el.getBoundingClientRect().top <= line) current = i; });
+      setActive(current);
+    };
+    const request = () => { if (!frame) frame = requestAnimationFrame(update); };
+    update();
+    window.addEventListener('scroll', request, { passive: true });
+    window.addEventListener('resize', request);
+    return () => { cancelAnimationFrame(frame); window.removeEventListener('scroll', request); window.removeEventListener('resize', request); };
+  }, [steps]);
+  return <div className="story-grid story-pin" ref={root}>
+    <div className="story-pin-stage">
+      <div className="story-pin-frame">{steps.map((step, i) => {
+        const ratio = step.images.reduce((sum, image) => sum + ratioOf(image), 0);
+        return <div className={'story-pin-layer' + (i === active ? ' is-active' : '')} key={step.text.title}
+          aria-hidden={i !== active} data-step={step.text.title}>
+          <div className="story-row" style={{ width: `min(100%, calc(var(--pin-h) * ${ratio}))` }}>
+            {step.images.map((image, j) => <Figure key={image.src} image={image} revealed
+              alt={`${title} — ${step.text.title} ${j + 1}`}
+              sizes="(max-width: 900px) 90vw, 50vw" />)}
+          </div>
+        </div>;
+      })}</div>
+    </div>
+    <div className="story-pin-steps">{steps.map((step, i) => <article className={'story-pin-step' + (i === active ? ' is-active' : '')}
+      key={step.text.title} data-step={step.text.title}>
+      <Copy text={step.text} chapter={chapter} />
+      <div className="story-row story-pin-inline">{step.images.map((image, j) => <Figure key={image.src}
+        image={image} alt={`${title} — ${step.text.title} ${j + 1}`} sizes="(max-width: 600px) 90vw, 44vw" />)}</div>
+    </article>)}</div>
+  </div>;
+}
+
+function Strip({ images, title }: { images: StoryImage[]; title: string }) {
+  const outer = useRef<HTMLDivElement>(null), track = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = outer.current!, rail = track.current!, viewport = el.querySelector<HTMLElement>('.story-strip-sticky')!;
+    const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let frame = 0;
+    const pinned = () => window.innerWidth > 900 && !motion.matches;
+    const place = () => {
+      frame = 0;
+      if (!pinned()) { rail.style.transform = ''; return; }
+      const travel = Math.max(0, rail.scrollWidth - viewport.clientWidth), box = el.getBoundingClientRect();
+      const progress = Math.min(1, Math.max(0, -box.top / Math.max(1, box.height - window.innerHeight)));
+      rail.style.transform = `translate3d(${-progress * travel}px,0,0)`;
+    };
+    const size = () => {
+      el.style.height = pinned() ? `${window.innerHeight + Math.max(0, rail.scrollWidth - viewport.clientWidth)}px` : '';
+      place();
+    };
+    const request = () => { if (!frame) frame = requestAnimationFrame(place); };
+    const observer = new ResizeObserver(size);
+    observer.observe(rail); observer.observe(viewport);
+    window.addEventListener('scroll', request, { passive: true });
+    window.addEventListener('resize', size); motion.addEventListener('change', size); size();
+    return () => {
+      cancelAnimationFrame(frame); observer.disconnect();
+      window.removeEventListener('scroll', request); window.removeEventListener('resize', size);
+      motion.removeEventListener('change', size);
+    };
+  }, [images]);
+  return <div className="story-strip" ref={outer}>
+    <div className="story-strip-sticky" tabIndex={0} role="region" aria-label={`${title} process images`}>
+      <div className="story-strip-track" ref={track}>{images.map((image, i) => <Figure key={image.src}
+        image={image} alt={`${title} — Prototyping ${i + 1}`} delay={i * .08}
+        sizes="(max-width: 900px) 90vw, 70vw"
+        style={{ flex: 'none', width: `calc(var(--strip-h) * ${ratioOf(image)})` }} />)}</div>
+    </div>
   </div>;
 }
 
@@ -45,18 +135,11 @@ function Part({ section, title }: { section: StorySection; title: string }) {
   const copy = (text: StoryText) => <div className="story-grid"><div style={content}><Copy text={text} chapter={chapter} /></div></div>;
   switch (section.kind) {
     case 'feature': return <div className="story-part story-feature">
-      <div className="story-grid"><div style={content}><Figure image={section.image} alt={`${title} — ${section.text.title}`} /></div></div>
+      <div className="story-grid"><div style={content}><Figure image={section.image} alt={`${title} — ${section.text.title}`} drift /></div></div>
       {copy(section.text)}{after && rows(after)}
     </div>;
     case 'pinned': return <div className="story-part story-mechanisms">
-      {section.steps.map(step => <article className="story-mechanism" key={step.text.title} data-part={step.text.title}>
-        <div className="story-grid"><div className="story-mechanism-images" style={content}>
-          {step.images.map((image, i) => <Figure key={image.src} image={image}
-            alt={`${title} — ${step.text.title} ${i + 1}`}
-            sizes="(max-width: 600px) 90vw, (max-width: 900px) 44vw, 38vw" />)}
-        </div></div>
-        {copy(step.text)}
-      </article>)}
+      <Pinned steps={section.steps} chapter={chapter} title={title} />
       {after && rows(after)}
     </div>;
     case 'compare': return <div className="story-part">
@@ -71,11 +154,7 @@ function Part({ section, title }: { section: StorySection; title: string }) {
     </div>;
     case 'strip': return <div className="story-part story-process">
       {copy(section.text)}
-      <div className="story-grid"><div className="story-process-images" style={content}>
-        {section.images.map((image, i) => <Figure key={image.src} image={image}
-          alt={`${title} — Prototyping ${i + 1}`}
-          sizes="(max-width: 600px) 90vw, (max-width: 900px) 44vw, 38vw" />)}
-      </div></div>
+      <Strip images={section.images} title={title} />
     </div>;
     default: return <div className="story-part" data-part={section.texts[0]?.title}>
       {section.texts.map(text => <React.Fragment key={text.title}>{copy(text)}</React.Fragment>)}
@@ -96,7 +175,13 @@ export default function ProjectStory({ story, year, films = [] }: { story: Story
   const index = ['Overview', ...chapters.map(c => c.name), ...(films.length ? ['Film'] : [])];
 
   useEffect(() => {
-    const parts = Array.from(rootRef.current!.querySelectorAll<HTMLElement>('.story-chapter'));
+    const root = rootRef.current!, motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const parts = Array.from(root.querySelectorAll<HTMLElement>('.story-chapter'));
+    const reveal = new IntersectionObserver(entries => entries.forEach(entry => {
+      if (entry.isIntersecting) { entry.target.classList.add('is-in'); reveal.unobserve(entry.target); }
+    }), { threshold: .01, rootMargin: '0px 0px -6% 0px' });
+    root.querySelectorAll('.story-rv, .story-media:not(.is-in)').forEach(el => reveal.observe(el));
+    const planes = Array.from(root.querySelectorAll<HTMLElement>('.story-image-plane.has-drift'));
     let frame = 0;
     const update = () => {
       frame = 0;
@@ -104,6 +189,12 @@ export default function ProjectStory({ story, year, films = [] }: { story: Story
       let active = 0;
       parts.forEach((part, i) => { if (part.getBoundingClientRect().top <= line) active = i; });
       setCurrent(active);
+      planes.forEach(el => {
+        const box = el.parentElement!.getBoundingClientRect();
+        const shift = !motion.matches && window.innerWidth > 900
+          ? Math.max(-box.height * .025, Math.min(box.height * .025, (window.innerHeight * .5 - box.top - box.height * .5) * .04)) : 0;
+        el.style.setProperty('--story-drift', `${shift}px`);
+      });
     };
     const request = () => { if (!frame) frame = requestAnimationFrame(update); };
     update();
@@ -111,6 +202,7 @@ export default function ProjectStory({ story, year, films = [] }: { story: Story
     window.addEventListener('resize', request);
     return () => {
       cancelAnimationFrame(frame);
+      reveal.disconnect();
       window.removeEventListener('scroll', request);
       window.removeEventListener('resize', request);
     };
@@ -123,7 +215,7 @@ export default function ProjectStory({ story, year, films = [] }: { story: Story
       behavior: reduceMotion() ? 'auto' : 'smooth' });
   };
   const head = (i: number, name: string) => <header className="story-grid story-chapter-head">
-    <div style={content}><span>{pad(i)}</span><h2>{name}</h2></div>
+    <div style={content}><span className="story-rv">{pad(i)}</span><h2 className="story-rv">{name}</h2></div>
   </header>;
 
   return <div className="story" ref={rootRef}>
@@ -138,18 +230,18 @@ export default function ProjectStory({ story, year, films = [] }: { story: Story
     </nav>
     <section className="story-chapter story-overview" aria-label="Overview">
       <header className="story-grid story-title">
-        <div style={content}><h1>{story.name}</h1><p>Space mobility<br />{year}</p></div>
+        <div style={content}><h1 className="story-rv">{story.name}</h1><p className="story-rv">Space mobility<br />{year}</p></div>
       </header>
       <div className="story-grid story-hero"><div style={content}>
         <Figure image={story.hero} alt={`${story.name} — wearable tail in zero gravity`} priority />
       </div></div>
       <div className="story-grid story-intro">
         <div className="story-intro-main">
-          <p className="story-lead">{story.intro.ko}</p>
-          {story.intro.en && <p className="story-lead-en" lang="en">{story.intro.en}</p>}
+          <p className="story-lead story-rv">{story.intro.ko}</p>
+          {story.intro.en && <p className="story-lead-en story-rv" lang="en">{story.intro.en}</p>}
         </div>
         <dl className="story-facts">{story.facts.map(([term, value]) =>
-          <div key={term}><dt>{term}</dt><dd>{value}</dd></div>)}</dl>
+          <div className="story-rv" key={term}><dt>{term}</dt><dd>{value}</dd></div>)}</dl>
       </div>
       {story.intro.image && <div className="story-grid"><div className="story-intro-image" style={content}>
         <Figure image={story.intro.image} alt={story.name} />
