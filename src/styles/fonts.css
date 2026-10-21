@@ -14,4 +14,15 @@
   font-display: swap;
 }
 
-@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css");
+/* Project story pages: Latin in Bricolage Grotesque (SIL OFL, see /fonts/BricolageGrotesque-OFL.txt); Hangul falls
+   through to Pretendard. */
+@font-face {
+  font-family: 'Bricolage Grotesque';
+  src: url('/fonts/BricolageGrotesque-Variable.ttf') format('truetype');
+  font-weight: 200 800;
+  font-stretch: 75% 100%;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Pretendard is linked from index.html (an @import here, after other rules, is ignored). */
