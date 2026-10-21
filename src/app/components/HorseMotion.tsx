@@ -75,11 +75,11 @@ export default function HorseMotion({ className }: { className?: string }) {
     // Each bone's pose is kept as its rotation plus where its joint (rest head) sits, so blends turn about the joint.
     let groups: Array<{ parent: number; shells: number[]; head: THREE.Vector3 }> = [];
     // Every hoof is two halves, toe and heel, hinged at the ankle; they ride the ankle but not the shin's tilt.
-    // The hoof tips as one with the stride: the heel lifts as the foot goes back and leaves the ground, and comes down
-    // again (a little past level) as it swings forward to land. The ground stops each half on its own: a half that
-    // would go through it is turned back about the ankle only as far as it must to rest on it, so the half that lands
-    // first bends first and the other bends when it lands too.
-    let hooves: Array<{ group: number; phase: number; ankle: THREE.Vector3; ground: number; halves: Array<{ shell: number; outline: THREE.Vector2[] }> }> = [];
+    // On the ground the hoof sits level. Off it, it tips as one with the stride: the heel lifts as the foot goes back
+    // and leaves the ground, and comes down again (a little past level) as it swings forward to land, levelling out
+    // as it nears the ground. The ground stops each half on its own: a half that would go through it is turned back
+    // about the ankle only as far as it must to rest on it, so the half that lands first bends first.
+    let hooves: Array<{ group: number; phase: number; ankle: THREE.Vector3; low: number; lift: number; ground: number; halves: Array<{ shell: number; outline: THREE.Vector2[] }> }> = [];
     // most the heel lifts as the foot leaves the ground, and drops as it comes down to land (radians)
     const HOOF = { heelUp: .45, heelDown: .15 };
     // where each foot is in the walk cycle when the cycle starts (as baked: the diagonal pairs half a cycle apart)
@@ -126,15 +126,18 @@ export default function HorseMotion({ className }: { className?: string }) {
         const ankle = new THREE.Vector3().fromArray(rig.bones[name].tail), group = names.indexOf(name), shin = groups[group].shells[0];
         const below = groups[group].shells.filter(i => {
           const geometry = (shells[i] as THREE.Mesh).geometry; geometry.computeBoundingBox();
-          // the hoof halves reach well below the ankle (the small joint caps just under it stay on the shin)
-          return geometry.boundingBox!.min.y < ankle.y - .09;
+          // the hoof halves hang from the ankle and reach well below it (the small joint caps just under it, and the
+          // shin, which reaches down past it on one front leg, stay on the leg)
+          const box = geometry.boundingBox!;
+          return box.min.y < ankle.y - .09 && box.max.y < ankle.y + .05;
         });
         groups[group].shells = groups[group].shells.filter(i => !below.includes(i));
         const halves = below.map(shell => ({ shell, outline: outlineOf(shell, ankle) }));
         // The ground: where the sole sits, level, with the ankle as low as it comes in the walk (or standing).
-        const lowest = Math.min(ankle.y, ...gait.walk.poses.map(set => ankle.clone().applyMatrix4(new THREE.Matrix4().fromArray(set[shin])).y));
+        const heights = gait.walk.poses.map(set => ankle.clone().applyMatrix4(new THREE.Matrix4().fromArray(set[shin])).y);
+        const low = Math.min(ankle.y, ...heights), lift = Math.max(...heights) - low;
         const sole = Math.min(...halves.flatMap(h => h.outline.map(v => v.y)));
-        return { group, phase: footPhase[name], ankle, ground: lowest + sole, halves };
+        return { group, phase: footPhase[name], ankle, low, lift, ground: low + sole, halves };
       });
       const world = new THREE.Matrix4(), inv = new THREE.Matrix4();
       const toLocal = (set: number[][]) => {
@@ -169,12 +172,10 @@ export default function HorseMotion({ className }: { className?: string }) {
     let phase = 0, activity = 0;
     let ready: { t: number } | null = null;
     const ease = (t: number) => { t = THREE.MathUtils.clamp(t, 0, 1); return t * t * (3 - 2 * t); };
-    // The hoof's tip through one foot's cycle (q: 0 lands, .5 lifts off, as baked). Landing heel-first, it rolls level
-    // over the first part of the stance; late in the stance, as the foot goes back, the heel lifts, and stays lifted as
-    // the foot leaves the ground; through the swing forward it comes down again, past level, to land heel-first.
-    const tipAt = (q: number) => q < .5
-      ? HOOF.heelDown * (1 - ease(q / .12)) - HOOF.heelUp * ease((q - .36) / .14)
-      : -HOOF.heelUp * (1 - ease((q - .55) / .25)) + HOOF.heelDown * ease((q - .7) / .2);
+    // The hoof's tip through one foot's cycle (q: 0 lands, .5 lifts off, as baked): level through the stance; as the
+    // foot leaves the ground going back the heel lifts, then through the swing forward it comes down, past level.
+    const tipAt = (q: number) => q < .5 ? 0
+      : -HOOF.heelUp * ease((q - .5) / .08) * (1 - ease((q - .62) / .18)) + HOOF.heelDown * ease((q - .75) / .15);
     const fire = () => {
       if (!shells.length || reducedMotion || ready) return;
       ready = { t: 0 };
@@ -226,7 +227,8 @@ export default function HorseMotion({ className }: { className?: string }) {
         const stride = activity * (mode === 'crouch' ? 1 - amount : 1);
         for (const hoof of hooves) {
           const at = ankleNow.copy(hoof.ankle).applyMatrix4(worlds[hoof.group]);
-          const tip = stride * tipAt((phase + hoof.phase) % 1);
+          // tipped only off the ground, levelling out as the foot comes down to it
+          const tip = stride * tipAt((phase + hoof.phase) % 1) * ease((at.y - hoof.low) / (.3 * hoof.lift));
           for (const { shell, outline } of hoof.halves) {
             // how far the half's lowest point is above the ground when turned by `a` about the ankle (+a lowers the heel)
             const above = (a: number) => {
