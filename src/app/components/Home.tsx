@@ -21,7 +21,7 @@ export default function Home() {
     rotation.current.hover = false; focus.current.index = -1; setPreview(-1);
   };
   const showPreview = (index: number) => {
-    if (window.innerWidth < 700 || rotation.current.drag || rotation.current.leaving || !window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+    if (rotation.current.drag || rotation.current.leaving || !window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
     rotation.current.hover = true; rotation.current.vx = 0; rotation.current.vy = 0;
     focus.current.index = index; setPreview(index);
   };
@@ -71,7 +71,6 @@ export default function Home() {
     let frame = 0, last = 0, width = stage.clientWidth, height = stage.clientHeight;
     const observer = new ResizeObserver(() => {
       width = stage.clientWidth; height = stage.clientHeight;
-      if (width < 700 && focus.current.index >= 0) clearPreview();
     });
     observer.observe(stage);
     const resetPointer = () => { if (!pointer.matches) clearPreview(); };
