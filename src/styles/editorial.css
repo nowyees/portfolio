@@ -310,7 +310,7 @@
 .story-rv { opacity:0; transform:translate3d(0,22px,0); transition:opacity .85s cubic-bezier(.22,1,.36,1),transform .85s cubic-bezier(.22,1,.36,1); }
 .story-rv.is-in { opacity:1; transform:none; }
 .story-figure figcaption { padding-top:12px; font:400 11px/1.5 var(--story-body); color:var(--story-muted); letter-spacing:0; }
-.story-pin { --pin-h:68svh; height:calc(var(--pin-count,3) * 100svh); align-items:start; }
+.story-pin { --pin-h:68svh; height:calc((var(--pin-count,3) - 1) * 60svh + 100svh); align-items:start; }   /* a scene every 60svh (PIN_STEP) */
 .story-pin-stage { grid-column:3 / 10; position:relative; height:100%; }
 .story-pin-frame { position:sticky; top:16svh; height:var(--pin-h); }
 .story-pin-layer { position:absolute; inset:0; display:flex; flex-direction:column; gap:24px; opacity:0; transform:translate3d(0,22px,0) scale(.98); transition:opacity .65s ease,transform .85s cubic-bezier(.22,1,.36,1); pointer-events:none; }

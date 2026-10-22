@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
-import { pinnedStepDestination, pinnedStepIndex } from '../../lib/pinnedSteps';
+import { PIN_STEP, pinnedStepIndex } from '../../lib/pinnedSteps';
 import type { ProjectStory as Story, StoryClip, StoryImage, StoryRow, StorySection, StoryText } from '../../lib/projectStories';
 
 type Film = { url: string; poster?: string };
@@ -133,62 +133,21 @@ function Pinned({ steps, chapter, title }: {
   useEffect(() => {
     const element = root.current!;
     const mode = window.matchMedia('(min-width: 901px) and (prefers-reduced-motion: no-preference)');
-    let frame = 0, lockedUntil = 0, lastWheel = 0, captured = false, accumulated = 0;
-    const within = () => {
-      const top = element.getBoundingClientRect().top, vh = window.innerHeight;
-      return top <= vh * .16 && top >= -steps.length * vh;
-    };
+    let frame = 0;
+    // The scene follows ordinary scrolling: it changes every PIN_STEP of a screen as the section passes.
     const update = () => {
       frame = 0;
-      setActive(pinnedStepIndex(-element.getBoundingClientRect().top, window.innerHeight, steps.length));
+      setActive(pinnedStepIndex(-element.getBoundingClientRect().top, window.innerHeight * PIN_STEP, steps.length));
     };
-    const changeMode = () => { setPinned(mode.matches); captured = false; accumulated = 0; update(); };
-    const move = (direction: -1 | 1) => {
-      const top = element.getBoundingClientRect().top, vh = window.innerHeight;
-      const next = pinnedStepDestination(-top, vh, steps.length, direction);
-      if (next === null) return false;
-      window.scrollTo({ top: window.scrollY + top + next * vh, behavior: 'smooth' });
-      return true;
-    };
-    const wheel = (event: WheelEvent) => {
-      if (!mode.matches || !within() || event.ctrlKey || event.altKey || Math.abs(event.deltaX) > Math.abs(event.deltaY) || !event.deltaY) return;
-      const now = performance.now();
-      // One physical wheel/trackpad gesture advances one scene, not all three.
-      if (captured && (now < lockedUntil || now - lastWheel < 180)) {
-        event.preventDefault(); lastWheel = now; return;
-      }
-      captured = false;
-      const direction = event.deltaY > 0 ? 1 : -1;
-      if (pinnedStepDestination(-element.getBoundingClientRect().top, window.innerHeight, steps.length, direction) === null) {
-        accumulated = 0; return;
-      }
-      event.preventDefault();
-      const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? window.innerHeight : 1);
-      if (now - lastWheel > 180 || Math.sign(accumulated) !== direction) accumulated = 0;
-      accumulated += delta; lastWheel = now;
-      if (Math.abs(accumulated) < 18) return;
-      if (move(direction)) { captured = true; lockedUntil = now + 700; accumulated = 0; }
-    };
-    const keydown = (event: KeyboardEvent) => {
-      if (!mode.matches || !within() || event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey ||
-          (event.target as HTMLElement).closest('a,button,input,textarea,select,[contenteditable="true"]')) return;
-      const direction = event.key === 'ArrowDown' || event.key === 'PageDown' || (event.key === ' ' && !event.shiftKey) ? 1 :
-        event.key === 'ArrowUp' || event.key === 'PageUp' || (event.key === ' ' && event.shiftKey) ? -1 : 0;
-      if (!direction) return;
-      if (pinnedStepDestination(-element.getBoundingClientRect().top, window.innerHeight, steps.length, direction as -1 | 1) === null) return;
-      if (event.repeat || performance.now() < lockedUntil) { event.preventDefault(); return; }
-      if (move(direction as -1 | 1)) { event.preventDefault(); lockedUntil = performance.now() + 700; }
-    };
+    const changeMode = () => { setPinned(mode.matches); update(); };
     const request = () => { if (!frame) frame = requestAnimationFrame(update); };
     changeMode();
     window.addEventListener('scroll', request, { passive: true });
     window.addEventListener('resize', request);
-    window.addEventListener('wheel', wheel, { passive: false });
-    window.addEventListener('keydown', keydown);
     mode.addEventListener('change', changeMode);
     return () => {
       cancelAnimationFrame(frame); window.removeEventListener('scroll', request); window.removeEventListener('resize', request);
-      window.removeEventListener('wheel', wheel); window.removeEventListener('keydown', keydown); mode.removeEventListener('change', changeMode);
+      mode.removeEventListener('change', changeMode);
     };
   }, [steps]);
   return <div className="story-grid story-pin" ref={root}
