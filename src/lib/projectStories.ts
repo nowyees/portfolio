@@ -88,7 +88,7 @@ const lunaris: ProjectStory = {
       { images: [l('artemis', 684, 215, '우주 건설 환경 — 컨셉 이미지')], span: 6, align: 'end' },
     ] },
     { chapter: 'Background', texts: [{ title: 'Biomimicry', body: '동물이 꼬리로 균형을 잡고 몸을 지지하는 방식에 주목했습니다. 꼬리의 회전 반동으로 몸의 각도를 바꾸는 Pivoting, 구조물을 감싸 몸을 고정하는 Anchoring을 하나의 장치에 담았습니다.' }], rows: [
-      { images: [l('nature-01', 215, 333), l('nature-02', 218, 333), l('nature-03', 215, 333)] },
+      { images: [l('nature-01', 215, 333), l('nature-02', 218, 333), l('nature-03', 215, 333), l('nature-04', 614, 1154)] },
     ] },
     { chapter: 'Tail Device', kind: 'feature', image: l('tail', 1859, 560),
       text: { title: 'Tail Device', body: '총 1.7m 길이의 꼬리는 케이블과 모터로 유기적으로 연결되어 있습니다. 외부 삼각형 쉘은 내부 설비를 보호하면서도 파츠 간 간섭 없이 유연하게 휘어지도록 설계했습니다. 또한 등에 있는 센서가 근육 움직임을 감지해, 원하는 방향으로 꼬리를 회전시켜 방향을 제어하거나 물체를 잡을 수 있게 합니다.' },
@@ -106,7 +106,7 @@ const lunaris: ProjectStory = {
           moving(l('gripper-spine', 332, 477), 'gripper-curl', 720, 1280, 'Gripper — 말아 쥐는 움직임')],
         details: [l('gripper-component', 685, 165)] },
       { text: { num: '02', title: 'Bone structure', body: '8방향 케이블 구동 방식을 통해 세밀한 회전 조절이 가능하며, 이를 통해 사용자의 자유로운 자세 변경과 회전 움직임을 지원합니다. 디바이스의 외형은 삼각 구조의 쉘(Shell)로 제작하여 경량화와 동시에 뛰어난 내충격성을 갖추도록 설계했습니다.' },
-        images: [moving(l('bone-hero', 920, 970), 'bone-exploded', 1600, 900, 'Bone structure — 쉘과 내부 구조'), l('bone-structure', 451, 685)],
+        images: [moving(l('bone-hero', 920, 970), 'bone-exploded', 1600, 900, 'Bone structure — 쉘과 내부 구조'), moving(l('bone-structure', 451, 685), 'shell-close', 720, 1280, 'Bone structure — 쉘 클로즈업')],
         details: [l('gripper-blueprint', 685, 165)] },
       { text: { num: '03', title: 'Motor cable system', body: '연결부에 위치한 모터는 도르래 시스템을 활용해 케이블을 정밀하게 밀고 당기며 길이를 조절합니다. 이러한 메커니즘을 통해 디바이스의 움직임을 오차 없이 정교하게 제어할 수 있습니다.' },
         images: [
