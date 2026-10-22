@@ -1,10 +1,10 @@
 // Long-form project pages, written from the portfolio slides (Figma "취창폴", page "web"). A project whose title has
 // a story here gets it in place of the plain gallery; its films (videos in the project's media) close the story.
-// Images use original Figma fills, with responsive WebP derivatives under /public/projects/<slug>/.
+// Images use authored Figma frames/masks, not uncropped image fills.
 
 // Native pixels and the designed display frame are independent: upgrading a source must not change its layout.
 export type StoryImage = { src: string; w: number; h: number; caption?: string; srcSet?: string;
-  frame?: { w: number; h: number }; position?: string; transform?: string; fit?: 'cover' | 'contain'; naturalCanvas?: boolean };
+  frame?: { w: number; h: number } };
 export type StoryText = { title: string; body: string; num?: string };
 // A row of images shown at one height. The page's content runs over the right ten of twelve columns; a row spans
 // `span` of those ten (all of them by default), from the left or, with `align: 'end'`, from the right.
@@ -19,6 +19,7 @@ export type StorySection = { chapter: string } & (
   | { kind: 'pinned'; steps: Array<{ text: StoryText; images: StoryImage[] }>; after?: StoryRow[] }
   | { kind: 'compare'; text?: StoryText; items: Array<{ text: StoryText; image: StoryImage }> }
   | { kind: 'strip'; text: StoryText; images: StoryImage[] }
+  | { kind: 'gallery'; text: StoryText; images: StoryImage[] }
 );
 export type ProjectStory = {
   name: string;   // the title as written (the project list keeps it in capitals)
@@ -32,34 +33,26 @@ export type ProjectStory = {
 const img = (slug: string) => (name: string, w: number, h: number, caption?: string): StoryImage =>
   ({ src: `/projects/${slug}/${name}.jpg`, w, h, caption });
 
-// Native dimensions, not dimensions of the image on a presentation slide. No asset is upscaled.
+// Pixel dimensions of exported image frames. Crop, masks and authored backgrounds
+// are baked together in Figma; the site must not reinterpret the original fills.
 const originals: Record<string, [number, number]> = {
-  cover: [3840, 2160], intro: [2880, 1620], 'astronaut-01': [800, 1213],
-  'astronaut-02': [1200, 1206], 'astronaut-03': [730, 735], artemis: [2912, 1632],
-  anchoring: [2160, 3840], 'nature-01': [1080, 1350], 'nature-02': [405, 768],
-  'nature-03': [1712, 2576], tail: [2560, 1440], 'gripper-joints': [2160, 3840],
-  'gripper-spine': [2160, 2840], 'gripper-blueprint': [1584, 304], 'bone-hero': [3840, 3840],
-  'motor-cable': [2160, 3840], companion: [2700, 2160], 'flow-mode': [2880, 2880],
-  'bike-mode': [1920, 1920], arm: [3840, 3840], 'arm-detail': [2880, 2025],
-  'proto-01': [1024, 576], 'proto-02': [1024, 576], 'proto-03': [4096, 2731],
-  'proto-04': [1024, 683], 'exhibition-01': [4096, 2731],
-  'exhibition-02': [1024, 683], 'exhibition-03': [1024, 683],
-};
-const framings: Record<string, Partial<StoryImage>> = {
-  pivoting: { position: '82% 50%' },
-  tail: { naturalCanvas: true, transform: 'translateY(-50%) rotate(-18deg) scaleX(-1) scale(1.05)' },
-  'arm-detail': { position: '55% 15%' },
-  'bike-mode': { position: '58% 50%' },
-  'gripper-blueprint': { fit: 'contain' },
+  cover: [2420, 2092], 'astronaut-01': [430, 900], 'astronaut-02': [430, 900],
+  'astronaut-03': [430, 900], artemis: [1370, 430], anchoring: [799, 1043],
+  pivoting: [799, 1043], 'nature-01': [430, 666], 'nature-02': [436, 666],
+  'nature-03': [430, 666], tail: [3718, 1120], 'tail-blueprint': [3720, 450],
+  gripper: [2127, 1260], 'gripper-joints': [666, 954], 'gripper-spine': [664, 954],
+  'gripper-component': [2740, 660], 'gripper-blueprint': [2740, 660],
+  'bone-hero': [1840, 1940], 'bone-structure': [1505, 2281], 'motor-cable': [900, 1370],
+  companion: [1840, 1370], 'flow-mode': [900, 1370], 'bike-mode': [900, 1370],
+  arm: [1840, 1940], 'arm-detail': [1840, 1176], 'proto-01': [1370, 1136],
+  'proto-02': [1370, 1136], 'proto-03': [900, 1136], 'proto-04': [1840, 764],
+  'exhibition-01': [2310, 1370], 'exhibition-02': [1370, 900], 'exhibition-03': [1370, 1000],
 };
 const l = (name: string, w: number, h: number, caption?: string): StoryImage => {
-  const source = name === 'pivoting' ? 'intro' : name;
-  const native = originals[source];
-  // Two original fills are blank in Figma's download. Keep their existing crops until originals are supplied.
+  const native = originals[name];
   if (!native) return img('lunaris')(name, w, h, caption);
-  const fullWidth = Math.min(native[0], 3200), base = `/projects/lunaris/${source}`;
-  const framing = framings[name] || {};
-  return { src: `${base}.webp`, w: native[0], h: native[1], frame: { w, h }, caption, ...framing,
+  const fullWidth = Math.min(native[0], 3200), base = `/projects/lunaris/${name}-framed`;
+  return { src: `${base}.webp`, w: native[0], h: native[1], frame: { w, h }, caption,
     srcSet: [...[640, 1280].filter(size => size < fullWidth).map(size => `${base}-${size}.webp ${size}w`),
       `${base}.webp ${fullWidth}w`].join(', ') };
 };
@@ -96,7 +89,7 @@ const lunaris: ProjectStory = {
         images: [l('bone-hero', 920, 970), l('bone-structure', 451, 685)] },
       { text: { num: '03', title: 'Motor cable system', body: '연결부에 위치한 모터는 도르래 시스템을 활용해 케이블을 정밀하게 밀고 당기며 길이를 조절합니다. 이러한 메커니즘을 통해 디바이스의 움직임을 오차 없이 정교하게 제어할 수 있습니다.' },
         images: [l('motor-cable', 450, 685)] },
-    ], after: [{ images: [l('gripper-component', 685, 165, 'Tail movement component'), l('gripper-blueprint', 620, 165)] }] },
+    ], after: [{ images: [l('gripper-component', 685, 165, 'Tail movement component'), l('gripper-blueprint', 685, 165)] }] },
     { chapter: 'Companion Robot', kind: 'feature', image: l('companion', 920, 685),
       text: { title: 'Companion robot', body: '이 로봇은 무중력 공간에서는 부유하며 이동과 임무를 보조하는 컴패니언 역할을 수행합니다. 반면, 달이나 화성과 같은 저중력 환경에서는 탑승형 바이크로 형태를 변환하여 지표면을 빠르게 주행할 수 있는 듀얼 모드 모빌리티입니다.' } },
     { chapter: 'Companion Robot', kind: 'compare', items: [
@@ -109,10 +102,9 @@ const lunaris: ProjectStory = {
     { chapter: 'Process', kind: 'strip',
       text: { title: 'Prototyping', body: '3D 프린팅을 활용한 반복 실험으로 부품 간 간섭을 제거하고, 아두이노와 구조 설계를 통해 구현 가능성을 검증했습니다. 관객이 직접 조작하며 작동 원리를 이해할 수 있도록 제작했으며, 직접 착용해보며 길이와 사용성을 점검했습니다. 특히 모든 파츠는 접착제 없이 조립 가능한 구조로 설계해 빠른 프로토타이핑을 실현했습니다.' },
       images: [l('proto-01', 685, 568), l('proto-02', 685, 568), l('proto-03', 450, 568), l('proto-04', 920, 382)] },
-    { chapter: 'Exhibition', texts: [{ title: 'Exhibition', body: '라이트 패널 위 우주인이 인쇄된 투명 필름에 실물 목업을 부착하여, 2D 평면 이미지와 3D 입체물이 자연스럽게 연결되도록 연출했습니다. 하단에는 불투명 아크릴로 제작한 조명 스탠드를 배치해 전시의 완성도를 높였습니다.' }], rows: [
-      { images: [l('exhibition-01', 1155, 685), l('exhibition-02', 685, 450)] },
-      { images: [l('exhibition-03', 685, 500)], span: 4, align: 'end' },
-    ] },
+    { chapter: 'Exhibition', kind: 'gallery',
+      text: { title: 'Exhibition', body: '라이트 패널 위 우주인이 인쇄된 투명 필름에 실물 목업을 부착하여, 2D 평면 이미지와 3D 입체물이 자연스럽게 연결되도록 연출했습니다. 하단에는 불투명 아크릴로 제작한 조명 스탠드를 배치해 전시의 완성도를 높였습니다.' },
+      images: [l('exhibition-01', 1155, 685), l('exhibition-02', 685, 450), l('exhibition-03', 685, 500)] },
   ],
 };
 

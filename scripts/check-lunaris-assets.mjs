@@ -29,7 +29,14 @@ for (const image of images.values()) {
 }
 for (const [name, w, h] of [['tail', 1859, 560], ['flow-mode', 450, 685], ['bike-mode', 450, 685],
   ['gripper-joints', 333, 477], ['proto-01', 685, 568], ['proto-03', 450, 568]]) {
-  const image = images.get(`/projects/lunaris/${name}.webp`);
+  const image = images.get(`/projects/lunaris/${name}-framed.webp`);
   if (image?.frame?.w !== w || image?.frame?.h !== h) throw new Error(`Designed frame changed: ${name}`);
+}
+const story = storyFor('LUNARIS');
+const exhibition = story.sections.find(section => section.chapter === 'Exhibition');
+if (exhibition?.kind !== 'gallery' || exhibition.images.length !== 3) throw new Error('Exhibition gallery missing');
+for (const image of images.values()) {
+  if (!image.src.includes('-framed.webp')) throw new Error(`Unframed source: ${image.src}`);
+  if ('transform' in image || 'position' in image || 'naturalCanvas' in image) throw new Error(`Guessed crop: ${image.src}`);
 }
 console.log(`PASS: ${images.size} unique images, ${files} valid files; responsive widths and aspect ratios match.`);

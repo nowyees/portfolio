@@ -1,23 +1,26 @@
 # LUNARIS image sources
 
-Figma file `CJ5Y81wbHC8Rb7Oremrexa`, page `3093:22`, retrieved 2026-10-21.
-These WebPs come from original image fills, not full-slide screenshots or AI upscaling.
+Figma file `CJ5Y81wbHC8Rb7Oremrexa`, page `3093:22`, updated 2026-10-22.
+The active `*-framed.webp` assets preserve the authored Figma crop, masks,
+rotation and backgrounds. They are node/frame exports, not reference screenshots.
+The older unframed WebPs remain on disk for recovery but are no longer referenced.
 Keep the downloaded PNGs outside the checkout; run:
 
 ```
-node scripts/prepare-lunaris-assets.mjs <original-png-directory>
+node scripts/prepare-lunaris-assets.mjs <exported-png-directory> [node-modules-directory-containing-sharp]
 ```
 
-The full web derivative is capped at 3200px wide, quality 88; 640px and 1280px
-variants are generated only when smaller than the source. Alpha is preserved.
-`projectStories.ts` records source dimensions, responsive candidates and independent
-display frames. The authored frame ratios from the original story are preserved;
-source pixels are fitted/cropped inside them, never stretched. The cover has an
-adaptive viewport-height frame; drawings use contain where edge labels must stay visible.
+The web derivative is capped at 3200px wide, quality 92. Smaller 640/1280px
+variants are generated only where applicable. Most image frames were exported
+at 2×. This preserves framing; it does not manufacture detail absent in a source.
+The cover also retains its authored 1210:1046 frame instead of an adaptive crop.
 
 Pinned mechanism studies and the horizontal process sequence are restored on
 desktop. Mobile uses inline mechanism studies and native horizontal scrolling;
 reduced-motion preferences also receive a non-pinned presentation.
+Exhibition uses a three-image Embla gallery with a uniform image height,
+centered snaps, pointer drag, touch swipe, keyboard arrows and button navigation.
+Its height is capped by the widest slide so no image is clipped on mobile.
 
 | Original PNG name | Figma source node |
 | --- | --- |
@@ -37,19 +40,26 @@ reduced-motion preferences also receive a non-pinned presentation.
 | proto-01 / 02 / 03 / 04 | 3093:302 / 303 / 304 / 307 |
 | exhibition-01 / 02 / 03 | 3093:314 / 313 / 315 |
 
-Only gripper-spine is trimmed: 1000px of unused top canvas is removed from the
-2160×3840 original. Other derivatives retain the original canvas and proportions.
-The full 16:9 cover source is retained, with the crop chosen in the web frame.
+## Active frame exports and supplied originals
 
-## Originals still needed
+- Cover: frame 3093:77, not its overflowing fill 3093:78.
+- Pivoting: rectangle 3093:138, not the full two-astronaut source.
+- Companion / Flow / Bike: frames 3093:271 / 260 / 255, including masks/backgrounds.
+- Arm detail: frame 3093:292, not the uncropped source 3093:294.
+- Tail: original `tail.png`, composed using the exact 3093:148 matrix relative
+  to frame 3093:145 and rectangular mask 3093:147. This avoids Figma's pixelated
+  masked-image export intermediate. No guessed CSS rotation or image position.
+- Bone hero and arm hero: their exact 920×970 slots at (30,80), extracted from
+  2× node exports of 3093:239 / 290. Original layered backgrounds are retained.
+- Gripper: owner-supplied `1004.408 1.png`, 2127×1260.
+- Bone structure: owner-supplied `1004.354 1.png`, 1505×2281.
+- Tail movement diagram: actual vector/text composition in 3093:193 exported
+  at 4× and extracted at (1205,599,685,165), yielding 2740×660 rather than 685×165.
+- Gripper blueprint: the same 4× export, slot (1205,852,685,165), including all
+  dimension lines and labels, not just bitmap 3093:211.
+- Tail blueprint: exact (30,835,1860,225) slot from 2× export 3093:143.
+- Other photographs/renders: their corresponding image rectangles exported
+  at 2×, retaining Figma's fills/transforms instead of refitting the raw images.
 
-`gripper` (3093:194) and `bone-structure` (3093:248) returned blank black PNGs
-from the original-fill download. They are NOT used. The previous JPG crops are
-retained at restrained display widths; replace them when the owner supplies
-the original renders. The existing composite `tail-blueprint.jpg` and
-`gripper-component.jpg` are also retained: their labels and dimension lines are
-multiple Figma layers, not part of the individual bitmap fills.
-
-Prototype stills 01/02 and exhibition images 02/03 have ~1024px originals;
-nature-02 has a 405px original. Those files are never artificially enlarged in
-the export pipeline. Higher-resolution sources can be substituted later.
+The source-node table above identifies original fills for provenance; active
+assets use the enclosing frames where specified here. No Figma canvas edits.

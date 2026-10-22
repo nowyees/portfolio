@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import useEmblaCarousel from 'embla-carousel-react';
 import type { ProjectStory as Story, StoryImage, StoryRow, StorySection, StoryText } from '../../lib/projectStories';
 
 type Film = { url: string; poster?: string };
@@ -15,10 +16,10 @@ function Figure({ image, alt, priority = false, delay = 0, drift = false, reveal
     <div className={'story-media' + (revealed ? ' is-in' : '')}
       style={{ aspectRatio: String(ratioOf(image)), transitionDelay: `${delay}s` }}>
       <div className="story-reveal-zoom"><div className={'story-image-plane' + (drift ? ' has-drift' : '')}>
-        <img className={image.naturalCanvas ? 'is-natural-canvas' : undefined}
+        <img draggable={false}
         src={image.src} srcSet={image.srcSet} sizes={image.srcSet ? sizes : undefined}
         alt={alt} width={image.w} height={image.h} loading={priority ? 'eager' : 'lazy'}
-        style={{ objectPosition: image.position, transform: image.transform, objectFit: image.fit }} decoding="async" />
+        decoding="async" />
       </div></div>
     </div>
     {image.caption && <figcaption className="story-rv">{image.caption}</figcaption>}
@@ -126,6 +127,50 @@ function Strip({ images, title }: { images: StoryImage[]; title: string }) {
   </div>;
 }
 
+function Gallery({ images, title }: { images: StoryImage[]; title: string }) {
+  const [viewport, api] = useEmblaCarousel({ align: 'center', containScroll: false, loop: false });
+  const [selected, setSelected] = useState(0);
+  const [ends, setEnds] = useState({ prev: false, next: images.length > 1 });
+  useEffect(() => {
+    if (!api) return;
+    const update = () => {
+      setSelected(api.selectedScrollSnap());
+      setEnds({ prev: api.canScrollPrev(), next: api.canScrollNext() });
+    };
+    update(); api.on('select', update); api.on('reInit', update);
+    return () => { api.off('select', update); api.off('reInit', update); };
+  }, [api]);
+  const move = (direction: -1 | 1) => {
+    if (direction < 0) api?.scrollPrev(reduceMotion());
+    else api?.scrollNext(reduceMotion());
+  };
+  return <div className="story-gallery" role="region" aria-roledescription="carousel" aria-label={title}
+    style={{ '--gallery-ratio': Math.max(...images.map(ratioOf)) } as React.CSSProperties}>
+    <div className="story-gallery-viewport" ref={viewport} tabIndex={0}
+      aria-label="Exhibition images. Drag, swipe or use the left and right arrow keys."
+      onKeyDown={event => {
+        if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+          event.preventDefault(); move(event.key === 'ArrowLeft' ? -1 : 1);
+        }
+      }}>
+      <div className="story-gallery-track">{images.map((image, i) =>
+        <div className="story-gallery-slide" key={image.src} role="group" aria-roledescription="slide"
+          aria-label={`${i + 1} / ${images.length}`}
+          style={{ width: `calc(var(--gallery-h) * ${ratioOf(image)})` }}>
+          <Figure image={image} alt={`${title} ${i + 1}`} revealed
+            sizes="(max-width: 900px) 92vw, 75vw" />
+        </div>)}</div>
+    </div>
+    <div className="story-gallery-controls">
+      <span aria-live="polite" aria-atomic="true">{pad(selected + 1)} / {pad(images.length)}</span>
+      <button type="button" disabled={!ends.prev} onClick={() => move(-1)} aria-label="Previous exhibition image"
+        className="story-gallery-arrow is-prev"><span aria-hidden="true" /></button>
+      <button type="button" disabled={!ends.next} onClick={() => move(1)} aria-label="Next exhibition image"
+        className="story-gallery-arrow is-next"><span aria-hidden="true" /></button>
+    </div>
+  </div>;
+}
+
 function Part({ section, title }: { section: StorySection; title: string }) {
   const chapter = section.chapter;
   const after = 'after' in section ? section.after : undefined;
@@ -155,6 +200,10 @@ function Part({ section, title }: { section: StorySection; title: string }) {
     case 'strip': return <div className="story-part story-process">
       {copy(section.text)}
       <Strip images={section.images} title={title} />
+    </div>;
+    case 'gallery': return <div className="story-part story-exhibition">
+      <div className="story-grid"><div style={content}><Gallery images={section.images} title={`${title} — ${chapter}`} /></div></div>
+      {copy(section.text)}
     </div>;
     default: return <div className="story-part" data-part={section.texts[0]?.title}>
       {section.texts.map(text => <React.Fragment key={text.title}>{copy(text)}</React.Fragment>)}
@@ -193,7 +242,7 @@ export default function ProjectStory({ story, year, films = [] }: { story: Story
         const box = el.parentElement!.getBoundingClientRect();
         const shift = !motion.matches && window.innerWidth > 900
           ? Math.max(-box.height * .025, Math.min(box.height * .025, (window.innerHeight * .5 - box.top - box.height * .5) * .04)) : 0;
-        el.style.setProperty('--story-drift', `${shift}px`);
+        el.closest<HTMLElement>('.story-figure')?.style.setProperty('--story-drift', `${shift}px`);
       });
     };
     const request = () => { if (!frame) frame = requestAnimationFrame(update); };
