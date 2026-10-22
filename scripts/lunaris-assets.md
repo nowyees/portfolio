@@ -13,7 +13,8 @@ node scripts/prepare-lunaris-assets.mjs <exported-png-directory> [node-modules-d
 The web derivative is capped at 3200px wide, quality 92. Smaller 640/1280px
 variants are generated only where applicable. Most image frames were exported
 at 2×. This preserves framing; it does not manufacture detail absent in a source.
-The cover also retains its authored 1210:1046 frame instead of an adaptive crop.
+The cover was subsequently restored to the original 16:9 source at the owner's
+request; this is the only intentional exception to the framed-asset rule.
 
 Pinned mechanism studies and the horizontal process sequence are restored on
 desktop. Mobile uses inline mechanism studies and native horizontal scrolling;
@@ -42,7 +43,8 @@ Its height is capped by the widest slide so no image is clipped on mobile.
 
 ## Active frame exports and supplied originals
 
-- Cover: frame 3093:77, not its overflowing fill 3093:78.
+- Cover: frame 3093:77 is retained as a fallback; the owner now prefers the
+  earlier wide source, used without the portrait crop.
 - Pivoting: rectangle 3093:138, not the full two-astronaut source.
 - Companion / Flow / Bike: frames 3093:271 / 260 / 255, including masks/backgrounds.
 - Arm detail: frame 3093:292, not the uncropped source 3093:294.
@@ -60,6 +62,21 @@ Its height is capped by the widest slide so no image is clipped on mobile.
 - Tail blueprint: exact (30,835,1860,225) slot from 2× export 3093:143.
 - Other photographs/renders: their corresponding image rectangles exported
   at 2×, retaining Figma's fills/transforms instead of refitting the raw images.
+
+## Context and technical-study placement
+
+The owner-provided `녹음 2025-11-06 225658.mp4` is remuxed (not enlarged) to
+`zero-gravity-reference.mp4`, retaining 460×418, 30fps and 16.64s. A poster is
+extracted at 6s. It sits beside the Background copy at a maximum width of 460px,
+plays muted/inline only while visible, and retains native playback/audio controls.
+Reduced-motion mode does not autoplay. The clip is explicitly labelled reference
+footage; no unsupported source/author credit is invented.
+
+The two technical drawings now belong to the Gripper and Bone structure pinned
+studies, not a disconnected row after all mechanisms. Mobile keeps each drawing
+with its study. Duplicate captions embedded in the drawings are not repeated.
+Feature descriptions align with the image's left edge instead of an empty title
+column pushing them to the right. Existing reveals and the Process strip remain.
 
 The source-node table above identifies original fills for provenance; active
 assets use the enclosing frames where specified here. No Figma canvas edits.

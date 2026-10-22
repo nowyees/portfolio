@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
-import type { ProjectStory as Story, StoryImage, StoryRow, StorySection, StoryText } from '../../lib/projectStories';
+import type { ProjectStory as Story, StoryClip, StoryImage, StoryRow, StorySection, StoryText } from '../../lib/projectStories';
 
 type Film = { url: string; poster?: string };
 const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -44,6 +44,42 @@ function Copy({ text, chapter }: { text: StoryText; chapter: string }) {
   </div>;
 }
 
+function BackgroundClip({ clip }: { clip: StoryClip }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  useEffect(() => {
+    const video = videoRef.current!;
+    const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let visible = false, userPaused = false, automaticPause = false;
+    const sync = () => {
+      if (visible && !motion.matches && !userPaused && !document.hidden) {
+        video.play().catch(() => { /* Native controls remain available if autoplay is blocked. */ });
+      } else if (!video.paused) {
+        automaticPause = true; video.pause();
+      }
+    };
+    const onPause = () => {
+      if (!automaticPause && visible && !document.hidden) userPaused = true;
+      automaticPause = false;
+    };
+    const onPlay = () => { userPaused = false; };
+    const observer = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting && entry.intersectionRatio >= .25; sync(); }, { threshold: [0, .25] });
+    observer.observe(video);
+    video.addEventListener('pause', onPause); video.addEventListener('play', onPlay);
+    motion.addEventListener('change', sync); document.addEventListener('visibilitychange', sync);
+    return () => {
+      observer.disconnect(); motion.removeEventListener('change', sync);
+      document.removeEventListener('visibilitychange', sync);
+      video.removeEventListener('pause', onPause); video.removeEventListener('play', onPlay);
+      video.pause();
+    };
+  }, [clip.src]);
+  return <figure className="story-reference-clip">
+    <video ref={videoRef} src={clip.src} poster={clip.poster} width={clip.w} height={clip.h}
+      muted loop playsInline controls preload="none" aria-label={clip.caption} />
+    <figcaption>{clip.caption}</figcaption>
+  </figure>;
+}
+
 function Pinned({ steps, chapter, title }: {
   steps: Extract<StorySection, { kind: 'pinned' }>['steps']; chapter: string; title: string;
 }) {
@@ -71,11 +107,14 @@ function Pinned({ steps, chapter, title }: {
         const ratio = step.images.reduce((sum, image) => sum + ratioOf(image), 0);
         return <div className={'story-pin-layer' + (i === active ? ' is-active' : '')} key={step.text.title}
           aria-hidden={i !== active} data-step={step.text.title}>
-          <div className="story-row" style={{ width: `min(100%, calc(var(--pin-h) * ${ratio}))` }}>
+          <div className="story-pin-visual"><div className="story-row" style={{ width: `min(100%, calc(100cqh * ${ratio}))` }}>
             {step.images.map((image, j) => <Figure key={image.src} image={image} revealed
               alt={`${title} — ${step.text.title} ${j + 1}`}
               sizes="(max-width: 900px) 90vw, 50vw" />)}
-          </div>
+          </div></div>
+          {step.details && <div className="story-pin-details">{step.details.map(image => <Figure key={image.src}
+            image={image} alt={`${title} — ${step.text.title} construction drawing`} revealed
+            sizes="(max-width: 900px) 90vw, 54vw" />)}</div>}
         </div>;
       })}</div>
     </div>
@@ -84,6 +123,8 @@ function Pinned({ steps, chapter, title }: {
       <Copy text={step.text} chapter={chapter} />
       <div className="story-row story-pin-inline">{step.images.map((image, j) => <Figure key={image.src}
         image={image} alt={`${title} — ${step.text.title} ${j + 1}`} sizes="(max-width: 600px) 90vw, 44vw" />)}</div>
+      {step.details && <div className="story-pin-details story-pin-inline-details">{step.details.map(image => <Figure
+        key={image.src} image={image} alt={`${title} — ${step.text.title} construction drawing`} sizes="90vw" />)}</div>}
     </article>)}</div>
   </div>;
 }
@@ -179,6 +220,13 @@ function Part({ section, title }: { section: StorySection; title: string }) {
   </div>;
   const copy = (text: StoryText) => <div className="story-grid"><div style={content}><Copy text={text} chapter={chapter} /></div></div>;
   switch (section.kind) {
+    case 'context': return <div className="story-part story-context">
+      <div className="story-grid story-context-intro">
+        <div className="story-context-video"><BackgroundClip clip={section.clip} /></div>
+        <div className="story-context-copy"><Copy text={section.text} chapter={chapter} /></div>
+      </div>
+      {rows(section.rows)}
+    </div>;
     case 'feature': return <div className="story-part story-feature">
       <div className="story-grid"><div style={content}><Figure image={section.image} alt={`${title} — ${section.text.title}`} drift /></div></div>
       {copy(section.text)}{after && rows(after)}

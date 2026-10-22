@@ -6,7 +6,7 @@ import { storyFor } from '../src/lib/projectStories.ts';
 const images = new Map();
 function walk(value) {
   if (!value || typeof value !== 'object') return;
-  if (value.src && value.w && value.h) images.set(value.src, value);
+  if (value.src && value.w && value.h && !value.src.endsWith('.mp4')) images.set(value.src, value);
   for (const child of Object.values(value)) walk(child);
 }
 walk(storyFor('LUNARIS'));
@@ -36,7 +36,20 @@ const story = storyFor('LUNARIS');
 const exhibition = story.sections.find(section => section.chapter === 'Exhibition');
 if (exhibition?.kind !== 'gallery' || exhibition.images.length !== 3) throw new Error('Exhibition gallery missing');
 for (const image of images.values()) {
-  if (!image.src.includes('-framed.webp')) throw new Error(`Unframed source: ${image.src}`);
+  if (!image.src.includes('-framed.webp') && image !== story.hero) throw new Error(`Unframed source: ${image.src}`);
   if ('transform' in image || 'position' in image || 'naturalCanvas' in image) throw new Error(`Guessed crop: ${image.src}`);
 }
+if (story.hero.frame.w / story.hero.frame.h !== 16 / 9) throw new Error('Wide hero missing');
+const context = story.sections.find(section => section.kind === 'context');
+if (!context || !existsSync(resolve('public', context.clip.src.slice(1))) || !existsSync(resolve('public', context.clip.poster.slice(1)))) {
+  throw new Error('Background reference video/poster missing');
+}
+const reference = JSON.parse(spawnSync('ffprobe', ['-v', 'error', '-select_streams', 'v:0',
+  '-show_entries', 'stream=width,height:format=duration', '-of', 'json',
+  resolve('public', context.clip.src.slice(1))], { encoding: 'utf8', windowsHide: true }).stdout);
+if (reference.streams[0].width !== context.clip.w || reference.streams[0].height !== context.clip.h || Number(reference.format.duration) < 16) {
+  throw new Error('Reference video dimensions or duration changed');
+}
+const studies = story.sections.find(section => section.kind === 'pinned');
+if (!studies.steps[0].details?.length || !studies.steps[1].details?.length || studies.after?.length) throw new Error('Technical drawings detached from studies');
 console.log(`PASS: ${images.size} unique images, ${files} valid files; responsive widths and aspect ratios match.`);
