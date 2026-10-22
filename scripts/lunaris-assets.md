@@ -13,8 +13,10 @@ node scripts/prepare-lunaris-assets.mjs <exported-png-directory> [node-modules-d
 The web derivative is capped at 3200px wide, quality 92. Smaller 640/1280px
 variants are generated only where applicable. Most image frames were exported
 at 2×. This preserves framing; it does not manufacture detail absent in a source.
-The cover was subsequently restored to the original 16:9 source at the owner's
-request; this is the only intentional exception to the framed-asset rule.
+The cover is the owner-supplied `2 28.png` (1932×1359), displayed at its original
+ratio without cropping. `cover-owner.png` is a byte-for-byte copy of the supplied
+PNG, with no recompression or enlargement and alpha retained. This is the only
+intentional exception to the framed-asset rule; earlier covers remain as backups.
 
 Pinned mechanism studies and the horizontal process sequence are restored on
 desktop. Mobile uses inline mechanism studies and native horizontal scrolling;
@@ -43,8 +45,8 @@ Its height is capped by the widest slide so no image is clipped on mobile.
 
 ## Active frame exports and supplied originals
 
-- Cover: frame 3093:77 is retained as a fallback; the owner now prefers the
-  earlier wide source, used without the portrait crop.
+- Cover: owner-supplied `2 28.png`; earlier wide and Figma frame 3093:77
+  exports are retained as backups, not referenced by the active hero.
 - Pivoting: rectangle 3093:138, not the full two-astronaut source.
 - Companion / Flow / Bike: frames 3093:271 / 260 / 255, including masks/backgrounds.
 - Arm detail: frame 3093:292, not the uncropped source 3093:294.

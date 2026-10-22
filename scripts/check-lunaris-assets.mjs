@@ -39,7 +39,8 @@ for (const image of images.values()) {
   if (!image.src.includes('-framed.webp') && image !== story.hero) throw new Error(`Unframed source: ${image.src}`);
   if ('transform' in image || 'position' in image || 'naturalCanvas' in image) throw new Error(`Guessed crop: ${image.src}`);
 }
-if (story.hero.frame.w / story.hero.frame.h !== 16 / 9) throw new Error('Wide hero missing');
+if (story.hero.src !== '/projects/lunaris/cover-owner.png' || story.hero.w !== 1932 || story.hero.h !== 1359 ||
+    story.hero.frame.w / story.hero.frame.h !== 1932 / 1359) throw new Error('Owner cover or original ratio changed');
 const context = story.sections.find(section => section.kind === 'context');
 if (!context || !existsSync(resolve('public', context.clip.src.slice(1))) || !existsSync(resolve('public', context.clip.poster.slice(1)))) {
   throw new Error('Background reference video/poster missing');

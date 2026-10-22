@@ -60,9 +60,8 @@ const l = (name: string, w: number, h: number, caption?: string): StoryImage => 
 };
 const lunaris: ProjectStory = {
   name: 'Lunaris',
-  // Owner requested the previous wide cover; all other images retain Figma crops.
-  hero: { src: '/projects/lunaris/cover.webp', w: 3840, h: 2160, frame: { w: 16, h: 9 },
-    srcSet: '/projects/lunaris/cover-640.webp 640w, /projects/lunaris/cover-1280.webp 1280w, /projects/lunaris/cover.webp 3200w' },
+  // Owner-supplied cover, displayed at its original ratio without cropping.
+  hero: { src: '/projects/lunaris/cover-owner.png', w: 1932, h: 1359, frame: { w: 1932, h: 1359 } },
   facts: [
     ['Team', 'Design Studio i · Industrial part'],
     ['Role', 'Planning · Product · Branding'],
