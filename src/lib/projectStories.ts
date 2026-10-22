@@ -88,16 +88,15 @@ const lunaris: ProjectStory = {
       { images: [l('artemis', 684, 215, '우주 건설 환경 — 컨셉 이미지')], span: 6, align: 'end' },
     ] },
     { chapter: 'Background', texts: [{ title: 'Biomimicry', body: '동물이 꼬리로 균형을 잡고 몸을 지지하는 방식에 주목했습니다. 꼬리의 회전 반동으로 몸의 각도를 바꾸는 Pivoting, 구조물을 감싸 몸을 고정하는 Anchoring을 하나의 장치에 담았습니다.' }], rows: [
-      { images: [
-        moving(l('anchoring', 399, 521, 'Anchoring — 구조물에 몸 고정하기'), 'anchoring', 720, 1280, 'Anchoring — 구조물 감기'),
-        moving(l('pivoting', 399, 521, 'Pivoting — 회전 반동으로 방향 바꾸기'), 'pivoting', 1600, 900, 'Pivoting — 몸의 방향 전환'),
-      ] },
-      { images: [l('nature-01', 215, 333), l('nature-02', 218, 333), l('nature-03', 215, 333)], span: 4, align: 'end' },
+      { images: [l('nature-01', 215, 333), l('nature-02', 218, 333), l('nature-03', 215, 333)] },
     ] },
     { chapter: 'Tail Device', kind: 'feature', image: l('tail', 1859, 560),
       text: { title: 'Tail Device', body: '총 1.7m 길이의 꼬리는 케이블과 모터로 유기적으로 연결되어 있습니다. 외부 삼각형 쉘은 내부 설비를 보호하면서도 파츠 간 간섭 없이 유연하게 휘어지도록 설계했습니다. 또한 등에 있는 센서가 근육 움직임을 감지해, 원하는 방향으로 꼬리를 회전시켜 방향을 제어하거나 물체를 잡을 수 있게 합니다.' },
       after: [
-        { images: [moving(l('tail', 1859, 560), 'tail-movement', 1600, 900, 'Tail device — 가동 범위')] },
+        { images: [
+          moving(l('anchoring', 399, 521, 'Anchoring — 구조물에 몸 고정하기'), 'anchoring', 720, 1280, 'Anchoring — 구조물 감기'),
+          moving(l('pivoting', 399, 521, 'Pivoting — 회전 반동으로 방향 바꾸기'), 'pivoting', 1600, 900, 'Pivoting — 몸의 방향 전환'),
+        ] },
         { images: [l('tail-blueprint', 1860, 225)] },
       ] },
     { chapter: 'Tail Device', kind: 'pinned', steps: [
