@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import { pinnedStepIndex, pinnedStepDestination } from '../src/lib/pinnedSteps.ts';
+assert.deepEqual([-200, 0, 490, 510, 1000, 2000, 3500].map(x => pinnedStepIndex(x, 1000, 3)), [0, 0, 0, 1, 1, 2, 2]);
+assert.equal(pinnedStepDestination(0, 1000, 3, 1), 1);
+assert.equal(pinnedStepDestination(1000, 1000, 3, 1), 2);
+assert.equal(pinnedStepDestination(2000, 1000, 3, -1), 1);
+assert.equal(pinnedStepDestination(1000, 1000, 3, -1), 0);
+assert.equal(pinnedStepDestination(0, 1000, 3, -1), null);
+assert.equal(pinnedStepDestination(2000, 1000, 3, 1), null);
+assert.equal(pinnedStepDestination(-150, 1000, 3, 1), 0);
+assert.equal(pinnedStepDestination(2150, 1000, 3, -1), 2);
+assert.equal(pinnedStepDestination(2150, 1000, 3, 1), null);
+assert.equal(pinnedStepDestination(-150, 1000, 3, -1), null);
+console.log('PASS: pinned step alignment, forward/backward travel and both exits.');

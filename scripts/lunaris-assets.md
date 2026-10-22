@@ -82,3 +82,45 @@ column pushing them to the right. Existing reveals and the Process strip remain.
 
 The source-node table above identifies original fills for provenance; active
 assets use the enclosing frames where specified here. No Figma canvas edits.
+
+## Motion studies (approved for deployment 2026-10-22)
+
+Eight owner-provided clips from `Video final files` are used below (paths in
+the table are relative to `mp4 export` unless otherwise specified).
+All are silent H.264/yuv420p, fast-start MP4, at their native aspect ratios and
+original timing. No crops, upscaling or AI-generated frames. Their authored
+stills remain in the data as recoverable alternatives. The supplied PNG hero,
+Companion Robot imagery, Process strip and Exhibition gallery are unchanged.
+
+| Placement | Original relative path | Local derivative | Pixels |
+| --- | --- | --- | --- |
+| Biomimicry — Anchoring | 사용씬/0001-0068.mp4 | motion/anchoring.mp4 | 720×1280 |
+| Biomimicry — Pivoting | 사용씬/0001-0077.mp4 | motion/pivoting.mp4 | 1600×900 |
+| Tail feature, before blueprint | 꼬리좌우/0001-0077.mp4 | motion/tail-movement.mp4 | 1600×900 |
+| Gripper — joint | gipper ball joint/0001-0065.mp4 | motion/gripper-joint.mp4 | 720×1280 |
+| Gripper — curling | 0001-0050.mp4 | motion/gripper-curl.mp4 | 720×1280 |
+| Bone structure — shell assembly | full exploded/0001-0076.mp4 | motion/bone-exploded.mp4 | 1600×900 |
+| Motor cable system — main study | super clost up motor/0001-0077.mp4 | motion/motor-drive.mp4 | 1280×720 |
+| Motor cable system — mid shot (beside original close-up) | ../수정본 rolling/2 mid closeup/1004.97.1–65.png | motion/motor-mid.mp4 | 720×1280 |
+
+The added mid shot is encoded from all 65 original PNG frames at 30000/1001 fps,
+not the review proxy or comparison montage. Its 9:16 ratio is retained, beside
+the unchanged 16:9 close-up, with a shared display height.
+
+Playback starts only while at least 25% visible, the browser tab is visible,
+and the desktop pinned layer is active. Hidden responsive duplicates do not
+play. `preload="none"` avoids eager video downloads; still posters remain until
+playback. Each clip has a keyboard-operable play/pause button. User pauses are
+retained across scroll; reduced-motion users must explicitly start playback.
+Videos pause offscreen or on inactive layers, and show their poster on errors.
+
+## Fixed three-step mechanism sequence
+
+On desktop (>900px, no reduced-motion preference), Gripper → Bone structure →
+Motor cable system share one fixed image stage and one fixed copy stage. Each
+vertical wheel/trackpad gesture moves to the adjacent viewport-aligned step;
+momentum is consumed until the gesture settles so it cannot skip multiple steps.
+Arrow/Page keys and Space also advance/reverse. Scrolling above the first or
+below the last step returns to normal document scrolling, without wrapping.
+Mobile/narrow screens and reduced-motion keep the ordinary inline sequence.
+All images retain their ratios; only the active scene's videos play.

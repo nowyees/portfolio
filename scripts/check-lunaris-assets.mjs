@@ -4,8 +4,10 @@ import { resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { storyFor } from '../src/lib/projectStories.ts';
 const images = new Map();
+const motionClips = new Map();
 function walk(value) {
   if (!value || typeof value !== 'object') return;
+  if (value.video) motionClips.set(value.video.src, value.video);
   if (value.src && value.w && value.h && !value.src.endsWith('.mp4')) images.set(value.src, value);
   for (const child of Object.values(value)) walk(child);
 }
@@ -53,4 +55,18 @@ if (reference.streams[0].width !== context.clip.w || reference.streams[0].height
 }
 const studies = story.sections.find(section => section.kind === 'pinned');
 if (!studies.steps[0].details?.length || !studies.steps[1].details?.length || studies.after?.length) throw new Error('Technical drawings detached from studies');
+if (motionClips.size !== 8) throw new Error('Expected eight selected motion studies');
+const motorStudy = studies.steps.find(step => step.text.title === 'Motor cable system');
+if (motorStudy.images.length !== 2 || motorStudy.images[0].video?.src !== '/projects/lunaris/motion/motor-mid.mp4' ||
+    motorStudy.images[1].video?.src !== '/projects/lunaris/motion/motor-drive.mp4') throw new Error('Motor mid shot and original close-up pair missing');
+for (const clip of motionClips.values()) {
+  for (const src of [clip.src, clip.poster]) if (!existsSync(resolve('public', src.slice(1)))) throw new Error(`Missing motion asset: ${src}`);
+  const probe = JSON.parse(spawnSync('ffprobe', ['-v', 'error', '-select_streams', 'v:0',
+    '-show_entries', 'stream=width,height,codec_name,pix_fmt:format=duration', '-of', 'json',
+    resolve('public', clip.src.slice(1))], { encoding: 'utf8', windowsHide: true }).stdout);
+  const stream = probe.streams[0];
+  if (stream.width !== clip.w || stream.height !== clip.h || stream.codec_name !== 'h264' || stream.pix_fmt !== 'yuv420p' ||
+      Number(probe.format.duration) <= 0) throw new Error(`Invalid motion asset: ${clip.src}`);
+}
 console.log(`PASS: ${images.size} unique images, ${files} valid files; responsive widths and aspect ratios match.`);
+console.log(`PASS: ${motionClips.size} H.264 motion studies; dimensions, posters and playback formats match.`);

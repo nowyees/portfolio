@@ -4,7 +4,7 @@
 
 // Native pixels and the designed display frame are independent: upgrading a source must not change its layout.
 export type StoryImage = { src: string; w: number; h: number; caption?: string; srcSet?: string;
-  frame?: { w: number; h: number } };
+  frame?: { w: number; h: number }; video?: StoryClip };
 export type StoryText = { title: string; body: string; num?: string };
 export type StoryClip = { src: string; poster: string; w: number; h: number; caption: string };
 // A row of images shown at one height. The page's content runs over the right ten of twelve columns; a row spans
@@ -58,6 +58,11 @@ const l = (name: string, w: number, h: number, caption?: string): StoryImage => 
     srcSet: [...[640, 1280].filter(size => size < fullWidth).map(size => `${base}-${size}.webp ${size}w`),
       `${base}.webp ${fullWidth}w`].join(', ') };
 };
+// Retain the authored still as a fallback; motion uses its own uncropped ratio.
+const moving = (image: StoryImage, name: string, w: number, h: number, caption: string): StoryImage => ({
+  ...image, video: { src: `/projects/lunaris/motion/${name}.mp4`,
+    poster: `/projects/lunaris/motion/${name}.jpg`, w, h, caption },
+});
 const lunaris: ProjectStory = {
   name: 'Lunaris',
   // Owner-supplied cover, displayed at its original ratio without cropping.
@@ -83,21 +88,32 @@ const lunaris: ProjectStory = {
       { images: [l('artemis', 684, 215, '우주 건설 환경 — 컨셉 이미지')], span: 6, align: 'end' },
     ] },
     { chapter: 'Background', texts: [{ title: 'Biomimicry', body: '동물이 꼬리로 균형을 잡고 몸을 지지하는 방식에 주목했습니다. 꼬리의 회전 반동으로 몸의 각도를 바꾸는 Pivoting, 구조물을 감싸 몸을 고정하는 Anchoring을 하나의 장치에 담았습니다.' }], rows: [
-      { images: [l('anchoring', 399, 521, 'Anchoring — 구조물에 몸 고정하기'), l('pivoting', 399, 521, 'Pivoting — 회전 반동으로 방향 바꾸기')], span: 6 },
+      { images: [
+        moving(l('anchoring', 399, 521, 'Anchoring — 구조물에 몸 고정하기'), 'anchoring', 720, 1280, 'Anchoring — 구조물 감기'),
+        moving(l('pivoting', 399, 521, 'Pivoting — 회전 반동으로 방향 바꾸기'), 'pivoting', 1600, 900, 'Pivoting — 몸의 방향 전환'),
+      ] },
       { images: [l('nature-01', 215, 333), l('nature-02', 218, 333), l('nature-03', 215, 333)], span: 4, align: 'end' },
     ] },
     { chapter: 'Tail Device', kind: 'feature', image: l('tail', 1859, 560),
       text: { title: 'Tail Device', body: '총 1.7m 길이의 꼬리는 케이블과 모터로 유기적으로 연결되어 있습니다. 외부 삼각형 쉘은 내부 설비를 보호하면서도 파츠 간 간섭 없이 유연하게 휘어지도록 설계했습니다. 또한 등에 있는 센서가 근육 움직임을 감지해, 원하는 방향으로 꼬리를 회전시켜 방향을 제어하거나 물체를 잡을 수 있게 합니다.' },
-      after: [{ images: [l('tail-blueprint', 1860, 225)] }] },
+      after: [
+        { images: [moving(l('tail', 1859, 560), 'tail-movement', 1600, 900, 'Tail device — 가동 범위')] },
+        { images: [l('tail-blueprint', 1860, 225)] },
+      ] },
     { chapter: 'Tail Device', kind: 'pinned', steps: [
       { text: { num: '01', title: 'Gripper', body: '볼 조인트 기반의 유연한 관절 구조와 파츠 간의 견고한 연결 설계를 통해 안정적인 구동이 가능합니다. 4방향 케이블 구동 시스템(4-way Cable Driven System)을 적용, 정밀한 밀고 당김을 통해 물체를 잡는 그리퍼의 기능을 최적화했습니다.' },
-        images: [l('gripper', 1155, 685), l('gripper-joints', 333, 477), l('gripper-spine', 332, 477)],
+        images: [l('gripper', 1155, 685),
+          moving(l('gripper-joints', 333, 477), 'gripper-joint', 720, 1280, 'Gripper — 볼 조인트 움직임'),
+          moving(l('gripper-spine', 332, 477), 'gripper-curl', 720, 1280, 'Gripper — 말아 쥐는 움직임')],
         details: [l('gripper-component', 685, 165)] },
       { text: { num: '02', title: 'Bone structure', body: '8방향 케이블 구동 방식을 통해 세밀한 회전 조절이 가능하며, 이를 통해 사용자의 자유로운 자세 변경과 회전 움직임을 지원합니다. 디바이스의 외형은 삼각 구조의 쉘(Shell)로 제작하여 경량화와 동시에 뛰어난 내충격성을 갖추도록 설계했습니다.' },
-        images: [l('bone-hero', 920, 970), l('bone-structure', 451, 685)],
+        images: [moving(l('bone-hero', 920, 970), 'bone-exploded', 1600, 900, 'Bone structure — 쉘과 내부 구조'), l('bone-structure', 451, 685)],
         details: [l('gripper-blueprint', 685, 165)] },
       { text: { num: '03', title: 'Motor cable system', body: '연결부에 위치한 모터는 도르래 시스템을 활용해 케이블을 정밀하게 밀고 당기며 길이를 조절합니다. 이러한 메커니즘을 통해 디바이스의 움직임을 오차 없이 정교하게 제어할 수 있습니다.' },
-        images: [l('motor-cable', 450, 685)] },
+        images: [
+          moving(l('motor-cable', 450, 685), 'motor-mid', 720, 1280, 'Motor cable system — 전체 연결부와 도르래'),
+          moving(l('motor-cable', 450, 685), 'motor-drive', 1280, 720, 'Motor cable system — 도르래 구동'),
+        ] },
     ] },
     { chapter: 'Companion Robot', kind: 'feature', image: l('companion', 920, 685),
       text: { title: 'Companion robot', body: '이 로봇은 무중력 공간에서는 부유하며 이동과 임무를 보조하는 컴패니언 역할을 수행합니다. 반면, 달이나 화성과 같은 저중력 환경에서는 탑승형 바이크로 형태를 변환하여 지표면을 빠르게 주행할 수 있는 듀얼 모드 모빌리티입니다.' } },

@@ -1,25 +1,69 @@
 import React, { useEffect, useRef, useState } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
+import { pinnedStepDestination, pinnedStepIndex } from '../../lib/pinnedSteps';
 import type { ProjectStory as Story, StoryClip, StoryImage, StoryRow, StorySection, StoryText } from '../../lib/projectStories';
 
 type Film = { url: string; poster?: string };
 const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const pad = (n: number) => String(n).padStart(2, '0');
 const content = { gridColumn: '3 / 13' };
-const ratioOf = (image: StoryImage) => (image.frame?.w || image.w) / (image.frame?.h || image.h);
+const ratioOf = (image: StoryImage) => image.video ? image.video.w / image.video.h : (image.frame?.w || image.w) / (image.frame?.h || image.h);
 
-function Figure({ image, alt, priority = false, delay = 0, drift = false, revealed = false, style,
+function MotionImage({ clip, active }: { clip: StoryClip; active: boolean }) {
+  const ref = useRef<HTMLVideoElement>(null);
+  const intent = useRef<'auto' | 'play' | 'pause'>('auto');
+  const syncRef = useRef<() => void>(() => {});
+  const [playing, setPlaying] = useState(false);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    const video = ref.current;
+    if (!video) return;
+    const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let visible = false, disposed = false;
+    const sync = () => {
+      const allowed = active && visible && !document.hidden && intent.current !== 'pause'
+        && (intent.current === 'play' || !motion.matches);
+      if (allowed) {
+        video.play().then(() => { if (disposed) video.pause(); }).catch(() => {});
+      } else video.pause();
+    };
+    syncRef.current = sync;
+    const observer = new IntersectionObserver(([entry]) => {
+      visible = entry.isIntersecting && entry.intersectionRatio >= .25; sync();
+    }, { threshold: [0, .25] });
+    observer.observe(video);
+    motion.addEventListener('change', sync); document.addEventListener('visibilitychange', sync);
+    video.addEventListener('canplay', sync);
+    return () => {
+      disposed = true; observer.disconnect(); video.pause(); syncRef.current = () => {};
+      motion.removeEventListener('change', sync); document.removeEventListener('visibilitychange', sync);
+      video.removeEventListener('canplay', sync);
+    };
+  }, [clip.src, active, failed]);
+  if (failed) return <img src={clip.poster} alt={clip.caption} width={clip.w} height={clip.h} />;
+  return <>
+    <video ref={ref} src={clip.src} poster={clip.poster} width={clip.w} height={clip.h}
+      muted loop playsInline preload="none" aria-label={clip.caption}
+      onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onError={() => setFailed(true)} />
+    <button className={'story-motion-toggle' + (playing ? ' is-playing' : '')} type="button" tabIndex={active ? 0 : -1}
+      aria-label={`${clip.caption} — ${playing ? '일시정지' : '재생'}`} onClick={() => {
+        intent.current = playing ? 'pause' : 'play'; syncRef.current();
+      }}><span aria-hidden="true" /></button>
+  </>;
+}
+
+function Figure({ image, alt, priority = false, delay = 0, drift = false, revealed = false, active = true, style,
   sizes = '(max-width: 900px) calc(100vw - 36px), 78vw' }:
   { image: StoryImage; alt: string; priority?: boolean; sizes?: string; delay?: number;
-    drift?: boolean; revealed?: boolean; style?: React.CSSProperties }) {
+    drift?: boolean; revealed?: boolean; active?: boolean; style?: React.CSSProperties }) {
   return <figure className="story-figure" style={{ flex: `${ratioOf(image)} 1 0`, ...style }}>
     <div className={'story-media' + (revealed ? ' is-in' : '')}
       style={{ aspectRatio: String(ratioOf(image)), transitionDelay: `${delay}s` }}>
       <div className="story-reveal-zoom"><div className={'story-image-plane' + (drift ? ' has-drift' : '')}>
-        <img draggable={false}
+        {image.video ? <MotionImage clip={image.video} active={active} /> : <img draggable={false}
         src={image.src} srcSet={image.srcSet} sizes={image.srcSet ? sizes : undefined}
         alt={alt} width={image.w} height={image.h} loading={priority ? 'eager' : 'lazy'}
-        decoding="async" />
+        decoding="async" />}
       </div></div>
     </div>
     {image.caption && <figcaption className="story-rv">{image.caption}</figcaption>}
@@ -85,47 +129,94 @@ function Pinned({ steps, chapter, title }: {
 }) {
   const root = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
+  const [pinned, setPinned] = useState(false);
   useEffect(() => {
-    const items = Array.from(root.current!.querySelectorAll<HTMLElement>('.story-pin-step'));
-    let frame = 0;
+    const element = root.current!;
+    const mode = window.matchMedia('(min-width: 901px) and (prefers-reduced-motion: no-preference)');
+    let frame = 0, lockedUntil = 0, lastWheel = 0, captured = false, accumulated = 0;
+    const within = () => {
+      const top = element.getBoundingClientRect().top, vh = window.innerHeight;
+      return top <= vh * .16 && top >= -steps.length * vh;
+    };
     const update = () => {
       frame = 0;
-      const line = window.innerHeight * .5;
-      let current = 0;
-      items.forEach((el, i) => { if (el.getBoundingClientRect().top <= line) current = i; });
-      setActive(current);
+      setActive(pinnedStepIndex(-element.getBoundingClientRect().top, window.innerHeight, steps.length));
+    };
+    const changeMode = () => { setPinned(mode.matches); captured = false; accumulated = 0; update(); };
+    const move = (direction: -1 | 1) => {
+      const top = element.getBoundingClientRect().top, vh = window.innerHeight;
+      const next = pinnedStepDestination(-top, vh, steps.length, direction);
+      if (next === null) return false;
+      window.scrollTo({ top: window.scrollY + top + next * vh, behavior: 'smooth' });
+      return true;
+    };
+    const wheel = (event: WheelEvent) => {
+      if (!mode.matches || !within() || event.ctrlKey || event.altKey || Math.abs(event.deltaX) > Math.abs(event.deltaY) || !event.deltaY) return;
+      const now = performance.now();
+      // One physical wheel/trackpad gesture advances one scene, not all three.
+      if (captured && (now < lockedUntil || now - lastWheel < 180)) {
+        event.preventDefault(); lastWheel = now; return;
+      }
+      captured = false;
+      const direction = event.deltaY > 0 ? 1 : -1;
+      if (pinnedStepDestination(-element.getBoundingClientRect().top, window.innerHeight, steps.length, direction) === null) {
+        accumulated = 0; return;
+      }
+      event.preventDefault();
+      const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? window.innerHeight : 1);
+      if (now - lastWheel > 180 || Math.sign(accumulated) !== direction) accumulated = 0;
+      accumulated += delta; lastWheel = now;
+      if (Math.abs(accumulated) < 18) return;
+      if (move(direction)) { captured = true; lockedUntil = now + 700; accumulated = 0; }
+    };
+    const keydown = (event: KeyboardEvent) => {
+      if (!mode.matches || !within() || event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey ||
+          (event.target as HTMLElement).closest('a,button,input,textarea,select,[contenteditable="true"]')) return;
+      const direction = event.key === 'ArrowDown' || event.key === 'PageDown' || (event.key === ' ' && !event.shiftKey) ? 1 :
+        event.key === 'ArrowUp' || event.key === 'PageUp' || (event.key === ' ' && event.shiftKey) ? -1 : 0;
+      if (!direction) return;
+      if (pinnedStepDestination(-element.getBoundingClientRect().top, window.innerHeight, steps.length, direction as -1 | 1) === null) return;
+      if (event.repeat || performance.now() < lockedUntil) { event.preventDefault(); return; }
+      if (move(direction as -1 | 1)) { event.preventDefault(); lockedUntil = performance.now() + 700; }
     };
     const request = () => { if (!frame) frame = requestAnimationFrame(update); };
-    update();
+    changeMode();
     window.addEventListener('scroll', request, { passive: true });
     window.addEventListener('resize', request);
-    return () => { cancelAnimationFrame(frame); window.removeEventListener('scroll', request); window.removeEventListener('resize', request); };
+    window.addEventListener('wheel', wheel, { passive: false });
+    window.addEventListener('keydown', keydown);
+    mode.addEventListener('change', changeMode);
+    return () => {
+      cancelAnimationFrame(frame); window.removeEventListener('scroll', request); window.removeEventListener('resize', request);
+      window.removeEventListener('wheel', wheel); window.removeEventListener('keydown', keydown); mode.removeEventListener('change', changeMode);
+    };
   }, [steps]);
-  return <div className="story-grid story-pin" ref={root}>
+  return <div className="story-grid story-pin" ref={root}
+    style={{ '--pin-count': steps.length } as React.CSSProperties} role="region" aria-label="Mechanism studies">
     <div className="story-pin-stage">
       <div className="story-pin-frame">{steps.map((step, i) => {
         const ratio = step.images.reduce((sum, image) => sum + ratioOf(image), 0);
         return <div className={'story-pin-layer' + (i === active ? ' is-active' : '')} key={step.text.title}
           aria-hidden={i !== active} data-step={step.text.title}>
           <div className="story-pin-visual"><div className="story-row" style={{ width: `min(100%, calc(100cqh * ${ratio}))` }}>
-            {step.images.map((image, j) => <Figure key={image.src} image={image} revealed
+            {step.images.map((image, j) => <Figure key={image.video?.src || image.src} image={image} revealed active={i === active}
               alt={`${title} — ${step.text.title} ${j + 1}`}
               sizes="(max-width: 900px) 90vw, 50vw" />)}
           </div></div>
           {step.details && <div className="story-pin-details">{step.details.map(image => <Figure key={image.src}
-            image={image} alt={`${title} — ${step.text.title} construction drawing`} revealed
+            image={image} alt={`${title} — ${step.text.title} construction drawing`} revealed active={i === active}
             sizes="(max-width: 900px) 90vw, 54vw" />)}</div>}
         </div>;
       })}</div>
     </div>
-    <div className="story-pin-steps">{steps.map((step, i) => <article className={'story-pin-step' + (i === active ? ' is-active' : '')}
-      key={step.text.title} data-step={step.text.title}>
+    <div className="story-pin-steps"><div className="story-pin-copy-frame">{steps.map((step, i) => <article className={'story-pin-step' + (i === active ? ' is-active' : '')}
+      key={step.text.title} data-step={step.text.title} aria-hidden={pinned && i !== active ? true : undefined}>
       <Copy text={step.text} chapter={chapter} />
-      <div className="story-row story-pin-inline">{step.images.map((image, j) => <Figure key={image.src}
+      <div className="story-row story-pin-inline">{step.images.map((image, j) => <Figure key={image.video?.src || image.src}
         image={image} alt={`${title} — ${step.text.title} ${j + 1}`} sizes="(max-width: 600px) 90vw, 44vw" />)}</div>
       {step.details && <div className="story-pin-details story-pin-inline-details">{step.details.map(image => <Figure
         key={image.src} image={image} alt={`${title} — ${step.text.title} construction drawing`} sizes="90vw" />)}</div>}
-    </article>)}</div>
+    </article>)}</div></div>
   </div>;
 }
 
