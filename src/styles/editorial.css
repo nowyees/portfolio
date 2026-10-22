@@ -260,7 +260,7 @@
 .story-title h1 { font:500 clamp(64px,8.4vw,144px)/.95 var(--story-sans); letter-spacing:-.04em; }
 .story-title p { padding-bottom:3px; font:400 13px/1.65 var(--story-sans); text-align:right; color:var(--story-muted); }
 .story-hero .story-figure { width:100%; margin-inline:auto; }
-.story-hero .story-media { background:#090909; }
+.story-hero .story-media { background:transparent; }
 .story-intro { padding-top:clamp(48px,7vw,110px); align-items:start; }
 .story-intro-main { grid-column:3 / 9; }
 .story-lead { max-width:34em; font:400 clamp(21px,1.85vw,30px)/1.65 var(--story-body); letter-spacing:-.035em; word-break:keep-all; }
