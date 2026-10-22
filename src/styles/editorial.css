@@ -44,7 +44,7 @@
 @keyframes image-arrive { from { opacity:0; scale:.7; } to { opacity:1; scale:1; } }
 /* Outboard labels and a thin, square frame; no text is scaled from a miniature. */
 .space-card::after { content:''; position:absolute; inset:-9px; border:1px solid var(--ink); box-shadow:0 0 0 8px var(--paper) inset; opacity:0; pointer-events:none; transition:opacity .18s ease; }
-.space-preview-meta { position:absolute; z-index:1; max-width:calc(100% + 18px); padding:5px 8px; background:var(--ink); color:var(--paper); font:400 11px/1.35 var(--mono); letter-spacing:0; opacity:0; pointer-events:none; transition:opacity .18s ease; }
+.space-preview-meta { position:absolute; z-index:1; max-width:calc(100% + 18px); padding:4px 6px; background:var(--ink); color:var(--paper); font:400 10px/1.35 var(--mono); letter-spacing:0; opacity:0; pointer-events:none; transition:opacity .18s ease; }
 .space-preview-meta.is-year { left:-9px; bottom:calc(100% + 9px); white-space:nowrap; }
 .space-preview-meta.is-title { right:-9px; top:calc(100% + 9px); max-width:min(260px,calc(100vw - 32px)); overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
 .space-card.is-preview { z-index:999!important; }

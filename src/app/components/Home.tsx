@@ -12,7 +12,7 @@ export default function Home() {
   const stageRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<Array<HTMLAnchorElement | null>>([]);
   const [preview, setPreview] = useState(-1);
-  const focus = useRef({ index: -1 });
+  const focus = useRef({ index: -1, growth: [] as number[] });
   const rotation = useRef({ x: .12, y: .35, vx: 0, vy: 0, drag: false, moved: false, distance: 0, px: 0, py: 0, hover: false, leaving: 0 });
   const arrival = useRef<Arrival | null>(null);
   const pendingGrid = useRef<SnapshotItem[] | null | undefined>(undefined);
@@ -105,8 +105,9 @@ export default function Home() {
           const p = easeInOut(Math.max(0, Math.min(1, (now - arrive.start - Math.min(i * 14, 260)) / 1150)));
           tx = start.x + (tx - start.x) * p; ty = start.y + (ty - start.y) * p; w = start.w + (w - start.w) * p;
         }
-        // Hover only reveals the frame/labels; image size and orb position do not change.
-        node.style.width = w + 'px';
+        // Slight image-only growth; labels keep their own fixed type size.
+        f.growth[i] = (f.growth[i] ?? 0) + ((f.index === i ? 1 : 0) - (f.growth[i] ?? 0)) * (reduced.matches ? 1 : .2);
+        node.style.width = (w * (1 + .15 * f.growth[i])) + 'px';
         node.style.transform = 'translate(-50%, -50%) translate3d(' + tx + 'px,' + ty + 'px,0)';
         node.style.zIndex = String(f.index === i ? 999 : Math.round((z + 1) * 50));
         // Cards turning onto the far side of the orb soften as if seen through frosted glass.
