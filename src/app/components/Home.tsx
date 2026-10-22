@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router';
 import SiteShell from './SiteShell';
 import { usePortfolio, imageUrl } from '../../lib/usePortfolio';
 import { easeInOut, holdPageEnter, prefersReducedMotion, projectKey, recedeIntoProject, saveOrb, snapshotItem, takeGrid, type SnapshotItem } from '../../lib/orbTransition';
-import { previewFrame } from '../../lib/orbPreview';
 
 type Arrival = { start: number; from: Array<{ x: number; y: number; w: number } | null> };
 
@@ -12,9 +11,8 @@ export default function Home() {
   const navigate = useNavigate();
   const stageRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<Array<HTMLAnchorElement | null>>([]);
-  const imageRatios = useRef<number[]>([]);
   const [preview, setPreview] = useState(-1);
-  const focus = useRef({ index: -1, reveal: [] as number[], dim: 0 });
+  const focus = useRef({ index: -1 });
   const rotation = useRef({ x: .12, y: .35, vx: 0, vy: 0, drag: false, moved: false, distance: 0, px: 0, py: 0, hover: false, leaving: 0 });
   const arrival = useRef<Arrival | null>(null);
   const pendingGrid = useRef<SnapshotItem[] | null | undefined>(undefined);
@@ -76,13 +74,10 @@ export default function Home() {
       if (width < 700 && focus.current.index >= 0) clearPreview();
     });
     observer.observe(stage);
-    const FOCUS = { dim: .55, rate: .18 };
     const resetPointer = () => { if (!pointer.matches) clearPreview(); };
     pointer.addEventListener('change', resetPointer);
     const tick = (now: number) => {
       const f = focus.current;
-      const rate = reduced.matches ? 1 : FOCUS.rate;
-      f.dim += ((f.index >= 0 ? 1 : 0) - f.dim) * rate;
       const dt = Math.min(now - (last || now), 32); last = now;
       const r = rotation.current;
       if (!r.drag) {
@@ -111,19 +106,14 @@ export default function Home() {
           const p = easeInOut(Math.max(0, Math.min(1, (now - arrive.start - Math.min(i * 14, 260)) / 1150)));
           tx = start.x + (tx - start.x) * p; ty = start.y + (ty - start.y) * p; w = start.w + (w - start.w) * p;
         }
-        const target = previewFrame(tx, ty, width, height, imageRatios.current[i]);
-        f.reveal[i] = (f.reveal[i] ?? 0) + ((f.index === i ? 1 : 0) - (f.reveal[i] ?? 0)) * rate;
-        const reveal = f.reveal[i];
-        node.style.width = (w + (target.width - w) * reveal) + 'px';
-        node.style.setProperty('--card-height', (w * 4/3 + (target.height - w * 4/3) * reveal) + 'px');
-        tx += (target.x - tx) * reveal; ty += (target.y - ty) * reveal;
+        // Hover only reveals the frame/labels; image size and orb position do not change.
+        node.style.width = w + 'px';
         node.style.transform = 'translate(-50%, -50%) translate3d(' + tx + 'px,' + ty + 'px,0)';
         node.style.zIndex = String(f.index === i ? 999 : Math.round((z + 1) * 50));
         // Cards turning onto the far side of the orb soften as if seen through frosted glass.
         const back = r.leaving ? 0 : Math.max(0, Math.min(1, (-z - .05) / .75));
         node.style.filter = back > .01 ? 'blur(' + (back * 3.5).toFixed(2) + 'px)' : '';
-        const dimmed = f.index === i ? 0 : f.dim * (1 - FOCUS.dim);
-        node.style.opacity = r.leaving ? '' : String((1 - back * .18) * (1 - dimmed));
+        node.style.opacity = r.leaving ? '' : String(1 - back * .18);
         if (f.index === i) node.style.filter = '';
       });
       if (arrive && now - arrive.start > 1500) arrival.current = null;
@@ -192,11 +182,7 @@ export default function Home() {
                 onClick={event => openProject(event, to)}
               >
                 <span className="space-preview-meta is-year" aria-hidden="true">{item.project.year}</span>
-                <span className="space-card-image"><img src={imageUrl(item.image, 300)}
-                  srcSet={imageUrl(item.image, 300) !== imageUrl(item.image, 1000)
-                    ? `${imageUrl(item.image, 300)} 300w, ${imageUrl(item.image, 1000)} 1000w` : undefined}
-                  sizes={preview === index ? '320px' : '90px'} alt="" draggable={false}
-                  onLoad={event => { const image = event.currentTarget; if (image.naturalHeight) imageRatios.current[index] = image.naturalWidth / image.naturalHeight; }} /></span>
+                <span className="space-card-image"><img src={imageUrl(item.image, 300)} alt="" draggable={false} /></span>
                 <span className="space-preview-meta is-title" aria-hidden="true">{item.project.title}</span>
               </Link>
             );
