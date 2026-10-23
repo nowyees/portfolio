@@ -62,7 +62,7 @@ function Figure({ image, alt, priority = false, delay = 0, drift = false, reveal
       <div className="story-reveal-zoom"><div className={'story-image-plane' + (drift ? ' has-drift' : '')}>
         {image.video ? <MotionImage clip={image.video} active={active} /> : <img draggable={false}
         src={image.src} srcSet={image.srcSet} sizes={image.srcSet ? sizes : undefined}
-        alt={alt} width={image.w} height={image.h} loading={priority ? 'eager' : 'lazy'}
+        alt={alt} width={image.w} height={image.h} style={image.focus ? { objectPosition:image.focus } : undefined} loading={priority ? 'eager' : 'lazy'}
         decoding="async" />}
       </div></div>
     </div>
@@ -73,7 +73,7 @@ function Figure({ image, alt, priority = false, delay = 0, drift = false, reveal
 function Row({ row, alt }: { row: StoryRow; alt: string }) {
   const span = row.span || 10, start = row.align === 'end' ? 13 - span : 3;
   return <div className={'story-row' + (row.images.length > 1 ? ' is-multiple' : '')}
-    style={{ gridColumn: `${start} / ${start + span}` }}>
+    style={{ gridColumn: `${start} / ${start + span}`, gridRow: row.line }}>
     {row.images.map((image, i) => <Figure key={image.src} image={image} delay={i * .1}
       alt={image.caption || `${alt} — ${i + 1}`}
       sizes={`(max-width: 900px) ${row.images.length > 1 ? '46vw' : '92vw'}, ${Math.round(span / 12 * 100 / row.images.length)}vw`} />)}
@@ -271,14 +271,39 @@ function Part({ section, title }: { section: StorySection; title: string }) {
   const copy = (text: StoryText) => <div className="story-grid"><div style={content}><Copy text={text} chapter={chapter} /></div></div>;
   switch (section.kind) {
     case 'context': return <div className="story-part story-context">
-      <div className="story-grid story-context-intro">
+      {copy(section.text)}
+      <div className="story-grid story-context-media">
         <div className="story-context-video"><BackgroundClip clip={section.clip} /></div>
-        <div className="story-context-copy"><Copy text={section.text} chapter={chapter} /></div>
+        {section.rows.map((row, i) => <Row key={i} row={row} alt={`${title} — ${chapter}`} />)}
       </div>
-      {rows(section.rows)}
+    </div>;
+    case 'companion': return <div className="story-part story-companion">
+      <div className="story-grid"><div className="story-companion-content" style={content}>
+        <div className="story-companion-intro"><Copy text={section.text} chapter={chapter} /></div>
+        <div className="story-companion-overview">
+          <div className="story-companion-hero"><Figure image={section.image} alt={`${title} — Companion robot`}
+            sizes="(max-width: 600px) 90vw, (max-width: 900px) 44vw, 38vw" /></div>
+          <div className="story-companion-summary">
+            <div className="story-companion-modes">{section.modes.map(mode => <article key={mode.text.title}>
+              <Figure image={mode.image} alt={`${title} — ${mode.text.title}`} sizes="(max-width: 600px) 40vw, 180px"
+                style={{ flex: 'none' }} />
+              <div className="story-companion-mode-copy"><h3>{mode.text.title}</h3><p>{mode.text.body}</p></div>
+            </article>)}</div>
+          </div>
+        </div>
+        <section className="story-companion-arm" aria-label={section.arm.text.title}>
+          <div className="story-companion-arm-content">
+            <div className="story-row">{section.arm.images.map(image => <Figure key={image.src} image={image} revealed
+              alt={`${title} — Robot Arm`} sizes="(max-width: 600px) 90vw, 32vw"
+              style={{ flex: `${ratioOf(image)} 1 0`, '--arm-ratio': ratioOf(image) } as React.CSSProperties} />)}</div>
+            <div className="story-companion-arm-copy"><h3>{section.arm.text.title}</h3><p>{section.arm.text.body}</p></div>
+          </div>
+        </section>
+      </div></div>
     </div>;
     case 'feature': return <div className="story-part story-feature">
       <div className="story-grid"><div style={content}><Figure image={section.image} alt={`${title} — ${section.text.title}`} drift /></div></div>
+      {section.before && <div className="story-prelude">{rows(section.before)}</div>}
       {copy(section.text)}{after && rows(after)}
     </div>;
     case 'pinned': return <div className="story-part story-mechanisms">
@@ -333,6 +358,8 @@ export default function ProjectStory({ story, year, films = [] }: { story: Story
     const update = () => {
       frame = 0;
       const line = window.innerHeight * .35;
+      const intro = root.querySelector<HTMLElement>('.story-intro');
+      if (intro) root.style.setProperty('--story-guide-start', `${intro.offsetTop}px`);
       let active = 0;
       parts.forEach((part, i) => { if (part.getBoundingClientRect().top <= line) active = i; });
       setCurrent(active);

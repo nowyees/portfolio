@@ -38,7 +38,8 @@ const story = storyFor('LUNARIS');
 const exhibition = story.sections.find(section => section.chapter === 'Exhibition');
 if (exhibition?.kind !== 'gallery' || exhibition.images.length !== 3) throw new Error('Exhibition gallery missing');
 for (const image of images.values()) {
-  if (!image.src.includes('-framed.webp') && image !== story.hero) throw new Error(`Unframed source: ${image.src}`);
+  // The live site's fourth nature reference is already an authored, uncropped JPG.
+  if (!image.src.includes('-framed.webp') && image !== story.hero && image.src !== '/projects/lunaris/nature-04.jpg') throw new Error(`Unframed source: ${image.src}`);
   if ('transform' in image || 'position' in image || 'naturalCanvas' in image) throw new Error(`Guessed crop: ${image.src}`);
 }
 if (story.hero.src !== '/projects/lunaris/cover-owner.png' || story.hero.w !== 1932 || story.hero.h !== 1359 ||
@@ -54,7 +55,10 @@ if (reference.streams[0].width !== context.clip.w || reference.streams[0].height
   throw new Error('Reference video dimensions or duration changed');
 }
 const studies = story.sections.find(section => section.kind === 'pinned');
-if (!studies.steps[0].details?.length || !studies.steps[1].details?.length || studies.after?.length) throw new Error('Technical drawings detached from studies');
+if (studies.steps[0].details?.length !== 2 || studies.steps[1].details?.length || studies.after?.length) throw new Error('Approved paired drawings must stay below Gripper');
+const tail = story.sections.find(section => section.kind === 'feature' && section.chapter === 'Tail Device');
+if (!tail.before?.[0]?.images[0].src.includes('tail-blueprint') || tail.after?.length !== 1) throw new Error('Tail overview must read image, blueprint, description, motion');
+if (context.rows.length !== 1 || context.rows[0].images.some(image => image.frame.w !== 163 || image.frame.h !== 421)) throw new Error('Approved Background composition changed');
 if (motionClips.size !== 8) throw new Error('Expected eight selected motion studies');
 const motorStudy = studies.steps.find(step => step.text.title === 'Motor cable system');
 if (motorStudy.images.length !== 2 || motorStudy.images[0].video?.src !== '/projects/lunaris/motion/motor-mid.mp4' ||
