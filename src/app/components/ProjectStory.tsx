@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import useEmblaCarousel from 'embla-carousel-react';
 import { PIN_STEP, pinnedStepIndex } from '../../lib/pinnedSteps';
 import type { ProjectStory as Story, StoryClip, StoryImage, StoryRow, StorySection, StoryText } from '../../lib/projectStories';
 
@@ -179,7 +178,7 @@ function Pinned({ steps, chapter, title }: {
   </div>;
 }
 
-function Strip({ images, title }: { images: StoryImage[]; title: string }) {
+function ScrollSequence({ children, label, className = '' }: { children: React.ReactNode; label: string; className?: string }) {
   const outer = useRef<HTMLDivElement>(null), track = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = outer.current!, rail = track.current!, viewport = el.querySelector<HTMLElement>('.story-strip-sticky')!;
@@ -207,62 +206,37 @@ function Strip({ images, title }: { images: StoryImage[]; title: string }) {
       window.removeEventListener('scroll', request); window.removeEventListener('resize', size);
       motion.removeEventListener('change', size);
     };
-  }, [images]);
-  return <div className="story-strip" ref={outer}>
-    <div className="story-strip-sticky" tabIndex={0} role="region" aria-label={`${title} process images`}>
-      <div className="story-strip-track" ref={track}>{images.map((image, i) => <Figure key={image.src}
-        image={image} alt={`${title} — Prototyping ${i + 1}`} delay={i * .08}
-        sizes="(max-width: 900px) 90vw, 70vw"
-        style={{ flex: 'none', width: `calc(var(--strip-h) * ${ratioOf(image)})` }} />)}</div>
+  }, []);
+  return <div className={`story-strip ${className}`} ref={outer}>
+    <div className="story-strip-sticky" tabIndex={0} role="region" aria-label={label}>
+      <div className="story-strip-track" ref={track}>{children}</div>
     </div>
   </div>;
 }
 
-function Gallery({ images, title }: { images: StoryImage[]; title: string }) {
-  const [viewport, api] = useEmblaCarousel({ align: 'center', containScroll: false, loop: false });
-  const [selected, setSelected] = useState(0);
-  const [ends, setEnds] = useState({ prev: false, next: images.length > 1 });
-  useEffect(() => {
-    if (!api) return;
-    const update = () => {
-      setSelected(api.selectedScrollSnap());
-      setEnds({ prev: api.canScrollPrev(), next: api.canScrollNext() });
-    };
-    update(); api.on('select', update); api.on('reInit', update);
-    return () => { api.off('select', update); api.off('reInit', update); };
-  }, [api]);
-  const move = (direction: -1 | 1) => {
-    if (direction < 0) api?.scrollPrev(reduceMotion());
-    else api?.scrollNext(reduceMotion());
-  };
-  return <div className="story-gallery" role="region" aria-roledescription="carousel" aria-label={title}
-    style={{ '--gallery-ratio': Math.max(...images.map(ratioOf)) } as React.CSSProperties}>
-    <div className="story-gallery-viewport" ref={viewport} tabIndex={0}
-      aria-label="Exhibition images. Drag, swipe or use the left and right arrow keys."
-      onKeyDown={event => {
-        if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
-          event.preventDefault(); move(event.key === 'ArrowLeft' ? -1 : 1);
-        }
-      }}>
-      <div className="story-gallery-track">{images.map((image, i) =>
-        <div className="story-gallery-slide" key={image.src} role="group" aria-roledescription="slide"
-          aria-label={`${i + 1} / ${images.length}`}
-          style={{ width: `calc(var(--gallery-h) * ${ratioOf(image)})` }}>
-          <Figure image={image} alt={`${title} ${i + 1}`} revealed
-            sizes="(max-width: 900px) 92vw, 75vw" />
-        </div>)}</div>
-    </div>
-    <div className="story-gallery-controls">
-      <span aria-live="polite" aria-atomic="true">{pad(selected + 1)} / {pad(images.length)}</span>
-      <button type="button" disabled={!ends.prev} onClick={() => move(-1)} aria-label="Previous exhibition image"
-        className="story-gallery-arrow is-prev"><span aria-hidden="true" /></button>
-      <button type="button" disabled={!ends.next} onClick={() => move(1)} aria-label="Next exhibition image"
-        className="story-gallery-arrow is-next"><span aria-hidden="true" /></button>
-    </div>
-  </div>;
+function Strip({ images, title, chapter = 'Prototyping' }: { images: StoryImage[]; title: string; chapter?: string }) {
+  return <ScrollSequence label={`${title} ${chapter} images`}>
+    {images.map((image, i) => <Figure key={image.src} image={image} revealed
+      alt={`${title} — ${chapter} ${i + 1}`} sizes="(max-width: 900px) 90vw, 70vw"
+      style={{ flex: 'none', width: `calc(var(--strip-h) * ${ratioOf(image)})` }} />)}
+  </ScrollSequence>;
 }
 
-function Part({ section, title }: { section: StorySection; title: string }) {
+function CompanionRail({ section, title }: { section: Extract<StorySection, { kind: 'companion' }>; title: string }) {
+  const cards = [...section.modes, ...section.arm.images.map((image, i) => ({
+    image: { ...image, frame: { w: 450, h: 685 }, focus: i === 0 ? '0% 50%' : image.focus },
+    text: { title: i ? 'Robot Arm — detail' : section.arm.text.title, body: i ? '' : section.arm.text.body },
+  }))];
+  return <ScrollSequence label="Companion Robot images" className="story-robot-strip">
+        <div className="story-companion-slide is-hero"><Figure image={section.image} alt={`${title} — Companion robot`} revealed sizes="(max-width: 600px) 85vw, 40vw" /></div>
+        {cards.map(card => <article className="story-companion-slide" key={card.image.src}>
+          <Figure image={card.image} alt={`${title} — ${card.text.title}`} revealed sizes="(max-width: 600px) 65vw, 22vw" />
+          <h3>{card.text.title}</h3>{card.text.body && <p>{card.text.body}</p>}
+        </article>)}
+  </ScrollSequence>;
+}
+
+function Part({ section, title, chapterNumber }: { section: StorySection; title: string; chapterNumber: number }) {
   const chapter = section.chapter;
   const after = 'after' in section ? section.after : undefined;
   const rows = (items: StoryRow[]) => <div className="story-grid story-rows">
@@ -271,40 +245,28 @@ function Part({ section, title }: { section: StorySection; title: string }) {
   const copy = (text: StoryText) => <div className="story-grid"><div style={content}><Copy text={text} chapter={chapter} /></div></div>;
   switch (section.kind) {
     case 'context': return <div className="story-part story-context">
-      {copy(section.text)}
       <div className="story-grid story-context-media">
-        <div className="story-context-video"><BackgroundClip clip={section.clip} /></div>
+        <div className="story-context-left">
+          <Copy text={section.text} chapter={chapter} />
+          <div className="story-context-video"><BackgroundClip clip={section.clip} /></div>
+        </div>
         {section.rows.map((row, i) => <Row key={i} row={row} alt={`${title} — ${chapter}`} />)}
       </div>
     </div>;
     case 'companion': return <div className="story-part story-companion">
       <div className="story-grid"><div className="story-companion-content" style={content}>
         <div className="story-companion-intro"><Copy text={section.text} chapter={chapter} /></div>
-        <div className="story-companion-overview">
-          <div className="story-companion-hero"><Figure image={section.image} alt={`${title} — Companion robot`}
-            sizes="(max-width: 600px) 90vw, (max-width: 900px) 44vw, 38vw" /></div>
-          <div className="story-companion-summary">
-            <div className="story-companion-modes">{section.modes.map(mode => <article key={mode.text.title}>
-              <Figure image={mode.image} alt={`${title} — ${mode.text.title}`} sizes="(max-width: 600px) 40vw, 180px"
-                style={{ flex: 'none' }} />
-              <div className="story-companion-mode-copy"><h3>{mode.text.title}</h3><p>{mode.text.body}</p></div>
-            </article>)}</div>
-          </div>
-        </div>
-        <section className="story-companion-arm" aria-label={section.arm.text.title}>
-          <div className="story-companion-arm-content">
-            <div className="story-row">{section.arm.images.map(image => <Figure key={image.src} image={image} revealed
-              alt={`${title} — Robot Arm`} sizes="(max-width: 600px) 90vw, 32vw"
-              style={{ flex: `${ratioOf(image)} 1 0`, '--arm-ratio': ratioOf(image) } as React.CSSProperties} />)}</div>
-            <div className="story-companion-arm-copy"><h3>{section.arm.text.title}</h3><p>{section.arm.text.body}</p></div>
-          </div>
-        </section>
       </div></div>
+      <CompanionRail section={section} title={title} />
     </div>;
     case 'feature': return <div className="story-part story-feature">
-      <div className="story-grid"><div style={content}><Figure image={section.image} alt={`${title} — ${section.text.title}`} drift /></div></div>
+      <div className="story-grid"><div style={content}><Figure image={section.image} alt={`${title} — ${section.text.title}`} /></div></div>
       {section.before && <div className="story-prelude">{rows(section.before)}</div>}
-      {copy(section.text)}{after && rows(after)}
+      <div className="story-grid story-feature-caption"><div style={content}>
+        <h2 className="story-feature-heading story-rv"><span>{pad(chapterNumber)}</span>{chapter}</h2>
+        <Copy text={section.text} chapter={chapter} />
+      </div></div>
+      {after && rows(after)}
     </div>;
     case 'pinned': return <div className="story-part story-mechanisms">
       <Pinned steps={section.steps} chapter={chapter} title={title} />
@@ -325,7 +287,7 @@ function Part({ section, title }: { section: StorySection; title: string }) {
       <Strip images={section.images} title={title} />
     </div>;
     case 'gallery': return <div className="story-part story-exhibition">
-      <div className="story-grid"><div style={content}><Gallery images={section.images} title={`${title} — ${chapter}`} /></div></div>
+      <Strip images={section.images} title={title} chapter={chapter} />
       {copy(section.text)}
     </div>;
     default: return <div className="story-part" data-part={section.texts[0]?.title}>
@@ -358,8 +320,6 @@ export default function ProjectStory({ story, year, films = [] }: { story: Story
     const update = () => {
       frame = 0;
       const line = window.innerHeight * .35;
-      const intro = root.querySelector<HTMLElement>('.story-intro');
-      if (intro) root.style.setProperty('--story-guide-start', `${intro.offsetTop}px`);
       let active = 0;
       parts.forEach((part, i) => { if (part.getBoundingClientRect().top <= line) active = i; });
       setCurrent(active);
@@ -422,8 +382,10 @@ export default function ProjectStory({ story, year, films = [] }: { story: Story
       </div></div>}
     </section>
     {chapters.map((chapter, i) => <section className="story-chapter" key={chapter.name} aria-label={chapter.name}>
-      {head(i + 1, chapter.name)}
-      {chapter.sections.map((section, j) => <Part key={j} section={section} title={story.name} />)}
+      {chapter.sections[0].kind === 'feature'
+        ? <div className="story-grid story-feature-start"><div style={content} /></div>
+        : head(i + 1, chapter.name)}
+      {chapter.sections.map((section, j) => <Part key={j} section={section} title={story.name} chapterNumber={i + 1} />)}
     </section>)}
     {films.length > 0 && <section className="story-chapter" aria-label="Film">
       {head(chapters.length + 1, 'Film')}

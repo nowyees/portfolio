@@ -94,7 +94,7 @@ const lunaris: ProjectStory = {
     ] },
     { chapter: 'Tail Device', kind: 'feature', image: l('tail', 1859, 560),
       before: [{ images: [l('tail-blueprint', 1860, 225)] }],
-      text: { title: 'Tail Device', body: '총 1.7m 길이의 꼬리는 케이블과 모터로 유기적으로 연결되어 있습니다. 외부 삼각형 쉘은 내부 설비를 보호하면서도 파츠 간 간섭 없이 유연하게 휘어지도록 설계했습니다. 또한 등에 있는 센서가 근육 움직임을 감지해, 원하는 방향으로 꼬리를 회전시켜 방향을 제어하거나 물체를 잡을 수 있게 합니다.' },
+      text: { title: 'Tail Device', body: '총 1.7m 길이의 꼬리는 케이블과 모터로 유기적으로 연결되어 있습니다.\n외부 삼각형 쉘은 내부 설비를 보호하면서도 파츠 간 간섭 없이 유연하게 휘어지도록 설계했습니다.\n또한 등에 있는 센서가 근육 움직임을 감지해, 원하는 방향으로 꼬리를 회전시켜 방향을 제어하거나 물체를 잡을 수 있게 합니다.' },
       after: [
         { images: [
           moving(l('anchoring', 399, 521, 'Anchoring — 구조물에 몸 고정하기'), 'anchoring', 720, 1280, 'Anchoring — 구조물 감기'),
