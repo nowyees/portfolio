@@ -193,7 +193,10 @@ function ScrollSequence({ children, label, className = '' }: { children: React.R
       rail.style.transform = `translate3d(${-progress * travel}px,0,0)`;
     };
     const size = () => {
-      el.style.height = pinned() ? `${window.innerHeight + Math.max(0, rail.scrollWidth - viewport.clientWidth)}px` : '';
+      const travel = Math.max(0, rail.scrollWidth - viewport.clientWidth);
+      const stationary = !!el.closest('.is-editorial-draft') && travel < 1;
+      el.dataset.stationary = String(stationary);
+      el.style.height = pinned() && !stationary ? `${window.innerHeight + travel}px` : '';
       place();
     };
     const request = () => { if (!frame) frame = requestAnimationFrame(place); };
@@ -284,7 +287,7 @@ function Part({ section, title, chapterNumber }: { section: StorySection; title:
     </div>;
     case 'strip': return <div className="story-part story-process">
       {copy(section.text)}
-      <Strip images={section.images} title={title} />
+      <Strip images={section.images} title={title} chapter={section.text.title} />
     </div>;
     case 'gallery': return <div className="story-part story-exhibition">
       <Strip images={section.images} title={title} chapter={chapter} />
@@ -352,7 +355,16 @@ export default function ProjectStory({ story, year, films = [] }: { story: Story
     <div style={content}><span className="story-rv">{pad(i)}</span><h2 className="story-rv">{name}</h2></div>
   </header>;
 
-  return <div className="story" ref={rootRef}>
+  const editorial = story.presentation === 'editorial';
+  const intro = <>
+    <div className="story-intro-main">
+      <p className="story-lead story-rv">{story.intro.ko}</p>
+      {story.intro.en && <p className="story-lead-en story-rv" lang="en">{story.intro.en}</p>}
+    </div>
+    <dl className="story-facts">{story.facts.map(([term, value]) =>
+      <div className="story-rv" key={term}><dt>{term}</dt><dd>{value}</dd></div>)}</dl>
+  </>;
+  return <div className={'story' + (editorial ? ' is-editorial-draft' : '')} ref={rootRef}>
     <nav className="story-index" aria-label={`${story.name} chapters`}>
       <p>{story.name}</p>
       <ol>{index.map((name, i) => <li key={name}>
@@ -364,19 +376,17 @@ export default function ProjectStory({ story, year, films = [] }: { story: Story
     </nav>
     <section className="story-chapter story-overview" aria-label="Overview">
       <header className="story-grid story-title">
-        <div style={content}><h1 className="story-rv">{story.name}</h1><p className="story-rv">Space mobility<br />{year}</p></div>
+        <div style={content}><h1 className="story-rv">{story.name}</h1><p className="story-rv">{story.discipline || 'Space mobility'}<br />{year}</p></div>
       </header>
+      {editorial ? <div className={'story-grid story-editorial-opening' + (ratioOf(story.hero) < .9 ? ' is-portrait' : '')}>
+        <div className="story-editorial-cover"><Figure image={story.hero} alt={`${story.name} — cover`} priority sizes="(max-width: 900px) 90vw, 48vw" /></div>
+        <div className="story-editorial-summary">{intro}</div>
+      </div> : <>
       <div className="story-grid story-hero"><div style={content}>
         <Figure image={story.hero} alt={`${story.name} — wearable tail in zero gravity`} priority />
       </div></div>
-      <div className="story-grid story-intro">
-        <div className="story-intro-main">
-          <p className="story-lead story-rv">{story.intro.ko}</p>
-          {story.intro.en && <p className="story-lead-en story-rv" lang="en">{story.intro.en}</p>}
-        </div>
-        <dl className="story-facts">{story.facts.map(([term, value]) =>
-          <div className="story-rv" key={term}><dt>{term}</dt><dd>{value}</dd></div>)}</dl>
-      </div>
+      <div className="story-grid story-intro">{intro}</div>
+      </>}
       {story.intro.image && <div className="story-grid"><div className="story-intro-image" style={content}>
         <Figure image={story.intro.image} alt={story.name} />
       </div></div>}

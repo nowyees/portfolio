@@ -11,6 +11,8 @@ export const router = createBrowserRouter([
   { path: "/projects", Component: Projects },
   { path: "/about", Component: About },
   { path: "/project/:category/:id", Component: ProjectDetail },
+  // The review index is local-only; public Projects keeps its original layout.
+  ...(import.meta.env.DEV ? [{ path: "/drafts/editorial", lazy: async () => ({ Component: (await import("./components/EditorialDraftIndex")).default }) }] : []),
   { path: "/admin", Component: AdminPage },
   { path: "/freedive", Component: FreeDive },
   // three.js only loads when this route is visited

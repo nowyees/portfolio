@@ -1,15 +1,20 @@
 import React, { useEffect, useLayoutEffect, useRef } from 'react';
-import { Link, useParams } from 'react-router';
+import { Link, useParams, useSearchParams } from 'react-router';
 import SiteShell from './SiteShell';
 import { usePortfolio, imageUrl } from '../../lib/usePortfolio';
 import { isVideoUrl } from '../../lib/storageService';
 import { storyFor } from '../../lib/projectStories';
 import ProjectStory from './ProjectStory';
+import { editorialDrafts } from '../../lib/projectStoryDrafts';
+import { draftProjectById, editorialDraftCatalog } from '../../lib/editorialDraftCatalog';
 
 export default function ProjectDetail() {
   const { category, id } = useParams();
+  const [searchParams] = useSearchParams();
+  const previewDraft = import.meta.env.DEV && searchParams.get('draft') === 'editorial';
   const projects = usePortfolio();
-  const project = projects.find(p => String(p.id) === id && p.category === category);
+  const project = projects.find(p => String(p.id) === id && p.category === category)
+    || (category === 'portfolio' && id ? draftProjectById(id) : undefined);
   const galleryRef = useRef<HTMLElement>(null);
   const dragRef = useRef({ active: false, moved: false, startX: 0, scrollLeft: 0 });
   useEffect(() => { window.scrollTo(0, 0); }, [id, category]);
@@ -64,12 +69,18 @@ export default function ProjectDetail() {
     moveGallery(event.clientX < rect.left + rect.width * .5 ? -1 : 1);
   };
   const next = projects[(projects.indexOf(project) + 1) % projects.length];
+  const draftPosition = editorialDraftCatalog.findIndex(item => String(item.id) === id);
+  const nextDraft = draftPosition >= 0 ? editorialDraftCatalog[(draftPosition + 1) % editorialDraftCatalog.length] : undefined;
   const footer = <footer className="detail-footer">
-    <Link to="/projects">All projects</Link>
-    {next && <Link to={'/project/' + next.category + '/' + next.id}>Next Project<br /><em>{next.title} ↗︎</em></Link>}
+    <Link to={previewDraft ? '/drafts/editorial' : '/projects'}>{previewDraft ? 'All drafts' : 'All projects'}</Link>
+    {previewDraft && nextDraft
+      ? <Link to={`/project/portfolio/${nextDraft.id}?draft=editorial`}>Next draft<br /><em>{nextDraft.title} ↗︎</em></Link>
+      : next && <Link to={'/project/' + next.category + '/' + next.id}>Next Project<br /><em>{next.title} ↗︎</em></Link>}
   </footer>;
   // Projects written up from the portfolio slides read as a story, with their films as its last chapter.
-  const story = storyFor(project.title);
+  const story = category === 'portfolio'
+    ? storyFor(project.title) || editorialDrafts[project.title.trim().toLowerCase()]
+    : undefined;
   if (story) {
     const films = media.filter(item => item.type === 'video' || isVideoUrl(item.url));
     return (

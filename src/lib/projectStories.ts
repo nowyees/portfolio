@@ -26,6 +26,8 @@ export type StorySection = { chapter: string } & (
       arm: { text: StoryText; images: StoryImage[] } }
 );
 export type ProjectStory = {
+  discipline?: string;
+  presentation?: 'editorial';
   name: string;   // the title as written (the project list keeps it in capitals)
   hero: StoryImage;
   facts: Array<[string, string]>;

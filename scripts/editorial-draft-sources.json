@@ -1,0 +1,953 @@
+{
+  "fileKey": "CJ5Y81wbHC8Rb7Oremrexa",
+  "page": "2470:4356",
+  "note": "Local drafts only. Individual Figma photo frames retain authored crops; published-site assets are original project media, not whole design screenshots.",
+  "assets": [
+    {
+      "project": "doya",
+      "name": "hero",
+      "nodeId": "2470:4997",
+      "w": 1210,
+      "h": 1046,
+      "path": "public/projects/doya/hero.webp",
+      "originalPath": "public/projects/doya/hero.png"
+    },
+    {
+      "project": "doya",
+      "name": "guide",
+      "nodeId": "2470:5539",
+      "w": 920,
+      "h": 970,
+      "path": "public/projects/doya/guide.webp",
+      "originalPath": "public/projects/doya/guide.png"
+    },
+    {
+      "project": "doya",
+      "name": "palace",
+      "nodeId": "2470:5540",
+      "w": 920,
+      "h": 450,
+      "path": "public/projects/doya/palace.webp",
+      "originalPath": "public/projects/doya/palace.png"
+    },
+    {
+      "project": "doya",
+      "name": "structure",
+      "nodeId": "2729:2",
+      "w": 920,
+      "h": 580,
+      "path": "public/projects/doya/structure.webp",
+      "originalPath": "public/projects/doya/structure.png"
+    },
+    {
+      "project": "doya",
+      "name": "wheels",
+      "nodeId": "2470:5009",
+      "w": 920,
+      "h": 970,
+      "path": "public/projects/doya/wheels.webp",
+      "originalPath": "public/projects/doya/wheels.png"
+    },
+    {
+      "project": "doya",
+      "name": "conversation",
+      "nodeId": "2470:5073",
+      "w": 926,
+      "h": 970,
+      "path": "public/projects/doya/conversation.webp",
+      "originalPath": "public/projects/doya/conversation.png"
+    },
+    {
+      "project": "doya",
+      "name": "response",
+      "nodeId": "2470:5074",
+      "w": 920,
+      "h": 568,
+      "path": "public/projects/doya/response.webp",
+      "originalPath": "public/projects/doya/response.png"
+    },
+    {
+      "project": "doya",
+      "name": "pattern",
+      "nodeId": "2470:5340",
+      "w": 920,
+      "h": 450,
+      "path": "public/projects/doya/pattern.webp",
+      "originalPath": "public/projects/doya/pattern.png"
+    },
+    {
+      "project": "doya",
+      "name": "identity",
+      "nodeId": "2470:5359",
+      "w": 628.39,
+      "h": 459.92,
+      "path": "public/projects/doya/identity.webp",
+      "originalPath": "public/projects/doya/identity.png"
+    },
+    {
+      "project": "doya",
+      "name": "roof",
+      "nodeId": "2470:5467",
+      "w": 920,
+      "h": 970,
+      "path": "public/projects/doya/roof.webp",
+      "originalPath": "public/projects/doya/roof.png"
+    },
+    {
+      "project": "doya",
+      "name": "process-01",
+      "nodeId": "2470:5473",
+      "w": 298,
+      "h": 314,
+      "path": "public/projects/doya/process-01.webp",
+      "originalPath": "public/projects/doya/process-01.png"
+    },
+    {
+      "project": "doya",
+      "name": "process-02",
+      "nodeId": "2470:5474",
+      "w": 297,
+      "h": 314,
+      "path": "public/projects/doya/process-02.webp",
+      "originalPath": "public/projects/doya/process-02.png"
+    },
+    {
+      "project": "doya",
+      "name": "process-03",
+      "nodeId": "2470:5476",
+      "w": 297,
+      "h": 316,
+      "path": "public/projects/doya/process-03.webp",
+      "originalPath": "public/projects/doya/process-03.png"
+    },
+    {
+      "project": "doya",
+      "name": "process-04",
+      "nodeId": "2470:5479",
+      "w": 297,
+      "h": 315,
+      "path": "public/projects/doya/process-04.webp",
+      "originalPath": "public/projects/doya/process-04.png"
+    },
+    {
+      "project": "doya",
+      "name": "fan",
+      "nodeId": "2470:5472",
+      "w": 920,
+      "h": 970,
+      "path": "public/projects/doya/fan.webp",
+      "originalPath": "public/projects/doya/fan.png"
+    },
+    {
+      "project": "doya",
+      "name": "exhibition-01",
+      "nodeId": "2470:5489",
+      "w": 685,
+      "h": 705,
+      "path": "public/projects/doya/exhibition-01.webp",
+      "originalPath": "public/projects/doya/exhibition-01.png"
+    },
+    {
+      "project": "doya",
+      "name": "exhibition-02",
+      "nodeId": "2470:5488",
+      "w": 1155,
+      "h": 970,
+      "path": "public/projects/doya/exhibition-02.webp",
+      "originalPath": "public/projects/doya/exhibition-02.png"
+    },
+    {
+      "project": "foudre",
+      "name": "hero",
+      "nodeId": "2794:41",
+      "w": 1210,
+      "h": 1046,
+      "path": "public/projects/foudre/hero.webp",
+      "originalPath": "public/projects/foudre/hero.png"
+    },
+    {
+      "project": "foudre",
+      "name": "macro",
+      "nodeId": "2794:722",
+      "w": 920,
+      "h": 970,
+      "path": "public/projects/foudre/macro.webp",
+      "originalPath": "public/projects/foudre/macro.png"
+    },
+    {
+      "project": "foudre",
+      "name": "suspended",
+      "nodeId": "2794:721",
+      "w": 450,
+      "h": 359,
+      "path": "public/projects/foudre/suspended.webp",
+      "originalPath": "public/projects/foudre/suspended.png"
+    },
+    {
+      "project": "foudre",
+      "name": "body",
+      "nodeId": "2794:669",
+      "w": 920,
+      "h": 967,
+      "path": "public/projects/foudre/body.webp",
+      "originalPath": "public/projects/foudre/body.png"
+    },
+    {
+      "project": "foudre",
+      "name": "cap",
+      "nodeId": "2794:665",
+      "w": 920,
+      "h": 500,
+      "path": "public/projects/foudre/cap.webp",
+      "originalPath": "public/projects/foudre/cap.png"
+    },
+    {
+      "project": "foudre",
+      "name": "campaign-01",
+      "nodeId": "2794:703",
+      "w": 920,
+      "h": 685,
+      "path": "public/projects/foudre/campaign-01.webp",
+      "originalPath": "public/projects/foudre/campaign-01.png"
+    },
+    {
+      "project": "foudre",
+      "name": "campaign-02",
+      "nodeId": "2794:682",
+      "w": 920.665,
+      "h": 970,
+      "path": "public/projects/foudre/campaign-02.webp",
+      "originalPath": "public/projects/foudre/campaign-02.png"
+    },
+    {
+      "project": "foudre",
+      "name": "merchandise",
+      "nodeId": "2794:714",
+      "w": 920,
+      "h": 963,
+      "path": "public/projects/foudre/merchandise.webp",
+      "originalPath": "public/projects/foudre/merchandise.png"
+    },
+    {
+      "project": "foudre",
+      "name": "making",
+      "nodeId": "2794:717",
+      "w": 919,
+      "h": 215,
+      "path": "public/projects/foudre/making.webp",
+      "originalPath": "public/projects/foudre/making.png"
+    },
+    {
+      "project": "foudre",
+      "name": "dolls",
+      "nodeId": "2794:716",
+      "w": 448.798,
+      "h": 450,
+      "path": "public/projects/foudre/dolls.webp",
+      "originalPath": "public/projects/foudre/dolls.png"
+    },
+    {
+      "project": "vaek",
+      "name": "hero",
+      "nodeId": "2794:734",
+      "w": 920,
+      "h": 970,
+      "path": "public/projects/vaek/hero.webp",
+      "originalPath": "public/projects/vaek/hero.png"
+    },
+    {
+      "project": "vaek",
+      "name": "vase",
+      "nodeId": "2794:742",
+      "w": 920,
+      "h": 510,
+      "path": "public/projects/vaek/vase.webp",
+      "originalPath": "public/projects/vaek/vase.png"
+    },
+    {
+      "project": "vaek",
+      "name": "campaign-01",
+      "nodeId": "2794:754",
+      "w": 920,
+      "h": 691,
+      "path": "public/projects/vaek/campaign-01.webp",
+      "originalPath": "public/projects/vaek/campaign-01.png"
+    },
+    {
+      "project": "vaek",
+      "name": "campaign-02",
+      "nodeId": "2794:746",
+      "w": 920,
+      "h": 970,
+      "path": "public/projects/vaek/campaign-02.webp",
+      "originalPath": "public/projects/vaek/campaign-02.png"
+    },
+    {
+      "project": "vaek",
+      "name": "curve",
+      "nodeId": "2794:1940",
+      "w": 920,
+      "h": 688,
+      "path": "public/projects/vaek/curve.webp",
+      "originalPath": "public/projects/vaek/curve.png"
+    },
+    {
+      "project": "vaek",
+      "name": "prototype-01",
+      "nodeId": "2794:1950",
+      "w": 685,
+      "h": 970,
+      "path": "public/projects/vaek/prototype-01.webp",
+      "originalPath": "public/projects/vaek/prototype-01.png"
+    },
+    {
+      "project": "vaek",
+      "name": "prototype-02",
+      "nodeId": "2794:1948",
+      "w": 1155,
+      "h": 685,
+      "path": "public/projects/vaek/prototype-02.webp",
+      "originalPath": "public/projects/vaek/prototype-02.png"
+    },
+    {
+      "project": "offick",
+      "name": "hero",
+      "nodeId": "2794:93",
+      "path": "public/projects/offick/hero.webp",
+      "source": "figma",
+      "w": 1210,
+      "h": 1046,
+      "originalPath": "public/projects/offick/hero.png"
+    },
+    {
+      "project": "offick",
+      "name": "tailoring",
+      "nodeId": "2794:1977",
+      "path": "public/projects/offick/tailoring.webp",
+      "source": "figma",
+      "w": 685,
+      "h": 970,
+      "originalPath": "public/projects/offick/tailoring.png"
+    },
+    {
+      "project": "offick",
+      "name": "duo",
+      "nodeId": "2794:1980",
+      "path": "public/projects/offick/duo.webp",
+      "source": "figma",
+      "w": 369,
+      "h": 705,
+      "originalPath": "public/projects/offick/duo.png"
+    },
+    {
+      "project": "offick",
+      "name": "solo",
+      "nodeId": "2794:1979",
+      "path": "public/projects/offick/solo.webp",
+      "source": "figma",
+      "w": 369,
+      "h": 705,
+      "originalPath": "public/projects/offick/solo.png"
+    },
+    {
+      "project": "offick",
+      "name": "campaign-01",
+      "nodeId": "2794:1997",
+      "path": "public/projects/offick/campaign-01.webp",
+      "source": "figma",
+      "w": 540,
+      "h": 803,
+      "originalPath": "public/projects/offick/campaign-01.png"
+    },
+    {
+      "project": "offick",
+      "name": "campaign-02",
+      "nodeId": "2794:2003",
+      "path": "public/projects/offick/campaign-02.webp",
+      "source": "figma",
+      "w": 603,
+      "h": 803,
+      "originalPath": "public/projects/offick/campaign-02.png"
+    },
+    {
+      "project": "identity",
+      "name": "hero",
+      "nodeId": "2470:4751",
+      "path": "public/projects/identity/hero.webp",
+      "source": "figma",
+      "w": 1210,
+      "h": 1046,
+      "originalPath": "public/projects/identity/hero.png"
+    },
+    {
+      "project": "identity",
+      "name": "device",
+      "nodeId": "2470:4852",
+      "path": "public/projects/identity/device.webp",
+      "source": "figma",
+      "w": 460,
+      "h": 490,
+      "originalPath": "public/projects/identity/device.png"
+    },
+    {
+      "project": "identity",
+      "name": "process-a",
+      "nodeId": "2470:4853",
+      "path": "public/projects/identity/process-a.webp",
+      "source": "figma",
+      "w": 450,
+      "h": 450,
+      "originalPath": "public/projects/identity/process-a.png"
+    },
+    {
+      "project": "identity",
+      "name": "process-b",
+      "nodeId": "2470:4854",
+      "path": "public/projects/identity/process-b.webp",
+      "source": "figma",
+      "w": 450,
+      "h": 448,
+      "originalPath": "public/projects/identity/process-b.png"
+    },
+    {
+      "project": "identity",
+      "name": "skin",
+      "nodeId": "2470:4927",
+      "path": "public/projects/identity/skin.webp",
+      "source": "figma",
+      "w": 3676,
+      "h": 1800,
+      "originalPath": "public/projects/identity/skin.png"
+    },
+    {
+      "project": "identity",
+      "name": "mould",
+      "nodeId": "2470:4924",
+      "path": "public/projects/identity/mould.webp",
+      "source": "figma",
+      "w": 336,
+      "h": 568,
+      "originalPath": "public/projects/identity/mould.png"
+    },
+    {
+      "project": "identity",
+      "name": "exhibition-01",
+      "nodeId": "2470:4902",
+      "path": "public/projects/identity/exhibition-01.webp",
+      "source": "figma",
+      "w": 920,
+      "h": 685,
+      "originalPath": "public/projects/identity/exhibition-01.png"
+    },
+    {
+      "project": "identity",
+      "name": "exhibition-02",
+      "nodeId": "2470:4903",
+      "path": "public/projects/identity/exhibition-02.webp",
+      "source": "figma",
+      "w": 920,
+      "h": 487,
+      "originalPath": "public/projects/identity/exhibition-02.png"
+    },
+    {
+      "project": "reckless",
+      "name": "hero",
+      "nodeId": "2795:2111",
+      "path": "public/projects/reckless/hero.webp",
+      "source": "figma",
+      "w": 1210,
+      "h": 1046,
+      "originalPath": "public/projects/reckless/hero.png"
+    },
+    {
+      "project": "reckless",
+      "name": "body",
+      "nodeId": "2834:356",
+      "path": "public/projects/reckless/body.webp",
+      "source": "figma",
+      "w": 920,
+      "h": 980,
+      "originalPath": "public/projects/reckless/body.png"
+    },
+    {
+      "project": "reckless",
+      "name": "scale",
+      "nodeId": "2919:10",
+      "path": "public/projects/reckless/scale.webp",
+      "source": "figma",
+      "w": 990,
+      "h": 569,
+      "originalPath": "public/projects/reckless/scale.png"
+    },
+    {
+      "project": "miro",
+      "name": "hero",
+      "nodeId": "3147:309",
+      "path": "public/projects/miro/hero.webp",
+      "source": "figma",
+      "w": 1210,
+      "h": 1046,
+      "originalPath": "public/projects/miro/hero.png"
+    },
+    {
+      "project": "miro",
+      "name": "plant",
+      "nodeId": "3154:313",
+      "path": "public/projects/miro/plant.webp",
+      "source": "figma",
+      "w": 920,
+      "h": 450,
+      "originalPath": "public/projects/miro/plant.png"
+    },
+    {
+      "project": "miro",
+      "name": "logo",
+      "nodeId": "3154:323",
+      "path": "public/projects/miro/logo.webp",
+      "source": "figma",
+      "w": 920,
+      "h": 580,
+      "originalPath": "public/projects/miro/logo.png"
+    },
+    {
+      "project": "miro",
+      "name": "front",
+      "nodeId": "3154:326",
+      "path": "public/projects/miro/front.webp",
+      "source": "figma",
+      "w": 920,
+      "h": 970,
+      "originalPath": "public/projects/miro/front.png"
+    },
+    {
+      "project": "miro",
+      "name": "detail",
+      "nodeId": "3154:334",
+      "path": "public/projects/miro/detail.webp",
+      "source": "figma",
+      "w": 920,
+      "h": 580,
+      "originalPath": "public/projects/miro/detail.png"
+    },
+    {
+      "project": "miro",
+      "name": "torso",
+      "nodeId": "3154:336",
+      "path": "public/projects/miro/torso.webp",
+      "source": "figma",
+      "w": 920,
+      "h": 970,
+      "originalPath": "public/projects/miro/torso.png"
+    },
+    {
+      "project": "miro",
+      "name": "phone",
+      "nodeId": "3154:344",
+      "path": "public/projects/miro/phone.webp",
+      "source": "figma",
+      "w": 920,
+      "h": 970,
+      "originalPath": "public/projects/miro/phone.png"
+    },
+    {
+      "project": "miro",
+      "name": "sleep",
+      "nodeId": "3154:346",
+      "path": "public/projects/miro/sleep.webp",
+      "source": "figma",
+      "w": 920,
+      "h": 568,
+      "originalPath": "public/projects/miro/sleep.png"
+    },
+    {
+      "project": "miro",
+      "name": "exhibition-01",
+      "nodeId": "3154:355",
+      "path": "public/projects/miro/exhibition-01.webp",
+      "source": "figma",
+      "w": 685,
+      "h": 705,
+      "originalPath": "public/projects/miro/exhibition-01.png"
+    },
+    {
+      "project": "miro",
+      "name": "exhibition-02",
+      "nodeId": "3154:357",
+      "path": "public/projects/miro/exhibition-02.webp",
+      "source": "figma",
+      "w": 1155,
+      "h": 970,
+      "originalPath": "public/projects/miro/exhibition-02.png"
+    },
+    {
+      "project": "reckless",
+      "name": "motion",
+      "nodeId": "3062:369",
+      "path": "public/projects/reckless/motion.webp",
+      "source": "figma",
+      "w": 1890,
+      "h": 863,
+      "originalPath": "public/projects/reckless/motion.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776583824/portfolio/paf2ko18vhte2vriqkne.png",
+      "name": "hero",
+      "project": "ev-charger",
+      "path": "public/projects/ev-charger/hero.webp",
+      "source": "published-site",
+      "w": 677,
+      "h": 911,
+      "originalPath": "public/projects/ev-charger/hero.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776611203/portfolio/icztcdl3gzrr4svcgctq.png",
+      "name": "image-01",
+      "project": "ev-charger",
+      "path": "public/projects/ev-charger/image-01.webp",
+      "source": "published-site",
+      "w": 2198,
+      "h": 1229,
+      "originalPath": "public/projects/ev-charger/image-01.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776611213/portfolio/deldlln1scxtb9r8inij.png",
+      "name": "image-02",
+      "project": "ev-charger",
+      "path": "public/projects/ev-charger/image-02.webp",
+      "source": "published-site",
+      "w": 2198,
+      "h": 1099,
+      "originalPath": "public/projects/ev-charger/image-02.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776611248/portfolio/zucgrbuvlpwbhzvfnngv.png",
+      "name": "image-03",
+      "project": "ev-charger",
+      "path": "public/projects/ev-charger/image-03.webp",
+      "source": "published-site",
+      "w": 2198,
+      "h": 1466,
+      "originalPath": "public/projects/ev-charger/image-03.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776611255/portfolio/lwxurthnmqfw883qtdl7.png",
+      "name": "image-04",
+      "project": "ev-charger",
+      "path": "public/projects/ev-charger/image-04.webp",
+      "source": "published-site",
+      "w": 2198,
+      "h": 1237,
+      "originalPath": "public/projects/ev-charger/image-04.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776752488/portfolio/bjubtpfb0bgutyiziqkd.png",
+      "name": "image-01",
+      "project": "d-light",
+      "path": "public/projects/d-light/image-01.webp",
+      "source": "published-site",
+      "w": 2880,
+      "h": 1620,
+      "originalPath": "public/projects/d-light/image-01.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776751192/portfolio/lu37yd1erx7otchuaymz.png",
+      "name": "image-02",
+      "project": "d-light",
+      "path": "public/projects/d-light/image-02.webp",
+      "source": "published-site",
+      "w": 7680,
+      "h": 4320,
+      "originalPath": "public/projects/d-light/image-02.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776752464/portfolio/xrccu8zmqszsctaa2dwb.png",
+      "name": "image-03",
+      "project": "d-light",
+      "path": "public/projects/d-light/image-03.webp",
+      "source": "published-site",
+      "w": 2528,
+      "h": 1696,
+      "originalPath": "public/projects/d-light/image-03.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776751195/portfolio/g5lwgznhynzaraowumd3.png",
+      "name": "image-04",
+      "project": "d-light",
+      "path": "public/projects/d-light/image-04.webp",
+      "source": "published-site",
+      "w": 1920,
+      "h": 810,
+      "originalPath": "public/projects/d-light/image-04.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776752670/portfolio/adrrh8jswiszwvafw8ay.png",
+      "name": "image-05",
+      "project": "d-light",
+      "path": "public/projects/d-light/image-05.webp",
+      "source": "published-site",
+      "w": 2528,
+      "h": 1696,
+      "originalPath": "public/projects/d-light/image-05.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776751196/portfolio/te7688y5rnpribsslgqf.png",
+      "name": "image-06",
+      "project": "d-light",
+      "path": "public/projects/d-light/image-06.webp",
+      "source": "published-site",
+      "w": 1920,
+      "h": 819,
+      "originalPath": "public/projects/d-light/image-06.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776751198/portfolio/di96l7zww3b5y0fiftvn.png",
+      "name": "image-07",
+      "project": "d-light",
+      "path": "public/projects/d-light/image-07.webp",
+      "source": "published-site",
+      "w": 1920,
+      "h": 1253,
+      "originalPath": "public/projects/d-light/image-07.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776756050/portfolio/echnkwcgd5ugnjp8xy0t.png",
+      "name": "image-08",
+      "project": "d-light",
+      "path": "public/projects/d-light/image-08.webp",
+      "source": "published-site",
+      "w": 1920,
+      "h": 809,
+      "originalPath": "public/projects/d-light/image-08.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776758570/portfolio/axddypp3aogxlgkgyy3c.png",
+      "name": "image-01",
+      "project": "exit",
+      "path": "public/projects/exit/image-01.webp",
+      "source": "published-site",
+      "w": 2050,
+      "h": 993,
+      "originalPath": "public/projects/exit/image-01.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776758571/portfolio/yigrsgugato8cvdvwhjh.png",
+      "name": "image-02",
+      "project": "exit",
+      "path": "public/projects/exit/image-02.webp",
+      "source": "published-site",
+      "w": 2050,
+      "h": 1367,
+      "originalPath": "public/projects/exit/image-02.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776758572/portfolio/lo0wjqkj6sigzogwgc5t.png",
+      "name": "image-03",
+      "project": "exit",
+      "path": "public/projects/exit/image-03.webp",
+      "source": "published-site",
+      "w": 2050,
+      "h": 659,
+      "originalPath": "public/projects/exit/image-03.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776758573/portfolio/stfzalpne43gykiftut9.png",
+      "name": "image-04",
+      "project": "exit",
+      "path": "public/projects/exit/image-04.webp",
+      "source": "published-site",
+      "w": 2050,
+      "h": 950,
+      "originalPath": "public/projects/exit/image-04.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776758574/portfolio/odumxcouqtztidhj30k7.png",
+      "name": "image-05",
+      "project": "exit",
+      "path": "public/projects/exit/image-05.webp",
+      "source": "published-site",
+      "w": 2050,
+      "h": 1070,
+      "originalPath": "public/projects/exit/image-05.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776758575/portfolio/ooha5njauelvj2ia1u53.png",
+      "name": "image-06",
+      "project": "exit",
+      "path": "public/projects/exit/image-06.webp",
+      "source": "published-site",
+      "w": 2031,
+      "h": 1354,
+      "originalPath": "public/projects/exit/image-06.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776758576/portfolio/unitkzowasmd3u7nibvw.png",
+      "name": "image-07",
+      "project": "exit",
+      "path": "public/projects/exit/image-07.webp",
+      "source": "published-site",
+      "w": 2050,
+      "h": 1048,
+      "originalPath": "public/projects/exit/image-07.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776758577/portfolio/gummhhv3ufp0ixsav8ma.png",
+      "name": "image-08",
+      "project": "exit",
+      "path": "public/projects/exit/image-08.webp",
+      "source": "published-site",
+      "w": 2050,
+      "h": 712,
+      "originalPath": "public/projects/exit/image-08.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776758578/portfolio/pfly1nay4klk6aqq8brn.png",
+      "name": "image-09",
+      "project": "exit",
+      "path": "public/projects/exit/image-09.webp",
+      "source": "published-site",
+      "w": 2050,
+      "h": 515,
+      "originalPath": "public/projects/exit/image-09.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776758579/portfolio/xn5kawl6mpashggmtpvl.png",
+      "name": "image-10",
+      "project": "exit",
+      "path": "public/projects/exit/image-10.webp",
+      "source": "published-site",
+      "w": 2050,
+      "h": 1126,
+      "originalPath": "public/projects/exit/image-10.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776758580/portfolio/b7unaki8aqlconpbudxe.png",
+      "name": "image-11",
+      "project": "exit",
+      "path": "public/projects/exit/image-11.webp",
+      "source": "published-site",
+      "w": 2030,
+      "h": 1316,
+      "originalPath": "public/projects/exit/image-11.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776758580/portfolio/ha6uxqv51v5keammhmch.png",
+      "name": "image-12",
+      "project": "exit",
+      "path": "public/projects/exit/image-12.webp",
+      "source": "published-site",
+      "w": 2035,
+      "h": 1083,
+      "originalPath": "public/projects/exit/image-12.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776271815/portfolio/pov7mkb5ocf9zwwrd7v7.png",
+      "name": "hero",
+      "project": "breathless",
+      "path": "public/projects/breathless/hero.webp",
+      "source": "published-site",
+      "w": 726,
+      "h": 968,
+      "originalPath": "public/projects/breathless/hero.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776599271/portfolio/moqjljtih1bs80ge5gwx.jpg",
+      "name": "image-01",
+      "project": "breathless",
+      "path": "public/projects/breathless/image-01.webp",
+      "source": "published-site",
+      "w": 6000,
+      "h": 4000,
+      "originalPath": "public/projects/breathless/image-01.jpg"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776599395/portfolio/zp8trjwdnjbzaozyjxgj.png",
+      "name": "image-02",
+      "project": "breathless",
+      "path": "public/projects/breathless/image-02.webp",
+      "source": "published-site",
+      "w": 2514,
+      "h": 1677,
+      "originalPath": "public/projects/breathless/image-02.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776599398/portfolio/wnjuywgq9w761gvjc7zd.png",
+      "name": "image-03",
+      "project": "breathless",
+      "path": "public/projects/breathless/image-03.webp",
+      "source": "published-site",
+      "w": 2514,
+      "h": 1677,
+      "originalPath": "public/projects/breathless/image-03.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776599429/portfolio/ts7lmbgdtouryt2eqfyh.png",
+      "name": "image-04",
+      "project": "breathless",
+      "path": "public/projects/breathless/image-04.webp",
+      "source": "published-site",
+      "w": 2514,
+      "h": 1677,
+      "originalPath": "public/projects/breathless/image-04.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776612853/portfolio/kcalod2itoodrk1qqnhm.png",
+      "name": "render-1",
+      "project": "runway",
+      "path": "public/projects/runway/render-1.webp",
+      "source": "published-site",
+      "w": 776,
+      "h": 1098,
+      "originalPath": "public/projects/runway/render-1.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776612854/portfolio/dvz8uslzxuow0weqhixr.png",
+      "name": "render-2",
+      "project": "runway",
+      "path": "public/projects/runway/render-2.webp",
+      "source": "published-site",
+      "w": 798,
+      "h": 1098,
+      "originalPath": "public/projects/runway/render-2.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776612854/portfolio/c8u7byxqkama3u9i0krd.png",
+      "name": "render-3",
+      "project": "runway",
+      "path": "public/projects/runway/render-3.webp",
+      "source": "published-site",
+      "w": 798,
+      "h": 1098,
+      "originalPath": "public/projects/runway/render-3.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776612856/portfolio/zv8bktsmswolcxsxd1ls.png",
+      "name": "render-4",
+      "project": "runway",
+      "path": "public/projects/runway/render-4.webp",
+      "source": "published-site",
+      "w": 798,
+      "h": 1098,
+      "originalPath": "public/projects/runway/render-4.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776612857/portfolio/zr0g2gdhdvpqhqmzlwpb.png",
+      "name": "render-5",
+      "project": "runway",
+      "path": "public/projects/runway/render-5.webp",
+      "source": "published-site",
+      "w": 1155,
+      "h": 586,
+      "originalPath": "public/projects/runway/render-5.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776612890/portfolio/bnob3idf3wj5woqlpmx7.png",
+      "name": "render-6",
+      "project": "runway",
+      "path": "public/projects/runway/render-6.webp",
+      "source": "published-site",
+      "w": 2225,
+      "h": 1161,
+      "originalPath": "public/projects/runway/render-6.png"
+    }
+  ]
+}
