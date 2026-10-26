@@ -425,7 +425,7 @@
 .story-gallery-arrow.is-prev > span::after { left:0; transform:rotate(-135deg); }
 .story-exhibition > .story-grid + .story-grid { margin-top:28px; }
 .story-films { margin-top:40px; row-gap:32px; }
-.story-films video { display:block; width:100%; max-height:80svh; background:#111; }
+.story-films video { display:block; width:100%; height:auto; aspect-ratio:16/9; max-height:80svh; object-fit:contain; background:#111; }
 .story-link { margin:48px var(--story-pad) 0 calc(var(--story-pad) + 2 * (var(--story-col) + var(--story-gap))); font:400 13px/1.5 var(--story-sans); }
 @media (min-width:901px) and (max-width:1360px) {
   .story-intro-main { grid-column:3 / 8; }

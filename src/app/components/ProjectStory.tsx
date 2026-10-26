@@ -401,7 +401,12 @@ export default function ProjectStory({ story, year, films = [] }: { story: Story
       {head(chapters.length + 1, 'Film')}
       <div className="story-grid story-films">{films.map((film, i) =>
         <video key={film.url} src={film.url} poster={film.poster} controls muted playsInline
-          preload="none" aria-label={`${story.name} film ${i + 1}`} style={content} />)}</div>
+          preload="metadata" aria-label={`${story.name} film ${i + 1}`} style={content}
+          onLoadedMetadata={({ currentTarget: video }) => {
+            if (video.videoWidth && video.videoHeight) {
+              video.style.aspectRatio = `${video.videoWidth} / ${video.videoHeight}`;
+            }
+          }} />)}</div>
     </section>}
   </div>;
 }
