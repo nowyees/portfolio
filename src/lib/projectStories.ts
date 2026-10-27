@@ -33,6 +33,7 @@ export type ProjectStory = {
   facts: Array<[string, string]>;
   intro: { ko: string; en?: string; image?: StoryImage };
   kickers?: Record<string, string>;   // a small line above a chapter's name, e.g. "Product 01"
+  films?: Array<{ src: string; poster: string; caption: string }>;   // full films (with sound) that close the story
   sections: StorySection[];
 };
 

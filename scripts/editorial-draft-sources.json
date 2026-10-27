@@ -491,76 +491,6 @@
     },
     {
       "project": "miro",
-      "name": "plant",
-      "nodeId": "3154:313",
-      "path": "public/projects/miro/plant.webp",
-      "source": "figma",
-      "w": 920,
-      "h": 450,
-      "originalPath": "public/projects/miro/plant.png"
-    },
-    {
-      "project": "miro",
-      "name": "logo",
-      "nodeId": "3154:323",
-      "path": "public/projects/miro/logo.webp",
-      "source": "figma",
-      "w": 920,
-      "h": 580,
-      "originalPath": "public/projects/miro/logo.png"
-    },
-    {
-      "project": "miro",
-      "name": "front",
-      "nodeId": "3154:326",
-      "path": "public/projects/miro/front.webp",
-      "source": "figma",
-      "w": 920,
-      "h": 970,
-      "originalPath": "public/projects/miro/front.png"
-    },
-    {
-      "project": "miro",
-      "name": "detail",
-      "nodeId": "3154:334",
-      "path": "public/projects/miro/detail.webp",
-      "source": "figma",
-      "w": 920,
-      "h": 580,
-      "originalPath": "public/projects/miro/detail.png"
-    },
-    {
-      "project": "miro",
-      "name": "torso",
-      "nodeId": "3154:336",
-      "path": "public/projects/miro/torso.webp",
-      "source": "figma",
-      "w": 920,
-      "h": 970,
-      "originalPath": "public/projects/miro/torso.png"
-    },
-    {
-      "project": "miro",
-      "name": "phone",
-      "nodeId": "3154:344",
-      "path": "public/projects/miro/phone.webp",
-      "source": "figma",
-      "w": 920,
-      "h": 970,
-      "originalPath": "public/projects/miro/phone.png"
-    },
-    {
-      "project": "miro",
-      "name": "sleep",
-      "nodeId": "3154:346",
-      "path": "public/projects/miro/sleep.webp",
-      "source": "figma",
-      "w": 920,
-      "h": 568,
-      "originalPath": "public/projects/miro/sleep.png"
-    },
-    {
-      "project": "miro",
       "name": "exhibition-01",
       "nodeId": "3154:355",
       "path": "public/projects/miro/exhibition-01.webp",
@@ -948,6 +878,46 @@
       "w": 2225,
       "h": 1161,
       "originalPath": "public/projects/runway/render-6.png"
+    },
+    {
+      "project": "miro",
+      "name": "home",
+      "source": "https://miro-web-ignite.vercel.app (owner project site)",
+      "w": 1120,
+      "h": 1404,
+      "path": "public/projects/miro/site/home.webp"
+    },
+    {
+      "project": "miro",
+      "name": "screen1",
+      "source": "https://miro-web-ignite.vercel.app (owner project site)",
+      "w": 581,
+      "h": 1256,
+      "path": "public/projects/miro/site/screen1.webp"
+    },
+    {
+      "project": "miro",
+      "name": "screen2",
+      "source": "https://miro-web-ignite.vercel.app (owner project site)",
+      "w": 581,
+      "h": 1256,
+      "path": "public/projects/miro/site/screen2.webp"
+    },
+    {
+      "project": "miro",
+      "name": "sketch",
+      "source": "https://miro-web-ignite.vercel.app (owner project site)",
+      "w": 1668,
+      "h": 2388,
+      "path": "public/projects/miro/site/sketch.webp"
+    },
+    {
+      "project": "miro",
+      "name": "arm",
+      "source": "https://miro-web-ignite.vercel.app (owner project site)",
+      "w": 1300,
+      "h": 2080,
+      "path": "public/projects/miro/site/arm.webp"
     }
   ]
 }

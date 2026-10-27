@@ -300,7 +300,9 @@ function Part({ section, title, chapterNumber }: { section: StorySection; title:
   }
 }
 
-export default function ProjectStory({ story, year, films = [] }: { story: Story; year?: string; films?: Film[] }) {
+export default function ProjectStory({ story, year, films: projectFilms = [] }: { story: Story; year?: string; films?: Film[] }) {
+  // the story's own films first, then any the project carries
+  const films = [...(story.films || []).map(film => ({ url: film.src, poster: film.poster })), ...projectFilms];
   const rootRef = useRef<HTMLDivElement>(null);
   const [current, setCurrent] = useState(0);
   const chapters = story.sections.reduce<Array<{ name: string; sections: StorySection[] }>>((list, section) => {

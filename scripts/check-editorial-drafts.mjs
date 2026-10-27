@@ -35,7 +35,8 @@ for (const src of sources.keys()) {
 }
 for (const src of replacedIdentityStills) assert(!images.has(src), `Replaced still remains in story: ${src}`);
 assert.equal(images.size, manifest.assets.length - replacedIdentityStills.size, 'Unused or missing image frame');
-assert.equal(clips.size, identityMotion.length, 'Every owner GIF must be represented');
+const identityClipCount = [...clips.keys()].filter(src => src.startsWith('/projects/identity/')).length;
+assert.equal(identityClipCount, identityMotion.length, 'Every owner GIF must be represented');
 for (const [slug, , , w, h] of identityMotion) {
   const src = `/projects/identity/motion/${slug}.mp4`;
   assert(clips.has(src), `Missing motion: ${slug}`);
@@ -50,7 +51,7 @@ for (const [slug, , , w, h] of identityMotion) {
     if (extension === 'mp4') assert.equal(stream.codec_name, 'h264');
   }
 }
-console.log(`PASS: ${clips.size} owner motion loops and posters, native dimensions preserved.`);
+console.log(`PASS: ${identityClipCount} identity motion loops and posters, native dimensions preserved.`);
 for (const story of Object.values(editorialDrafts)) {
   assert.equal(story.presentation, 'editorial');
   assert(story.sections.length >= 2, `A draft must have meaningful chapters: ${story.name}`);
