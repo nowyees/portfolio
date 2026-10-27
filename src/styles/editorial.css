@@ -407,6 +407,20 @@
 .story-strip { --strip-h:min(62svh,640px); position:relative; margin-top:40px; }
 .story-strip-sticky { position:sticky; top:0; z-index:21; height:100svh; display:flex; align-items:flex-start; padding-top:24px; box-sizing:border-box; overflow:hidden; background:var(--paper); }
 .story-strip-track { display:flex; align-items:start; gap:var(--story-gap); width:max-content; padding:0 var(--story-pad) 0 calc(var(--story-pad) + 2 * (var(--story-col) + var(--story-gap))); }
+/* The installation draws its instructions separately from its video frames. */
+.story-reaction-guide { position:absolute; inset:0; container-type:inline-size; pointer-events:none; }
+.story-reaction-guide > div { position:absolute; inset:1.111cqw 0 auto; display:flex; flex-direction:column; align-items:center; text-align:center; font-family:var(--story-sans); font-weight:600; letter-spacing:-.03em; }
+.story-reaction-guide p { margin:0; font-size:2.222cqw; line-height:1.6; color:#555d6d; }
+.story-reaction-guide p:last-child { font-size:3.889cqw; color:#282c33; white-space:nowrap; }
+.story-image-plane .story-reaction-guide img { position:static; width:9.259cqw; height:9.259cqw; object-fit:contain; margin-bottom:.37cqw; }
+@media (max-width:600px) {
+  .story[data-story="miro"] .story-row:has(.story-reaction-guide) { overflow-x:auto; scroll-snap-type:x proximity; gap:20px; }
+  .story[data-story="miro"] .story-row:has(.story-reaction-guide) > .story-figure { flex:0 0 72vw!important; scroll-snap-align:start; }
+}
+@media (min-width:901px) and (prefers-reduced-motion:no-preference) {
+  .story[data-story="miro"] .story-strip { --strip-h:min(62svh,640px,calc(100svh - 176px)); }
+  .story[data-story="miro"] .story-strip:not([data-stationary="true"]) .story-strip-sticky { align-items:center; padding-block:clamp(64px,9svh,112px); }
+}
 .story-gallery { container-type:inline-size; --gallery-h:min(62svh,640px,calc(100cqw / var(--gallery-ratio))); }
 .story-gallery-viewport { overflow:hidden; cursor:grab; touch-action:pan-y pinch-zoom; }
 .story-gallery-viewport:active { cursor:grabbing; }

@@ -6,7 +6,8 @@
 export type StoryImage = { src: string; w: number; h: number; caption?: string; srcSet?: string;
   frame?: { w: number; h: number }; video?: StoryClip; focus?: string };
 export type StoryText = { title: string; body: string; num?: string };
-export type StoryClip = { src: string; poster: string; w: number; h: number; caption: string };
+export type StoryClip = { src: string; poster: string; w: number; h: number; caption: string;
+  guide?: { sub: string; title: string; icon?: string } };
 // A row of images shown at one height. The page's content runs over the right ten of twelve columns; a row spans
 // `span` of those ten (all of them by default), from the left or, with `align: 'end'`, from the right.
 export type StoryRow = { images: StoryImage[]; span?: number; align?: 'start' | 'end'; line?: number };
@@ -14,7 +15,7 @@ export type StoryRow = { images: StoryImage[]; span?: number; align?: 'start' | 
 // stack — text and image rows; feature — a large image with its description below;
 // pinned — a fixed image stage changes with the explanation beside it;
 // compare — modes side by side; strip — a pinned horizontal process sequence (native swipe on mobile).
-export type StorySection = { chapter: string } & (
+export type StorySection = { chapter: string; links?: Array<{ label: string; href: string }> } & (
   | { kind?: 'stack'; texts: StoryText[]; rows: StoryRow[] }
   | { kind: 'feature'; image: StoryImage; text: StoryText; before?: StoryRow[]; after?: StoryRow[] }
   | { kind: 'context'; text: StoryText; clip: StoryClip; rows: StoryRow[] }

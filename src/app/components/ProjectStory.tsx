@@ -44,6 +44,10 @@ function MotionImage({ clip, active }: { clip: StoryClip; active: boolean }) {
     <video ref={ref} src={clip.src} poster={clip.poster} width={clip.w} height={clip.h}
       muted loop playsInline preload="none" aria-label={clip.caption}
       onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onError={() => setFailed(true)} />
+    {clip.guide && <div className="story-reaction-guide"><div>
+      {clip.guide.icon && <img src={clip.guide.icon} alt="" />}
+      <p>{clip.guide.sub}</p><p>{clip.guide.title}</p>
+    </div></div>}
     <button className={'story-motion-toggle' + (playing ? ' is-playing' : '')} type="button" tabIndex={active ? 0 : -1}
       aria-label={`${clip.caption} — ${playing ? '일시정지' : '재생'}`} onClick={() => {
         intent.current = playing ? 'pause' : 'play'; syncRef.current();
@@ -366,7 +370,7 @@ export default function ProjectStory({ story, year, films: projectFilms = [] }: 
     <dl className="story-facts">{story.facts.map(([term, value]) =>
       <div className="story-rv" key={term}><dt>{term}</dt><dd>{value}</dd></div>)}</dl>
   </>;
-  return <div className={'story' + (editorial ? ' is-editorial-draft' : '')} ref={rootRef}>
+  return <div className={'story' + (editorial ? ' is-editorial-draft' : '')} data-story={story.name.toLowerCase()} ref={rootRef}>
     <nav className="story-index" aria-label={`${story.name} chapters`}>
       <p>{story.name}</p>
       <ol>{index.map((name, i) => <li key={name}>
@@ -398,6 +402,10 @@ export default function ProjectStory({ story, year, films: projectFilms = [] }: 
         ? <div className="story-grid story-feature-start"><div style={content} /></div>
         : head(i + 1, chapter.name)}
       {chapter.sections.map((section, j) => <Part key={j} section={section} title={story.name} chapterNumber={i + 1} />)}
+      {chapter.sections.some(section => section.links?.length) && <div className="story-grid story-links"><p style={content}>
+        {chapter.sections.flatMap(section => section.links || []).map(link =>
+          <a key={link.href} className="detail-external-link" href={link.href} target="_blank" rel="noopener noreferrer">{link.label}</a>)}
+      </p></div>}
     </section>)}
     {story.links && <div className="story-grid story-links"><p style={content}>{story.links.map(link =>
       <a key={link.href} className="detail-external-link" href={link.href} target="_blank" rel="noopener noreferrer">{link.label}</a>)}</p></div>}

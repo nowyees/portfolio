@@ -1,4 +1,4 @@
-import type { ProjectStory, StoryImage, StoryRow, StorySection } from './projectStories';
+import type { ProjectStory, StoryClip, StoryImage, StoryRow, StorySection } from './projectStories';
 
 // Miro, told after the project's own exhibition site (miro-web-ignite.vercel.app: Stories → Features → System).
 // Loops are cut from the owner's scenario film (Miro_시나리오_최종) and product film (DDP/Detailed 영상/FINAL2),
@@ -8,10 +8,19 @@ const film = (name: string, caption: string): StoryImage => {
   const poster = `/projects/miro/motion/${name}.webp`;
   return { src: poster, w: W, h: H, caption, video: { src: `/projects/miro/motion/${name}.mp4`, poster, w: W, h: H, caption } };
 };
-// Responses of the webcam installation (nowyees.github.io/miro-interaction), 720x1280.
+// Installation videos resized for six simultaneous previews; preserve framing and guide artwork.
+const guides: Record<string, NonNullable<StoryClip['guide']>> = {
+  idle: { sub: 'Miro와 놀아볼까요?', title: '선 앞에서 카메라를 바라봐 주세요' },
+  onboarding: { sub: 'Miro가 물을 주고 있어요', title: '하던 일을 마치고 금방 돌아올 거예요!' },
+  hi: { sub: 'Miro에게 인사해볼까요?', title: '카메라를 향해 손을 흔들어 보세요!', icon: '/projects/miro/guide/wave.png' },
+  rsp: { sub: 'Miro와 가위바위보를 해볼까요?', title: '카메라를 향해 검지 하나를 펴 보세요!', icon: '/projects/miro/guide/point.png' },
+  picture: { sub: 'Miro가 무슨 포즈를 할까요?', title: '카메라를 향해 V 해보세요!', icon: '/projects/miro/guide/v.png' },
+  tomato: { sub: 'Miro가 어떤 걸 가져다 줄까요?', title: '카메라를 향해 하트를 해보세요!', icon: '/projects/miro/guide/finger-heart.png' },
+};
 const reaction = (name: string, caption: string): StoryImage => {
   const poster = `/projects/miro/motion/ia-${name}.webp`;
-  return { src: poster, w: 720, h: 1280, caption, video: { src: `/projects/miro/motion/ia-${name}.mp4`, poster, w: 720, h: 1280, caption } };
+  const w = 720, h = 1280;
+  return { src: poster, w, h, caption, video: { src: `/projects/miro/motion/ia-${name}.mp4`, poster, w, h, caption, guide: guides[name] } };
 };
 // Studio and DDP booth photos (owner's DDP/progress pic and 전시장 사진).
 const ddp = (name: string, w: number, h: number, caption?: string): StoryImage =>
@@ -22,8 +31,8 @@ const photo = (name: string, w: number, h: number): StoryImage => ({ src: `/proj
 const pair = (left: StoryImage, right: StoryImage, line: number): StoryRow[] => [
   { images: [left], span: 5, line }, { images: [right], span: 5, align: 'end', line },
 ];
-const part = (chapter: string, title: string, body: string, rows: StoryRow[]): StorySection =>
-  ({ chapter, texts: [{ title, body }], rows });
+const part = (chapter: string, title: string, body: string, rows: StoryRow[], links?: StorySection['links']): StorySection =>
+  ({ chapter, texts: [{ title, body }], rows, links });
 
 export const miro: ProjectStory = {
   name: 'miro', discipline: 'Personal care home robotics', presentation: 'editorial',
@@ -34,14 +43,14 @@ export const miro: ProjectStory = {
   },
   facts: [['Team', 'Hyundai ZER01NE × Hongik Industrial Design'],
     ['Scope', 'Branding · Rendering · Web & UI · Exhibition design'], ['Field', 'Home wellness robotics']],
-  kickers: { Background: 'Why', 'Value Shift': 'Insight', 'Core Value': 'Concept', 'Key Features': 'Product', System: 'Beyond the robot', Process: 'How', Interaction: 'Webcam installation', 'Interactive Web': 'Web', Exhibition: 'Show' },
+  kickers: { Background: 'Why', 'Value Shift': 'Insight', 'Core Value': 'Concept', 'Key Features': 'Product', System: 'Beyond the robot', Process: 'How', Interaction: 'Webcam installation', Exhibition: 'Show' },
   sections: [
     part('Background', '10년 뒤, 로봇이 일상이 된 집',
       'Physical AI의 확장으로 로봇은 주변을 인식하고 판단해 직접 행동하기 시작했습니다. 홈 로봇은 빠르게 고도화되어 가정에 보급되고, 청소·빨래·요리 같은 가사 노동을 대신하게 될 것입니다. 그렇다면 노동을 대체한 다음, 로봇은 집에서 어떤 역할을 맡게 될까요?',
       pair(film('home-chores', '가사 노동을 대신하는 로봇'), film('fridge', '냉장고를 정리하는 Miro'), 1)),
     part('Background', '노동의 대체, 움직임을 잃은 인간',
       '청소와 빨래 같은 일들은 역설적이게도 우리의 몸을 움직이게 했습니다. 영화 ‘월-E’ 속 사람들처럼, 로봇이 모든 일을 대신하는 집에서 인간은 점점 움직이지 않게 될 것입니다.',
-      [{ images: [film('leaving-home', '빈 집을 지키는 Miro')] }]),
+      [{ images: [still('walle-reference', 1024, 427, '영화 WALL·E — 자동화된 생활 속 움직임을 잃은 인간 · 참고 이미지')] }]),
     { chapter: 'Value Shift', kind: 'feature', image: film('meditation', '회복의 움직임'),
       after: [{ images: [film('head-care', '이완 케어')] }],
       text: { title: '노동의 움직임에서, 회복의 움직임으로',
@@ -78,19 +87,19 @@ export const miro: ProjectStory = {
         { images: [ddp('studio-desk', 1800, 1350, '형태 스터디'), ddp('modeling', 1800, 1350, '3D 모델링')] }]),
     part('Interaction', 'Miro와 놀아볼까요?',
       '전시장 화면 앞에 선 관람객을 웹캠으로 인식하는 인터랙티브 웹을 만들었습니다. 2초간 화면을 바라보면 하던 일을 마친 Miro가 다가오고, 검지·손 흔들기·브이·손가락 하트 제스처에 맞춰 각기 다른 동작으로 반응합니다. 관람객이 자리를 떠나면 다시 대기 상태로 돌아갑니다.',
-      [{ images: [reaction('onboarding', '바라보면 다가오는 Miro'), reaction('hi', '손 흔들기 → 인사'), reaction('rsp', '검지 → 가위바위보'),
-          reaction('picture', '브이 → 사진 포즈'), reaction('tomato', '손가락 하트 → 토마토 선물')] }]),
-    part('Interactive Web', 'miro-web-ignite',
-      'Miro의 세계관과 기능을 직접 탐색할 수 있는 인터랙티브 웹사이트를 기획·디자인·제작했습니다. 픽셀 로고가 흩어졌다 모이는 첫 화면, 스크롤에 따라 펼쳐지는 스토리와 기능 페이지로 전시의 경험을 온라인으로 이어갑니다.',
-      [{ images: [film('web-home', 'Home — 픽셀 로고 인터랙션')] },
-        { images: [film('web-stories', 'Stories'), film('web-features', 'Features')] }]),
+      [{ images: [reaction('idle', '참여 안내 · 관람객을 기다리는 Miro'), reaction('onboarding', '바라보면 다가오는 Miro'), reaction('hi', '손 흔들기 → 인사'),
+        reaction('rsp', '검지 → 가위바위보'), reaction('picture', '브이 → 사진 포즈'), reaction('tomato', '손가락 하트 → 토마토 선물')] }],
+      [{ label: 'Try the interaction (webcam) ↗︎', href: 'https://nowyees.github.io/miro-interaction/' }]),
     { chapter: 'Exhibition', kind: 'gallery', text: { title: 'A home to explore',
       body: 'DDP 서울디자인위크에서 앱·웹·로봇·커뮤니티의 네 가지 경험을 하나의 집처럼 배치했습니다. 공존, 교환과 물류, 대기와 충전의 영역으로 나눠 관람객이 Miro의 생활을 직접 살펴보도록 구성했습니다.' },
-      images: [ddp('booth-wide', 1800, 1202, 'DDP 부스'), ddp('booth-robot', 1080, 1440, 'Miro'), ddp('booth-visitors', 1800, 1202, '관람객'),
-        ddp('booth-table', 1800, 1202, '디스플레이 테이블'), photo('exhibition-01', 685, 705), photo('exhibition-02', 1155, 970)] },
+      images: [ddp('booth-wide', 1800, 1202, 'DDP 부스'),
+        ddp('booth-kids-gestures', 1350, 1800, '제스처로 Miro와 소통하는 관람객'), ddp('booth-kids-web', 1350, 1800, '웹 인터랙션을 직접 체험하는 관람객'),
+        ddp('booth-robot', 1080, 1440, 'Miro'), ddp('booth-visitors', 1800, 1202, '관람객'),
+        ddp('booth-table', 1800, 1202, '디스플레이 테이블'), photo('exhibition-01', 685, 705), photo('exhibition-02', 1155, 970)],
+      links: [{ label: '조선일보 · 미래 로봇과 주거 환경 상상… 디자인으로 구현 ↗︎',
+        href: 'https://www.chosun.com/special/special_section/2026/10/16/VPX5G2FFGJHENBZ6S2VJOM23LU/' }] },
   ],
-  links: [{ label: 'Try the interaction (webcam) ↗︎', href: 'https://nowyees.github.io/miro-interaction/' },
-    { label: 'Visit miro-web-ignite ↗︎', href: 'https://miro-web-ignite.vercel.app/' }],
+  links: [{ label: 'Visit miro-web-ignite ↗︎', href: 'https://miro-web-ignite.vercel.app/' }],
   films: [
     { src: '/projects/miro/motion/scenario-film.mp4', poster: '/projects/miro/motion/scenario-film.webp', caption: 'Scenario film' },
     { src: '/projects/miro/motion/product-film.mp4', poster: '/projects/miro/motion/product-film.webp', caption: 'Product film' },
