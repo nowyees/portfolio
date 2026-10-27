@@ -516,4 +516,5 @@
   .story-strip-track { transform:none!important; }
 }
 .story-links { margin-top:clamp(48px,8vh,96px); }
+.story-links p { display:flex; flex-wrap:wrap; gap:12px 32px; }
 .story-links a { font:400 15px/1.4 var(--story-sans); }
