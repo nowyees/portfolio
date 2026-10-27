@@ -34,6 +34,7 @@ export type ProjectStory = {
   intro: { ko: string; en?: string; image?: StoryImage };
   kickers?: Record<string, string>;   // a small line above a chapter's name, e.g. "Product 01"
   films?: Array<{ src: string; poster: string; caption: string }>;   // full films (with sound) that close the story
+  links?: Array<{ label: string; href: string }>;   // outward links shown before the films (e.g. the project's own site)
   sections: StorySection[];
 };
 

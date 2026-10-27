@@ -8,6 +8,9 @@ const film = (name: string, caption: string): StoryImage => {
   const poster = `/projects/miro/motion/${name}.webp`;
   return { src: poster, w: W, h: H, caption, video: { src: `/projects/miro/motion/${name}.mp4`, poster, w: W, h: H, caption } };
 };
+// Studio and DDP booth photos (owner's DDP/progress pic and 전시장 사진).
+const ddp = (name: string, w: number, h: number, caption?: string): StoryImage =>
+  ({ src: `/projects/miro/ddp/${name}.webp`, w, h, caption });
 const still = (name: string, w: number, h: number, caption?: string): StoryImage =>
   ({ src: `/projects/miro/site/${name}.webp`, w, h, caption });
 const photo = (name: string, w: number, h: number): StoryImage => ({ src: `/projects/miro/${name}.webp`, w, h });
@@ -26,7 +29,7 @@ export const miro: ProjectStory = {
   },
   facts: [['Team', 'Hyundai ZER01NE × Hongik Industrial Design'],
     ['Scope', 'Branding · Rendering · Web & UI · Exhibition design'], ['Field', 'Home wellness robotics']],
-  kickers: { Background: 'Why', 'Value Shift': 'Insight', 'Core Value': 'Concept', 'Key Features': 'Product', System: 'Beyond the robot' },
+  kickers: { Background: 'Why', 'Value Shift': 'Insight', 'Core Value': 'Concept', 'Key Features': 'Product', System: 'Beyond the robot', Process: 'How', 'Interactive Web': 'Web', Exhibition: 'Show' },
   sections: [
     part('Background', '10년 뒤, 로봇이 일상이 된 집',
       'Physical AI의 확장으로 로봇은 주변을 인식하고 판단해 직접 행동하기 시작했습니다. 홈 로봇은 빠르게 고도화되어 가정에 보급되고, 청소·빨래·요리 같은 가사 노동을 대신하게 될 것입니다. 그렇다면 노동을 대체한 다음, 로봇은 집에서 어떤 역할을 맡게 될까요?',
@@ -64,10 +67,20 @@ export const miro: ProjectStory = {
     part('System', '로봇 친화적 홈 시스템',
       '같은 휠베이스 플랫폼을 공유하는 커뮤니티 로봇과 연결되어, 이웃 간 물품 나눔과 택배 수령 등 공동체의 일상을 함께 돌봅니다. 공간은 확장되고, 로봇은 집 안팎을 자유롭게 움직입니다.',
       [{ images: [film('wheelbase-top', '공유 휠베이스'), still('home', 1120, 1404, '로봇 친화적 홈 시스템')] }]),
+    part('Process', 'From the wall to the model',
+      '팀 전체가 벽면에 실제 크기로 스케치를 붙여 비례를 맞추고, 3D 프린팅한 파츠로 헤드와 몸체의 형태를 반복해서 검증했습니다. 확정된 형태는 3D 모델링과 렌더링으로 이어졌습니다.',
+      [{ images: [ddp('fullscale-sketch', 1800, 2400, '실제 크기 스케치'), ddp('mockup-parts', 1800, 1350, '3D 프린팅 목업 파츠')] },
+        { images: [ddp('studio-desk', 1800, 1350, '형태 스터디'), ddp('modeling', 1800, 1350, '3D 모델링')] }]),
+    part('Interactive Web', 'miro-web-ignite',
+      'Miro의 세계관과 기능을 직접 탐색할 수 있는 인터랙티브 웹사이트를 기획·디자인·제작했습니다. 픽셀 로고가 흩어졌다 모이는 첫 화면, 스크롤에 따라 펼쳐지는 스토리와 기능 페이지로 전시의 경험을 온라인으로 이어갑니다.',
+      [{ images: [film('web-home', 'Home — 픽셀 로고 인터랙션')] },
+        { images: [film('web-stories', 'Stories'), film('web-features', 'Features')] }]),
     { chapter: 'Exhibition', kind: 'gallery', text: { title: 'A home to explore',
-      body: '앱·웹·로봇·커뮤니티의 네 가지 경험을 전시 공간에 배치했습니다. 공존, 교환과 물류, 대기와 충전의 영역으로 나눠 Miro의 생활을 직접 살펴보도록 구성했습니다.' },
-      images: [photo('exhibition-01', 685, 705), photo('exhibition-02', 1155, 970)] },
+      body: 'DDP 서울디자인위크에서 앱·웹·로봇·커뮤니티의 네 가지 경험을 하나의 집처럼 배치했습니다. 공존, 교환과 물류, 대기와 충전의 영역으로 나눠 관람객이 Miro의 생활을 직접 살펴보도록 구성했습니다.' },
+      images: [ddp('booth-wide', 1800, 1202, 'DDP 부스'), ddp('booth-robot', 1080, 1440, 'Miro'), ddp('booth-visitors', 1800, 1202, '관람객'),
+        ddp('booth-table', 1800, 1202, '디스플레이 테이블'), photo('exhibition-01', 685, 705), photo('exhibition-02', 1155, 970)] },
   ],
+  links: [{ label: 'Visit miro-web-ignite ↗︎', href: 'https://miro-web-ignite.vercel.app/' }],
   films: [
     { src: '/projects/miro/motion/scenario-film.mp4', poster: '/projects/miro/motion/scenario-film.webp', caption: 'Scenario film' },
     { src: '/projects/miro/motion/product-film.mp4', poster: '/projects/miro/motion/product-film.webp', caption: 'Product film' },

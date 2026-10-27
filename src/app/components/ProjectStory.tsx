@@ -399,6 +399,8 @@ export default function ProjectStory({ story, year, films: projectFilms = [] }: 
         : head(i + 1, chapter.name)}
       {chapter.sections.map((section, j) => <Part key={j} section={section} title={story.name} chapterNumber={i + 1} />)}
     </section>)}
+    {story.links && <div className="story-grid story-links"><p style={content}>{story.links.map(link =>
+      <a key={link.href} className="detail-external-link" href={link.href} target="_blank" rel="noopener noreferrer">{link.label}</a>)}</p></div>}
     {films.length > 0 && <section className="story-chapter" aria-label="Film">
       {head(chapters.length + 1, 'Film')}
       <div className="story-grid story-films">{films.map((film, i) =>

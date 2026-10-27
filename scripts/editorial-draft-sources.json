@@ -916,6 +916,70 @@
       "w": 1600,
       "h": 2260,
       "path": "public/projects/miro/tomato.webp"
+    },
+    {
+      "project": "miro",
+      "name": "fullscale-sketch",
+      "source": "owner photos (G:/2026/DDP/progress pic, 전시장 사진)",
+      "w": 1800,
+      "h": 2400,
+      "path": "public/projects/miro/ddp/fullscale-sketch.webp"
+    },
+    {
+      "project": "miro",
+      "name": "mockup-parts",
+      "source": "owner photos (G:/2026/DDP/progress pic, 전시장 사진)",
+      "w": 1800,
+      "h": 1350,
+      "path": "public/projects/miro/ddp/mockup-parts.webp"
+    },
+    {
+      "project": "miro",
+      "name": "studio-desk",
+      "source": "owner photos (G:/2026/DDP/progress pic, 전시장 사진)",
+      "w": 1800,
+      "h": 1350,
+      "path": "public/projects/miro/ddp/studio-desk.webp"
+    },
+    {
+      "project": "miro",
+      "name": "modeling",
+      "source": "owner photos (G:/2026/DDP/progress pic, 전시장 사진)",
+      "w": 1800,
+      "h": 1350,
+      "path": "public/projects/miro/ddp/modeling.webp"
+    },
+    {
+      "project": "miro",
+      "name": "booth-wide",
+      "source": "owner photos (G:/2026/DDP/progress pic, 전시장 사진)",
+      "w": 1800,
+      "h": 1202,
+      "path": "public/projects/miro/ddp/booth-wide.webp"
+    },
+    {
+      "project": "miro",
+      "name": "booth-robot",
+      "source": "owner photos (G:/2026/DDP/progress pic, 전시장 사진)",
+      "w": 1080,
+      "h": 1440,
+      "path": "public/projects/miro/ddp/booth-robot.webp"
+    },
+    {
+      "project": "miro",
+      "name": "booth-visitors",
+      "source": "owner photos (G:/2026/DDP/progress pic, 전시장 사진)",
+      "w": 1800,
+      "h": 1202,
+      "path": "public/projects/miro/ddp/booth-visitors.webp"
+    },
+    {
+      "project": "miro",
+      "name": "booth-table",
+      "source": "owner photos (G:/2026/DDP/progress pic, 전시장 사진)",
+      "w": 1800,
+      "h": 1202,
+      "path": "public/projects/miro/ddp/booth-table.webp"
     }
   ]
 }
