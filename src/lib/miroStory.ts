@@ -19,7 +19,7 @@ const part = (chapter: string, title: string, body: string, rows: StoryRow[]): S
 
 export const miro: ProjectStory = {
   name: 'miro', discipline: 'Personal care home robotics', presentation: 'editorial',
-  hero: photo('hero', 1210, 1046),
+  hero: photo('hero-plant', 2000, 1125),
   intro: {
     ko: '가사 노동을 위한 움직임이 사라진 미래에서,\n인간의 움직임은 회복과 자기관리를 위한 행위로.',
     en: 'In a future where robots take on the housework, movement at home becomes a way to recover and to care for oneself.',
@@ -58,10 +58,10 @@ export const miro: ProjectStory = {
     part('Key Features', '휴먼 태스크에 최적화된 설계',
       '슬라이딩 암, 360° 회전 힌지, 레일형 엄지를 갖춘 5지 손으로 높은 선반부터 바닥까지 넓은 범위를 오가며, 물건 정리부터 섬세한 집안일까지 사람처럼 능숙하게 수행합니다.',
       [...pair(film('arm-reach', '슬라이딩 암'), film('hand', '5지 손'), 1),
-        ...pair(still('sketch', 1668, 2388, 'Sketch'), still('arm', 1300, 2080, 'Arm'), 2)]),
+        { images: [still('arm', 1300, 2080, 'Arm')], span: 4, align: 'end' }]),
     { chapter: 'Key Features', kind: 'strip', text: { title: 'Grow-to-Table 영양 케어',
       body: '홈 스마트 팜을 관리하고 필요한 식재료를 직접 준비합니다. 밀프렙, 영양소 분석, 냉장고 관리로 사용자의 상태에 맞춘 식사 루틴을 제공합니다.' },
-      images: [film('meal-plate', '밀프렙'), film('meal-label', '영양 라벨링'), film('shared-meal', '함께하는 식사')] },
+      images: [photo('tomato', 1600, 2260), film('meal-plate', '밀프렙'), film('meal-label', '영양 라벨링'), film('shared-meal', '함께하는 식사')] },
     part('System', '로봇 친화적 홈 시스템',
       '같은 휠베이스 플랫폼을 공유하는 커뮤니티 로봇과 연결되어, 이웃 간 물품 나눔과 택배 수령 등 공동체의 일상을 함께 돌봅니다. 공간은 확장되고, 로봇은 집 안팎을 자유롭게 움직입니다.',
       pair(film('wheelbase', '휠베이스 플랫폼'), film('wheelbase-top', '공유 휠베이스'), 1)),

@@ -19,7 +19,6 @@ export const draftAssetMap: Record<string, StoryImage> = {
   'reckless/hero': { src: '/projects/reckless/hero.webp', w: 1210, h: 1046 },
   'reckless/body': { src: '/projects/reckless/body.webp', w: 920, h: 980 },
   'reckless/scale': { src: '/projects/reckless/scale.webp', w: 990, h: 569 },
-  'miro/hero': { src: '/projects/miro/hero.webp', w: 1210, h: 1046 },
   'miro/plant': { src: '/projects/miro/plant.webp', w: 920, h: 450 },
   'miro/logo': { src: '/projects/miro/logo.webp', w: 920, h: 580 },
   'miro/front': { src: '/projects/miro/front.webp', w: 920, h: 970 },

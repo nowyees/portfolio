@@ -481,16 +481,6 @@
     },
     {
       "project": "miro",
-      "name": "hero",
-      "nodeId": "3147:309",
-      "path": "public/projects/miro/hero.webp",
-      "source": "figma",
-      "w": 1210,
-      "h": 1046,
-      "originalPath": "public/projects/miro/hero.png"
-    },
-    {
-      "project": "miro",
       "name": "exhibition-01",
       "nodeId": "3154:355",
       "path": "public/projects/miro/exhibition-01.webp",
@@ -905,19 +895,27 @@
     },
     {
       "project": "miro",
-      "name": "sketch",
-      "source": "https://miro-web-ignite.vercel.app (owner project site)",
-      "w": 1668,
-      "h": 2388,
-      "path": "public/projects/miro/site/sketch.webp"
-    },
-    {
-      "project": "miro",
       "name": "arm",
       "source": "https://miro-web-ignite.vercel.app (owner project site)",
       "w": 1300,
       "h": 2080,
       "path": "public/projects/miro/site/arm.webp"
+    },
+    {
+      "project": "miro",
+      "name": "hero-plant",
+      "source": "owner render (miro 1포스터, landscape crop supplied by owner)",
+      "w": 2000,
+      "h": 1125,
+      "path": "public/projects/miro/hero-plant.webp"
+    },
+    {
+      "project": "miro",
+      "name": "tomato",
+      "source": "owner render (Downloads/miro 2.png)",
+      "w": 1600,
+      "h": 2260,
+      "path": "public/projects/miro/tomato.webp"
     }
   ]
 }
