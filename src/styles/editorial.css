@@ -222,17 +222,20 @@
 .motion-guide small { font:400 10px/1.2 var(--sans); letter-spacing:0; color:#999; }
 .motion-guide .is-touch { display:none; }
 @media (hover:none) { .motion-guide .is-pointer { display:none; } .motion-guide .is-touch { display:block; } }
-.motion-stage.miro-piece { cursor:auto; touch-action:auto; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; padding:72px 16px 64px; }
+.motion-stage.miro-piece { cursor:auto; touch-action:auto; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:76px 16px 64px; }
 .miro-frame { flex:0 1 auto; height:min(100%,calc((100vw - 32px) * 16 / 9)); aspect-ratio:9/16; min-height:0; border:0; background:#fff; }
 .miro-panel { flex:none; display:flex; flex-direction:column; align-items:center; gap:9px; max-width:100%; }
-.miro-note { min-height:1.3em; font:400 14px/1.3 var(--sans); color:var(--ink); }
+.miro-note { font:400 12px/1.3 var(--sans); color:#777; }
 .miro-buttons { display:flex; flex-wrap:wrap; justify-content:center; gap:6px; min-height:34px; }
 .editorial-site .miro-button { display:inline-flex; align-items:center; gap:5px; height:30px; padding:0 11px; border:1px solid #d4d4d4; border-radius:15px; background:#fff; font:400 12px/1 var(--sans); letter-spacing:-.02em; transition:border-color .15s, background .15s, opacity .15s; }
 .miro-button img { width:16px; height:16px; object-fit:contain; }
 .editorial-site .miro-button:not(:disabled):hover { border-color:var(--ink); }
 .editorial-site .miro-button.is-call { height:34px; padding:0 20px; border-radius:17px; background:var(--ink); border-color:var(--ink); color:#fff; font-size:13px; }
 .editorial-site .miro-button:disabled { opacity:.32; cursor:default; }
-.miro-links { display:flex; gap:14px; }
+.miro-links { display:flex; gap:14px; min-height:14px; }
+.editorial-site .miro-camera { flex:none; padding:0; border:0; background:none; font:400 12px/1.2 var(--sans); color:#555; text-decoration:underline; text-underline-offset:3px; }
+.editorial-site .miro-camera:hover { color:var(--ink); }
+.editorial-site .miro-camera:disabled { text-decoration:none; cursor:default; color:#999; }
 .editorial-site .miro-links button { padding:0; border:0; background:none; font:400 11px/1.2 var(--sans); color:#999; text-decoration:underline; text-underline-offset:3px; }
 .editorial-site .miro-links button:hover { color:var(--ink); }
 .editorial-site .miro-links button:disabled { text-decoration:none; cursor:default; color:#999; }

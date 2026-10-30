@@ -32,7 +32,8 @@ export default function MiroInteraction({ className }: { className?: string }) {
   }, []);
 
   const { state } = miro;
-  // One step at a time: only the buttons that work right now are shown.
+  // One step at a time: only the buttons that work right now are shown. What to do is told by the
+  // guide on the video itself, so the panel has no hint text of its own.
   const step = state === 'IDLE' ? 'call' : state === 'DEFAULT' ? 'choose' : PLAYING.has(state) ? 'playing' : 'wait';
   const note = state === 'LOADING' ? '불러오는 중…'
     : step === 'call' ? '버튼을 눌러 Miro를 불러 보세요'
@@ -42,10 +43,13 @@ export default function MiroInteraction({ className }: { className?: string }) {
 
   return (
     <div className={`${className ?? ''} miro-piece`}>
+      <button type="button" className="miro-camera" disabled={miro.camera} onClick={() => send({ miro: 'camera' })}>
+        {miro.camera ? '카메라 켜짐 · 손동작으로도 반응해요' : '웹캠으로 해보기'}
+      </button>
       <iframe ref={frameRef} className="miro-frame" src={SRC} title="MIRO interactive web" allow="camera; fullscreen"
         onLoad={() => send({ miro: 'hello' })} />
       <div className="miro-panel">
-        <p className="miro-note" aria-live="polite">{miro.status || note}</p>
+        {miro.status && <p className="miro-note" role="status">{miro.status}</p>}
         <div className="miro-buttons">
           {step === 'call' && (
             <button type="button" className="miro-button is-call" onClick={() => send({ miro: 'wake' })}>Miro 부르기</button>
@@ -61,9 +65,6 @@ export default function MiroInteraction({ className }: { className?: string }) {
           {state !== 'IDLE' && state !== 'LOADING' && (
             <button type="button" onClick={() => send({ miro: 'reset' })}>처음으로</button>
           )}
-          <button type="button" disabled={miro.camera} onClick={() => send({ miro: 'camera' })}>
-            {miro.camera ? '카메라 켜짐 · 손동작으로도 반응해요' : '웹캠으로 해보기'}
-          </button>
         </p>
       </div>
     </div>

@@ -9,8 +9,6 @@ import MiroInteraction from './MiroInteraction';
 // Rigged pieces you can move, one at a time; the arrows (or ← →) step through them.
 type Guide = { pointer: [string, string]; touch: [string, string] };   // [Korean, English]
 const pieces: Array<{ id: string; title: string; note: string; guide?: Guide; Piece: React.ComponentType<{ className?: string }> }> = [
-  // MIRO carries its own step-by-step hint under the video, so no guide line on top.
-  { id: 'miro', title: 'Interactive web', note: 'MIRO', Piece: MiroInteraction },
   { id: 'astronaut-tail', title: 'Graduation work', note: 'Robotic tail', Piece: AstroTail, guide: {
     pointer: ['마우스를 움직여 꼬리를 흔들어 보세요', 'Move your cursor to swing the tail'],
     touch: ['화면을 쓸어 꼬리를 흔들어 보세요', 'Drag across the screen to swing the tail'] } },
@@ -20,6 +18,8 @@ const pieces: Array<{ id: string; title: string; note: string; guide?: Guide; Pi
   { id: 'horse', title: 'Motion study', note: 'HORSE', Piece: HorseMotion, guide: {
     pointer: ['클릭하면 준비 자세를 취해요', 'Click to make it crouch ready'],
     touch: ['탭하면 준비 자세를 취해요', 'Tap to make it crouch ready'] } },
+  // MIRO's own guide shows on the video, so no guide line here; its webcam link sits up top instead.
+  { id: 'miro', title: 'Interactive web', note: 'MIRO', Piece: MiroInteraction },
 ];
 
 export default function MotionGallery() {
