@@ -15,6 +15,7 @@ const GESTURES = [
 ] as const;
 
 type MiroState = { state: string; camera: boolean; status: string };
+const PLAYING = new Set(['RSP', 'HI', 'PICTURE', 'TOMATO']);
 
 export default function MiroInteraction({ className }: { className?: string }) {
   const frameRef = useRef<HTMLIFrameElement>(null);
@@ -31,12 +32,13 @@ export default function MiroInteraction({ className }: { className?: string }) {
   }, []);
 
   const { state } = miro;
-  const busy = state === 'WAKING' || state === 'ONBOARD';
+  // One step at a time: only the buttons that work right now are shown.
+  const step = state === 'IDLE' ? 'call' : state === 'DEFAULT' ? 'choose' : PLAYING.has(state) ? 'playing' : 'wait';
   const note = state === 'LOADING' ? '불러오는 중…'
-    : state === 'IDLE' ? 'Miro를 불러 보세요'
-    : busy ? 'Miro가 다가오는 중…'
-    : state === 'DEFAULT' ? '동작을 골라 보세요'
-    : state === 'BACK' ? '' : 'Miro가 반응하는 중…';
+    : step === 'call' ? '버튼을 눌러 Miro를 불러 보세요'
+    : step === 'choose' ? '동작을 골라 보세요'
+    : step === 'playing' ? 'Miro가 반응하고 있어요'
+    : 'Miro가 다가오고 있어요';
 
   return (
     <div className={`${className ?? ''} miro-piece`}>
@@ -45,18 +47,24 @@ export default function MiroInteraction({ className }: { className?: string }) {
       <div className="miro-panel">
         <p className="miro-note" aria-live="polite">{miro.status || note}</p>
         <div className="miro-buttons">
-          <button type="button" className="miro-button is-wake" disabled={state !== 'IDLE'} onClick={() => send({ miro: 'wake' })}>Miro 부르기</button>
-          {GESTURES.map(g => (
-            <button key={g.name} type="button" className="miro-button" disabled={state !== 'DEFAULT'}
+          {step === 'call' && (
+            <button type="button" className="miro-button is-call" onClick={() => send({ miro: 'wake' })}>Miro 부르기</button>
+          )}
+          {(step === 'choose' || step === 'playing') && GESTURES.map(g => (
+            <button key={g.name} type="button" className="miro-button" disabled={step !== 'choose'}
               onClick={() => send({ miro: 'gesture', name: g.name })}>
               <img src={ICON(g.icon)} alt="" />{g.label}
             </button>
           ))}
-          <button type="button" className="miro-button is-reset" disabled={state === 'IDLE' || state === 'LOADING'} onClick={() => send({ miro: 'reset' })}>처음으로</button>
         </div>
-        <button type="button" className="miro-camera" disabled={miro.camera} onClick={() => send({ miro: 'camera' })}>
-          {miro.camera ? '카메라 켜짐 · 손동작으로도 반응해요' : '웹캠이 있다면 카메라로 해보기'}
-        </button>
+        <p className="miro-links">
+          {state !== 'IDLE' && state !== 'LOADING' && (
+            <button type="button" onClick={() => send({ miro: 'reset' })}>처음으로</button>
+          )}
+          <button type="button" disabled={miro.camera} onClick={() => send({ miro: 'camera' })}>
+            {miro.camera ? '카메라 켜짐 · 손동작으로도 반응해요' : '웹캠으로 해보기'}
+          </button>
+        </p>
       </div>
     </div>
   );
