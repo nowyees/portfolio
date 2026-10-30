@@ -4,7 +4,8 @@ import React, { useEffect, useRef, useState } from 'react';
 // `?embed` mode, which waits for the host: the buttons below stand in for the gestures, and the camera
 // only starts if the visitor asks for it. Messages: see the embed section of miro-interaction/app.js.
 const ORIGIN = 'https://nowyees.github.io';
-const SRC = `${ORIGIN}/miro-interaction/?embed`;
+// Bump `v` after updating the Miro site so the embed never shows a cached older page.
+const SRC = `${ORIGIN}/miro-interaction/?embed&v=38`;
 const ICON = (name: string) => `${ORIGIN}/miro-interaction/guide/${name}.png`;
 
 const GESTURES = [
