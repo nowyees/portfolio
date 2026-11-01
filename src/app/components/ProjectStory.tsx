@@ -297,7 +297,7 @@ function Part({ section, title, chapterNumber }: { section: StorySection; title:
     </div>;
     case 'gallery': return <div className="story-part story-exhibition">
       <Strip images={section.images} title={title} chapter={chapter} />
-      {copy(section.text)}
+      {section.text && copy(section.text)}
     </div>;
     default: return <div className="story-part" data-part={section.texts[0]?.title}>
       {section.texts.map(text => <React.Fragment key={text.title}>{copy(text)}</React.Fragment>)}

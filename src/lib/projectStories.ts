@@ -23,7 +23,7 @@ export type StorySection = { chapter: string; links?: Array<{ label: string; hre
   | { kind: 'pinned'; steps: Array<{ text: StoryText; images: StoryImage[]; details?: StoryImage[] }>; after?: StoryRow[] }
   | { kind: 'compare'; text?: StoryText; items: Array<{ text: StoryText; image: StoryImage }> }
   | { kind: 'strip'; text: StoryText; images: StoryImage[] }
-  | { kind: 'gallery'; text: StoryText; images: StoryImage[] }
+  | { kind: 'gallery'; text?: StoryText; images: StoryImage[] }
   | { kind: 'companion'; image: StoryImage; text: StoryText; modes: Array<{ text: StoryText; image: StoryImage }>;
       arm: { text: StoryText; images: StoryImage[] } }
 );
