@@ -55,10 +55,18 @@ const runway: ProjectStory = {
       photos('runway', ['render-6'])),
     sequence('Form', 'A different silhouette at every angle',
       '앞에서는 무릎과 수직적인 실루엣이 시선을 위로 이끌고, 뒤에서는 안으로 돌아가는 곡선이 드러납니다. 보는 방향에 따라 다른 인상을 갖도록 구성했습니다.',
-      photos('runway', ['render-2', 'render-3', 'render-4'])),
-    block('Collection', 'A gesture in the room',
-      '사람의 눈높이와 마주하는 열린 조형을 지향했습니다. 기대거나 앉는 자세에서 얻은 형태를 공간 안에서 읽히는 하나의 제스처로 제안합니다.',
-      photos('runway', ['render-5'])),
+      photos('runway', ['render-2', 'render-3', 'render-4', 'render-7', 'render-5'])),
+    // the renders from the owner's Page 73 slides: the set from above, then two of its poses side by side
+    { chapter: 'Collection', texts: [{ title: 'A chair for each other',
+      body: '연인이 서로의 의자가 되어주는 모습에서 착안해 다양한 포즈를 구성했습니다. 사람의 눈높이와 마주하는 열린 조형을 이어, 앉거나 기댈 수 있는 형태로 만들고, 가운데 조형을 의자 형태의 받침대로 두어 나머지 조형들의 이유를 유추하도록 했습니다.' }],
+      rows: [{ images: photos('runway', ['rest-top']), line: 1 },
+        { images: photos('runway', ['rest-recline']), span: 5, line: 2 },
+        { images: photos('runway', ['rest-sit']), span: 5, align: 'end', line: 2 }] },
+    { chapter: 'Space', texts: [{ title: 'ATiiSSU W/S collection',
+      body: '브랜드 월 앞의 낮은 단 위에 조형들을 한 장면으로 모았습니다. 가까이 다가갈수록 각 조형의 자세와 서로 기대는 관계가 드러납니다.' }],
+      rows: [{ images: photos('runway', ['space-wall']), line: 1 },
+        { images: photos('runway', ['space-rug']), span: 5, line: 2 },
+        { images: photos('runway', ['space-close']), span: 5, align: 'end', line: 2 }] },
   ],
 };
 

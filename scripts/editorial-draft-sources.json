@@ -218,20 +218,20 @@
     {
       "project": "foudre",
       "name": "campaign-02",
-      "nodeId": "2794:682",
-      "w": 920.665,
-      "h": 970,
+      "nodeId": "3404:4439",
+      "w": 1800,
+      "h": 1896,
       "path": "public/projects/foudre/campaign-02.webp",
-      "originalPath": "public/projects/foudre/campaign-02.png"
+      "source": "Figma Page 73 export at 3x, node 3404:4439"
     },
     {
       "project": "foudre",
       "name": "merchandise",
-      "nodeId": "2794:714",
-      "w": 920,
-      "h": 963,
+      "nodeId": "3404:4470",
+      "w": 1674,
+      "h": 1752,
       "path": "public/projects/foudre/merchandise.webp",
-      "originalPath": "public/projects/foudre/merchandise.png"
+      "source": "Figma Page 73 source image (CJ5Y81wbHC8Rb7Oremrexa)"
     },
     {
       "project": "foudre",
@@ -246,29 +246,29 @@
     {
       "project": "foudre",
       "name": "dolls",
-      "nodeId": "2794:716",
-      "w": 448.798,
-      "h": 450,
+      "nodeId": "3404:4472",
+      "w": 768,
+      "h": 768,
       "path": "public/projects/foudre/dolls.webp",
-      "originalPath": "public/projects/foudre/dolls.png"
+      "source": "Figma Page 73 source image (CJ5Y81wbHC8Rb7Oremrexa), rotated upright and in greyscale as on the slide"
     },
     {
       "project": "vaek",
       "name": "hero",
-      "nodeId": "2794:734",
-      "w": 920,
-      "h": 970,
+      "nodeId": "3404:4493",
+      "w": 1472,
+      "h": 1552,
       "path": "public/projects/vaek/hero.webp",
-      "originalPath": "public/projects/vaek/hero.png"
+      "source": "Figma Page 73 source image (CJ5Y81wbHC8Rb7Oremrexa)"
     },
     {
       "project": "vaek",
       "name": "vase",
-      "nodeId": "2794:742",
-      "w": 920,
-      "h": 510,
+      "nodeId": "3404:4501",
+      "w": 2400,
+      "h": 1330,
       "path": "public/projects/vaek/vase.webp",
-      "originalPath": "public/projects/vaek/vase.png"
+      "source": "owner high-resolution file (클로드 전달용)"
     },
     {
       "project": "vaek",
@@ -291,11 +291,11 @@
     {
       "project": "vaek",
       "name": "curve",
-      "nodeId": "2794:1940",
-      "w": 920,
-      "h": 688,
+      "nodeId": "3404:5699",
+      "w": 2356,
+      "h": 1762,
       "path": "public/projects/vaek/curve.webp",
-      "originalPath": "public/projects/vaek/curve.png"
+      "source": "owner high-resolution file (클로드 전달용)"
     },
     {
       "project": "vaek",
@@ -816,54 +816,49 @@
       "originalPath": "public/projects/breathless/image-04.png"
     },
     {
-      "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776612853/portfolio/kcalod2itoodrk1qqnhm.png",
       "name": "render-1",
       "project": "runway",
       "path": "public/projects/runway/render-1.webp",
-      "source": "published-site",
-      "w": 776,
-      "h": 1098,
-      "originalPath": "public/projects/runway/render-1.png"
+      "source": "Figma Page 73 source image (CJ5Y81wbHC8Rb7Oremrexa), flattened over a grey gradient",
+      "w": 1150,
+      "h": 1438,
+      "nodeId": "3404:5723"
     },
     {
-      "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776612854/portfolio/dvz8uslzxuow0weqhixr.png",
       "name": "render-2",
       "project": "runway",
       "path": "public/projects/runway/render-2.webp",
-      "source": "published-site",
-      "w": 798,
-      "h": 1098,
-      "originalPath": "public/projects/runway/render-2.png"
+      "source": "Figma Page 73 source image (CJ5Y81wbHC8Rb7Oremrexa), flattened over a grey gradient",
+      "w": 1200,
+      "h": 1884,
+      "nodeId": "3404:5732"
     },
     {
-      "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776612854/portfolio/c8u7byxqkama3u9i0krd.png",
       "name": "render-3",
       "project": "runway",
       "path": "public/projects/runway/render-3.webp",
-      "source": "published-site",
-      "w": 798,
-      "h": 1098,
-      "originalPath": "public/projects/runway/render-3.png"
+      "source": "Figma Page 73 source image (CJ5Y81wbHC8Rb7Oremrexa), flattened over a grey gradient",
+      "w": 1200,
+      "h": 1842,
+      "nodeId": "3404:5729"
     },
     {
-      "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776612856/portfolio/zv8bktsmswolcxsxd1ls.png",
       "name": "render-4",
       "project": "runway",
       "path": "public/projects/runway/render-4.webp",
-      "source": "published-site",
-      "w": 798,
-      "h": 1098,
-      "originalPath": "public/projects/runway/render-4.png"
+      "source": "Figma Page 73 source image (CJ5Y81wbHC8Rb7Oremrexa), flattened over a grey gradient",
+      "w": 1200,
+      "h": 1800,
+      "nodeId": "3404:5726"
     },
     {
-      "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776612857/portfolio/zr0g2gdhdvpqhqmzlwpb.png",
       "name": "render-5",
       "project": "runway",
       "path": "public/projects/runway/render-5.webp",
-      "source": "published-site",
-      "w": 1155,
-      "h": 586,
-      "originalPath": "public/projects/runway/render-5.png"
+      "source": "Figma Page 73 source image (CJ5Y81wbHC8Rb7Oremrexa), flattened over a grey gradient",
+      "w": 1440,
+      "h": 980,
+      "nodeId": "3404:5763"
     },
     {
       "url": "https://res.cloudinary.com/dwxglojis/image/upload/v1776612890/portfolio/bnob3idf3wj5woqlpmx7.png",
@@ -1002,6 +997,121 @@
       "w": 1430,
       "h": 946,
       "path": "public/projects/foudre/hands.webp"
+    },
+    {
+      "project": "vaek",
+      "name": "pattern",
+      "path": "public/projects/vaek/pattern.webp",
+      "w": 1800,
+      "h": 1898,
+      "source": "owner high-resolution file (클로드 전달용)",
+      "nodeId": "3404:4520"
+    },
+    {
+      "project": "vaek",
+      "name": "hand",
+      "path": "public/projects/vaek/hand.webp",
+      "w": 780,
+      "h": 1078,
+      "source": "owner high-resolution file (클로드 전달용)",
+      "nodeId": "3404:4416"
+    },
+    {
+      "project": "vaek",
+      "name": "space",
+      "path": "public/projects/vaek/space.webp",
+      "w": 2400,
+      "h": 1350,
+      "source": "Figma Page 73 source image (CJ5Y81wbHC8Rb7Oremrexa)",
+      "nodeId": "3404:5714"
+    },
+    {
+      "project": "runway",
+      "name": "render-7",
+      "path": "public/projects/runway/render-7.webp",
+      "w": 1200,
+      "h": 1550,
+      "source": "Figma Page 73 source image (CJ5Y81wbHC8Rb7Oremrexa), flattened over a grey gradient",
+      "nodeId": "3404:5759"
+    },
+    {
+      "project": "runway",
+      "name": "rest-top",
+      "path": "public/projects/runway/rest-top.webp",
+      "w": 2400,
+      "h": 1012,
+      "source": "Figma Page 73 source image (CJ5Y81wbHC8Rb7Oremrexa)",
+      "nodeId": "3404:5742"
+    },
+    {
+      "project": "runway",
+      "name": "rest-recline",
+      "path": "public/projects/runway/rest-recline.webp",
+      "w": 1600,
+      "h": 898,
+      "source": "Figma Page 73 source image (CJ5Y81wbHC8Rb7Oremrexa)",
+      "nodeId": "3404:5743"
+    },
+    {
+      "project": "runway",
+      "name": "rest-sit",
+      "path": "public/projects/runway/rest-sit.webp",
+      "w": 1600,
+      "h": 900,
+      "source": "Figma Page 73 source image (CJ5Y81wbHC8Rb7Oremrexa)",
+      "nodeId": "3404:5744"
+    },
+    {
+      "project": "runway",
+      "name": "space-wall",
+      "path": "public/projects/runway/space-wall.webp",
+      "w": 2400,
+      "h": 1130,
+      "source": "Figma Page 73 source image (CJ5Y81wbHC8Rb7Oremrexa)",
+      "nodeId": "3404:5751"
+    },
+    {
+      "project": "runway",
+      "name": "space-rug",
+      "path": "public/projects/runway/space-rug.webp",
+      "w": 1600,
+      "h": 676,
+      "source": "Figma Page 73 source image (CJ5Y81wbHC8Rb7Oremrexa)",
+      "nodeId": "3404:5752"
+    },
+    {
+      "project": "runway",
+      "name": "space-close",
+      "path": "public/projects/runway/space-close.webp",
+      "w": 1600,
+      "h": 676,
+      "source": "Figma Page 73 source image (CJ5Y81wbHC8Rb7Oremrexa)",
+      "nodeId": "3404:5753"
+    },
+    {
+      "project": "miro",
+      "name": "booth-kids-gestures",
+      "path": "public/projects/miro/ddp/booth-kids-gestures.webp",
+      "w": 1350,
+      "h": 1800,
+      "source": "owner DDP exhibition photo"
+    },
+    {
+      "project": "miro",
+      "name": "booth-kids-web",
+      "path": "public/projects/miro/ddp/booth-kids-web.webp",
+      "w": 1350,
+      "h": 1800,
+      "source": "owner project file"
+    },
+    {
+      "project": "foudre",
+      "name": "doll-sit",
+      "path": "public/projects/foudre/doll-sit.webp",
+      "w": 1600,
+      "h": 1600,
+      "source": "Figma Page 73 source image (CJ5Y81wbHC8Rb7Oremrexa)",
+      "nodeId": "3404:4462"
     }
   ]
 }

@@ -65,16 +65,16 @@ const foudre: ProjectStory = {
       f('body', 2125, 2234), f('cap', 2400, 1304)),
     { chapter: 'Branding', kind: 'strip', text: { title: 'Raw, cold, unrefined',
       body: '차갑고 묵직한 금속의 물성을 브랜드의 중심에 놓았습니다. 정제되지 않은 날것의 미학을 제품 이미지와 캠페인 그래픽으로 확장했습니다.' },
-      images: [f('hands', 1430, 946), f('campaign-01', 920, 685), f('campaign-02', 920.665, 970)] },
+      images: [f('hands', 1430, 946), f('campaign-01', 920, 685), f('campaign-02', 1800, 1896)] },
     { chapter: 'Process', kind: 'strip', text: { title: 'A scent you can touch',
       body: '표면을 문지르면 향이 퍼지는 인형을 제작했습니다. 시각적 이미지에 머무르지 않고, 만지고 향을 맡으며 브랜드를 경험하는 인터랙티브 오브제입니다.' },
-      images: [f('merchandise', 920, 963), f('dolls', 448.798, 450), f('making', 1116, 1606)] },
+      images: [f('merchandise', 1674, 1752), f('doll-sit', 1600, 1600), f('dolls', 768, 768), f('making', 1116, 1606)] },
   ],
 };
 
 const vaek: ProjectStory = {
   name: 'Vaek', discipline: 'Object & identity', presentation: 'editorial',
-  hero: v('hero', 920, 970),
+  hero: v('hero', 1472, 1552),
   intro: {
     ko: '한국 자기의 유려한 곡선과 여백을 일상의 오브제로.\n단순함 속에 깃든 부드럽고 고요한 아름다움을 담았습니다.',
     en: 'An everyday object that reinterprets the quiet curves and negative space of Korean porcelain.',
@@ -83,16 +83,19 @@ const vaek: ProjectStory = {
   sections: [
     { chapter: 'Background', texts: [{ title: 'Space for a branch',
       body: '수직으로 꽃을 꽂는 일반적인 입구 대신 사선 방향으로 타공했습니다. 한국화 속 꽃과 가지처럼, 식물의 선이 공간 안에서 자연스럽게 이어지도록 유도합니다.' }],
-      rows: [{ images: [v('vase', 920, 510)] }] },
+      rows: [{ images: [v('vase', 2400, 1330), v('hand', 780, 1078)] }] },
     { chapter: 'Product', texts: [{ title: 'The Korean curve',
       body: '백자의 비대칭적인 조형과 불완전한 곡선에서 출발했습니다. 측면으로 향하는 입구는 식물의 방향과 여백을 함께 드러내는 장치입니다.' }],
-      rows: [{ images: [v('curve', 920, 688)], span: 7 }] },
+      rows: [{ images: [v('curve', 2356, 1762), v('pattern', 1800, 1898)] }] },
     { chapter: 'Branding', kind: 'strip', text: { title: 'Quiet strength',
       body: '단순함 속에 내재된 부드러운 힘을 브랜드의 인상으로 삼았습니다. 자기의 유려한 선과 비움의 정서를 이미지와 그래픽에 연결했습니다.' },
       images: [v('campaign-01', 920, 691), v('campaign-02', 920, 970)] },
     { chapter: 'Process', kind: 'strip', text: { title: 'From print to everyday use',
       body: '3D 프린팅으로 제작한 뒤 직접 물을 담고 식물을 꽂아보며 사용성을 확인했습니다. 생활 공간에 배치하고 지인들에게 선물하며 일상 속 오브제로서의 가능성을 살폈습니다.' },
       images: [v('prototype-01', 685, 970), v('prototype-02', 1155, 685)] },
+    { chapter: 'Space', texts: [{ title: 'A room for Vaek',
+      body: '브랜드의 정서를 공간으로 확장했습니다. 어둠 속에 열린 빛의 문과 백자의 실루엣이 캠페인 이미지와 하나의 장면으로 이어지도록 구성했습니다.' }],
+      rows: [{ images: [v('space', 2400, 1350)] }] },
   ],
 };
 
