@@ -253,12 +253,11 @@ function Part({ section, title, chapterNumber }: { section: StorySection; title:
   </div>;
   const copy = (text: StoryText) => <div className="story-grid"><div style={content}><Copy text={text} chapter={chapter} /></div></div>;
   switch (section.kind) {
+    // the title and text first, then the clip and the images in one row beneath them (as in the edited Figma page)
     case 'context': return <div className="story-part story-context">
+      {copy(section.text)}
       <div className="story-grid story-context-media">
-        <div className="story-context-left">
-          <Copy text={section.text} chapter={chapter} />
-          <div className="story-context-video"><BackgroundClip clip={section.clip} /></div>
-        </div>
+        <div className="story-context-video"><BackgroundClip clip={section.clip} /></div>
         {section.rows.map((row, i) => <Row key={i} row={row} alt={`${title} — ${chapter}`} />)}
       </div>
     </div>;
