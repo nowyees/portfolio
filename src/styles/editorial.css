@@ -8,7 +8,7 @@
 
 /* Keep every navigation label visible. */
 .editorial-nav-center:has(.is-exposed) { gap:14px; }
-.editorial-nav nav:has(.is-exposed) { gap:12px; }
+.editorial-nav nav:has(.is-exposed) { gap:7px; }
 .editorial-nav nav .editorial-tab.is-exposed { width:auto; }
 .editorial-tab.is-exposed::before { opacity:0; }
 .editorial-tab.is-exposed .editorial-tab-label { opacity:.42; font-size:9px; letter-spacing:.05em; transition:opacity .18s ease; }
