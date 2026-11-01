@@ -237,7 +237,9 @@ function CompanionRail({ section, title }: { section: Extract<StorySection, { ki
   return <ScrollSequence label="Companion Robot images" className="story-robot-strip">
         <div className="story-companion-slide is-hero"><Figure image={section.image} alt={`${title} — Companion robot`} revealed sizes="(max-width: 600px) 85vw, 40vw" /></div>
         {cards.map(card => <article className="story-companion-slide" key={card.image.src}>
-          <Figure image={card.image} alt={`${title} — ${card.text.title}`} revealed sizes="(max-width: 600px) 65vw, 22vw" />
+          {/* cards crop landscape renders to a tall frame, so ask for the width the crop needs, not the card's */}
+          <Figure image={card.image} alt={`${title} — ${card.text.title}`} revealed
+            sizes={`(max-width: 600px) 65vw, ${Math.round(22 * Math.max(1, ratioOf(card.image) / .66))}vw`} />
           <h3>{card.text.title}</h3>{card.text.body && <p>{card.text.body}</p>}
         </article>)}
   </ScrollSequence>;

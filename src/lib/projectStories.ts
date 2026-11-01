@@ -1,6 +1,7 @@
 // Long-form project pages, written from the portfolio slides (Figma "취창폴", page "web"). A project whose title has
 // a story here gets it in place of the plain gallery; its films (videos in the project's media) close the story.
 // Images use authored Figma frames/masks, not uncropped image fills.
+import { lotty } from './lottyStory.ts';
 
 // Native pixels and the designed display frame are independent: upgrading a source must not change its layout.
 export type StoryImage = { src: string; w: number; h: number; caption?: string; srcSet?: string;
@@ -141,6 +142,6 @@ const lunaris: ProjectStory = {
   ],
 };
 
-const stories: Record<string, ProjectStory> = { lunaris };
+const stories: Record<string, ProjectStory> = { lunaris, 'lotty bot': lotty };
 
 export const storyFor = (title: string) => stories[title.trim().toLowerCase()];

@@ -980,6 +980,14 @@
       "w": 1800,
       "h": 1202,
       "path": "public/projects/miro/ddp/booth-table.webp"
+    },
+    {
+      "project": "miro",
+      "name": "walle-reference",
+      "source": "miro-web-ignite.vercel.app (owner project site)",
+      "w": 1024,
+      "h": 427,
+      "path": "public/projects/miro/site/walle-reference.webp"
     }
   ]
 }
