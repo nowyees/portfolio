@@ -7,11 +7,11 @@
 }
 
 /* Keep every navigation label visible. */
-.editorial-nav-center:has(.is-exposed) { gap:14px; }
-.editorial-nav nav:has(.is-exposed) { gap:7px; }
+.editorial-nav-center:has(.is-exposed) { gap:11px; }
+.editorial-nav nav:has(.is-exposed) { gap:3px; }
 .editorial-nav nav .editorial-tab.is-exposed { width:auto; }
 .editorial-tab.is-exposed::before { opacity:0; }
-.editorial-tab.is-exposed .editorial-tab-label { opacity:.42; font-size:9px; letter-spacing:.05em; transition:opacity .18s ease; }
+.editorial-tab.is-exposed .editorial-tab-label { opacity:.42; font-size:8.5px; letter-spacing:.04em; transition:opacity .18s ease; }
 .editorial-tab.is-exposed:not(:hover):not(:focus-visible) .editorial-tab-caret { visibility:hidden; }
 .editorial-site { min-height:100dvh; background:var(--paper); color:var(--ink); font-family:var(--sans); font-size:14px; letter-spacing:-.025em; }
 .editorial-site a { color:inherit; text-decoration:none; }

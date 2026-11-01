@@ -99,7 +99,7 @@ export default function Home() {
         const y = py * Math.cos(r.x) - pz * Math.sin(r.x);
         const z = py * Math.sin(r.x) + pz * Math.cos(r.x);
         const depth = .76 + (z + 1) * .19;
-        let w = (mobile ? 60 : 86) * depth, tx = px * radius, ty = y * radius;
+        let w = (mobile ? 54 : 76) * depth, tx = px * radius, ty = y * radius;
         const start = arrive?.from[i];
         if (arrive && start) {
           const p = easeInOut(Math.max(0, Math.min(1, (now - arrive.start - Math.min(i * 14, 260)) / 1150)));
