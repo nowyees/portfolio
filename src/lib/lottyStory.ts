@@ -4,9 +4,9 @@ import type { ProjectStory, StoryImage } from './projectStories';
 // Each image is cut from its slide rendered at 2x, so crops and backgrounds match the slides; under /public/projects/lotty/.
 const shot = (name: string, w: number, h: number, caption?: string): StoryImage =>
   ({ src: `/projects/lotty/${name}.webp`, w, h, caption });
-// Lorry's face animation on the robot's eye displays (owner's 얼굴animation/Default (Smile)_1, _2), 960x684.
-const eyes: StoryImage = { src: '/projects/lotty/eye-states-poster.webp', w: 960, h: 684, caption: 'Eye display — star · heart',
-  video: { src: '/projects/lotty/eye-states.mp4', poster: '/projects/lotty/eye-states-poster.webp', w: 960, h: 684, caption: 'Eye display — star · heart' } };
+// Lorry's face animation on the robot's eye displays (owner's 얼굴animation/Default (Smile)_1, _2), cropped to the eyes, 840x480.
+const eyes: StoryImage = { src: '/projects/lotty/eye-states-poster.webp', w: 840, h: 480, caption: 'Eye display — star · heart',
+  video: { src: '/projects/lotty/eye-states.mp4', poster: '/projects/lotty/eye-states-poster.webp', w: 840, h: 480, caption: 'Eye display — star · heart' } };
 // The vertical TV's reaction films (owner's 영상 시안용), 720x1280.
 const tv = (name: string, caption: string): StoryImage => {
   const poster = `/projects/lotty/tv-${name}.webp`;
@@ -29,7 +29,7 @@ export const lotty: ProjectStory = {
       rows: [{ images: [shot('characters', 1840, 1100, 'Lotty & Lorry'), shot('render-side', 900, 1136), shot('render-wave', 900, 1136), shot('render-front', 1840, 1960)] }] },
     { chapter: 'Interaction', texts: [{ title: 'Blinking · Star · Heart',
       body: '깜빡임·별·하트 눈 애니메이션을 직접 제작했습니다. 눈이 감겼다 열리는 동작과 그래픽 변화를 설계하고, 좌·우 눈별 재생 영상으로 출력해 2.1인치 원형 디스플레이와 라즈베리 파이로 로리의 표정을 구현했습니다.' }],
-      rows: [{ images: [eyes], span: 4 }] },
+      rows: [{ images: [eyes], span: 5 }], aside: true },
     { chapter: 'Interaction', texts: [{ title: 'Interactive display',
       body: '세로 TV 앞의 카메라와 마이크로 관람객의 목소리와 손동작을 인식해 영상이 이어지도록 구성했습니다. “로리야”라고 부르면 화면 가장자리에서 빼꼼 나타나 인사하고, 손바닥을 펴면 하이파이브로, “뮤직큐”라고 말하면 음악에 맞춘 모션으로 답합니다.' }],
       rows: [{ images: [tv('onboarding', 'Onboarding'), tv('default', 'Default'), tv('highfive', 'High five'), tv('challenge', 'Challenge')] }] },

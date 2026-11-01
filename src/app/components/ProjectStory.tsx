@@ -298,7 +298,13 @@ function Part({ section, title, chapterNumber }: { section: StorySection; title:
       <Strip images={section.images} title={title} chapter={chapter} />
       {section.text && copy(section.text)}
     </div>;
-    default: return <div className="story-part" data-part={section.texts[0]?.title}>
+    default: if (section.aside) return <div className="story-part" data-part={section.texts[0]?.title}>
+      <div className="story-grid story-aside">
+        <div className="story-aside-copy"><Copy text={section.texts[0]} chapter={chapter} /></div>
+        {section.rows.map((row, i) => <Row key={i} row={{ ...row, align: 'end' }} alt={`${title} — ${chapter}`} />)}
+      </div>
+    </div>;
+    return <div className="story-part" data-part={section.texts[0]?.title}>
       {section.texts.map(text => <React.Fragment key={text.title}>{copy(text)}</React.Fragment>)}
       {rows(section.rows)}
     </div>;

@@ -13,11 +13,11 @@ export type StoryClip = { src: string; poster: string; w: number; h: number; cap
 // `span` of those ten (all of them by default), from the left or, with `align: 'end'`, from the right.
 export type StoryRow = { images: StoryImage[]; span?: number; align?: 'start' | 'end'; line?: number };
 // Sections in a row with the same `chapter` read as one chapter. Each kind lays its part out differently:
-// stack — text and image rows; feature — a large image with its description below;
+// stack — text and image rows (aside: one text with its image beside it); feature — a large image with its description below;
 // pinned — a fixed image stage changes with the explanation beside it;
 // compare — modes side by side; strip — a pinned horizontal process sequence (native swipe on mobile).
 export type StorySection = { chapter: string; links?: Array<{ label: string; href: string }> } & (
-  | { kind?: 'stack'; texts: StoryText[]; rows: StoryRow[] }
+  | { kind?: 'stack'; texts: StoryText[]; rows: StoryRow[]; aside?: boolean }
   | { kind: 'feature'; image: StoryImage; text: StoryText; before?: StoryRow[]; after?: StoryRow[] }
   | { kind: 'context'; text: StoryText; clip: StoryClip; rows: StoryRow[] }
   | { kind: 'pinned'; steps: Array<{ text: StoryText; images: StoryImage[]; details?: StoryImage[] }>; after?: StoryRow[] }
