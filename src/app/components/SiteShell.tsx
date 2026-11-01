@@ -11,7 +11,7 @@ const items: Array<{ key: ActivePage; label: string; index: string; to: string }
 const typedLabels = new Set<ActivePage>();
 const typingCadence = [82, 148, 66, 116, 91, 164, 74, 132];
 
-function TypingTab({ item, active }: { item: typeof items[number]; active: boolean }) {
+function TypingTab({ item, active, exposed = false }: { item: typeof items[number]; active: boolean; exposed?: boolean }) {
   const [text, setText] = useState(typedLabels.has(item.key) ? item.label : '');
   const typingRef = useRef(false);
   const timerRef = useRef<number | null>(null);
@@ -31,8 +31,8 @@ function TypingTab({ item, active }: { item: typeof items[number]; active: boole
     timerRef.current = window.setTimeout(typeNext, 90);
   }, [item.key, item.label]);
   useEffect(() => { if (active) typeLabel(); return () => { if (timerRef.current) window.clearTimeout(timerRef.current); }; }, [active, typeLabel]);
-  return <Link to={item.to} className={'editorial-tab ' + (active ? 'is-active' : '')} aria-label={item.label} aria-keyshortcuts={item.index} aria-current={active ? 'page' : undefined} onMouseEnter={typeLabel} onFocus={typeLabel}>
-    <span className="editorial-tab-label"><span>{text}</span><span className="editorial-tab-caret" aria-hidden="true">|</span></span>
+  return <Link to={item.to} className={'editorial-tab ' + (active ? 'is-active' : '') + (exposed ? ' is-exposed' : '')} aria-label={item.label} aria-keyshortcuts={item.index} aria-current={active ? 'page' : undefined} onMouseEnter={typeLabel} onFocus={typeLabel}>
+    <span className="editorial-tab-label"><span>{exposed ? item.label : text}</span><span className="editorial-tab-caret" aria-hidden="true">|</span></span>
   </Link>;
 }
 
@@ -72,7 +72,7 @@ export default function SiteShell({ active, children }: { active: ActivePage; ch
       <div className="editorial-nav-center">
         <Link to="/" className="editorial-brand" aria-label="Lee Jae Woong — home">LJ .W</Link>
         <nav aria-label="Main">
-          {items.map(item => <TypingTab key={item.key} item={item} active={active === item.key} />)}
+          {items.map(item => <TypingTab key={item.key} item={item} active={active === item.key} exposed />)}
         </nav>
       </div>
       <button type="button" className={'editorial-sound ' + (soundOn ? 'is-on' : '')} aria-label={soundOn ? 'Turn off sound' : 'Turn on sound'} aria-pressed={soundOn}
