@@ -12,14 +12,14 @@ const pieces: Array<{ id: string; title: string; note: string; guide?: Guide; Pi
   { id: 'astronaut-tail', title: 'Graduation work', note: 'Robotic tail', Piece: AstroTail, guide: {
     pointer: ['마우스를 움직여 꼬리를 흔들어 보세요', 'Move your cursor to swing the tail'],
     touch: ['화면을 쓸어 꼬리를 흔들어 보세요', 'Drag across the screen to swing the tail'] } },
-  { id: 'dual-arm-ik', title: 'Motion study', note: 'Dual-arm IK', Piece: DualArmIK, guide: {
+  { id: 'dual-arm-ik', title: 'Miro', note: 'Future home robotics', Piece: DualArmIK, guide: {
     pointer: ['선이 굵어지는 부분을 끌어서 움직여 보세요', 'Drag a part whose lines turn bold to move it'],
     touch: ['로봇의 부분을 끌어서 움직여 보세요', 'Drag a part of the robot to move it'] } },
-  { id: 'horse', title: 'Motion study', note: 'HORSE', Piece: HorseMotion, guide: {
+  { id: 'horse', title: 'Reckless', note: 'Racing quadruped', Piece: HorseMotion, guide: {
     pointer: ['클릭하면 준비 자세를 취해요', 'Click to make it crouch ready'],
     touch: ['탭하면 준비 자세를 취해요', 'Tap to make it crouch ready'] } },
   // MIRO's own guide shows on the video, so no guide line here; its webcam link sits up top instead.
-  { id: 'miro', title: 'Interactive web', note: 'MIRO', Piece: MiroInteraction },
+  { id: 'miro', title: 'Miro', note: 'Interaction web', Piece: MiroInteraction },
 ];
 
 export default function MotionGallery() {
