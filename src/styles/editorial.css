@@ -207,6 +207,8 @@
 /* Motion gallery: rigged pieces, one at a time */
 .motion-gallery { position:relative; height:100dvh; overflow:hidden; }
 .motion-stage { position:absolute; inset:0; cursor:none; touch-action:none; }
+/* the rigged models sit between the guide line and the caption, not under the guide */
+.motion-stage:not(.miro-piece) { top:110px; bottom:20px; }
 .astro-cursor { position:absolute; left:0; top:0; z-index:3; width:22px; height:22px; margin:-11px 0 0 -11px; border:1px solid var(--ink); border-radius:50%; pointer-events:none; opacity:0; transition:opacity .2s; }
 .astro-cursor::after { content:''; position:absolute; left:50%; top:50%; width:3px; height:3px; margin:-1.5px 0 0 -1.5px; border-radius:50%; background:var(--ink); }
 .astro-cursor.is-shown { opacity:1; }
@@ -224,7 +226,7 @@
 .motion-caption { position:absolute; left:50%; bottom:28px; transform:translateX(-50%); display:flex; align-items:baseline; gap:4px; font:13px/1.2 var(--sans); color:#555; pointer-events:none; white-space:nowrap; }
 .motion-caption em { font:14px/1.2 var(--serif); color:#111; }
 .motion-count { margin-left:14px; font:500 10px/1 var(--sans); letter-spacing:.075em; color:#111; }
-.motion-guide { position:absolute; left:50%; top:58px; z-index:2; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; gap:5px; pointer-events:none; white-space:nowrap; text-align:center; }
+.motion-guide { position:absolute; left:50%; top:88px; z-index:2; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; gap:5px; pointer-events:none; white-space:nowrap; text-align:center; }
 .motion-guide span { font:400 13px/1.3 var(--sans); letter-spacing:-.02em; color:#111; }
 .motion-guide small { font:400 10px/1.2 var(--sans); letter-spacing:0; color:#999; }
 .motion-guide .is-touch { display:none; }
