@@ -160,46 +160,51 @@
       "project": "foudre",
       "name": "hero",
       "nodeId": "2794:41",
-      "w": 1210,
-      "h": 1046,
+      "w": 1800,
+      "h": 2040,
       "path": "public/projects/foudre/hero.webp",
-      "originalPath": "public/projects/foudre/hero.png"
+      "originalPath": "public/projects/foudre/hero.png",
+      "source": "owner high-resolution file (클로드 전달용)"
     },
     {
       "project": "foudre",
       "name": "macro",
       "nodeId": "2794:722",
-      "w": 920,
-      "h": 970,
+      "w": 1840,
+      "h": 1940,
       "path": "public/projects/foudre/macro.webp",
-      "originalPath": "public/projects/foudre/macro.png"
+      "originalPath": "public/projects/foudre/macro.png",
+      "source": "owner high-resolution file (클로드 전달용)"
     },
     {
       "project": "foudre",
       "name": "suspended",
       "nodeId": "2794:721",
-      "w": 450,
-      "h": 359,
+      "w": 1800,
+      "h": 2040,
       "path": "public/projects/foudre/suspended.webp",
-      "originalPath": "public/projects/foudre/suspended.png"
+      "originalPath": "public/projects/foudre/suspended.png",
+      "source": "owner high-resolution file (클로드 전달용)"
     },
     {
       "project": "foudre",
       "name": "body",
       "nodeId": "2794:669",
-      "w": 920,
-      "h": 967,
+      "w": 2125,
+      "h": 2234,
       "path": "public/projects/foudre/body.webp",
-      "originalPath": "public/projects/foudre/body.png"
+      "originalPath": "public/projects/foudre/body.png",
+      "source": "owner high-resolution file (클로드 전달용)"
     },
     {
       "project": "foudre",
       "name": "cap",
       "nodeId": "2794:665",
-      "w": 920,
-      "h": 500,
+      "w": 2400,
+      "h": 1304,
       "path": "public/projects/foudre/cap.webp",
-      "originalPath": "public/projects/foudre/cap.png"
+      "originalPath": "public/projects/foudre/cap.png",
+      "source": "owner high-resolution file (클로드 전달용)"
     },
     {
       "project": "foudre",
@@ -232,10 +237,11 @@
       "project": "foudre",
       "name": "making",
       "nodeId": "2794:717",
-      "w": 919,
-      "h": 215,
+      "w": 1116,
+      "h": 1606,
       "path": "public/projects/foudre/making.webp",
-      "originalPath": "public/projects/foudre/making.png"
+      "originalPath": "public/projects/foudre/making.png",
+      "source": "owner high-resolution file (클로드 전달용)"
     },
     {
       "project": "foudre",
@@ -988,6 +994,14 @@
       "w": 1024,
       "h": 427,
       "path": "public/projects/miro/site/walle-reference.webp"
+    },
+    {
+      "project": "foudre",
+      "name": "hands",
+      "source": "owner high-resolution file (클로드 전달용)",
+      "w": 1430,
+      "h": 946,
+      "path": "public/projects/foudre/hands.webp"
     }
   ]
 }

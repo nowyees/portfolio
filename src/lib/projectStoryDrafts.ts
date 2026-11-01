@@ -50,7 +50,7 @@ const doya: ProjectStory = {
 
 const foudre: ProjectStory = {
   name: 'Foudre', discipline: 'Portable fragrance', presentation: 'editorial',
-  hero: f('hero', 1210, 1046),
+  hero: f('hero', 1800, 2040),
   intro: {
     ko: '위스키 플라스크의 곡면, 거친 금속의 물성.\n휴대하는 향수를 몸에 가까운 하나의 오브제로 제안합니다.',
     en: 'A portable fragrance object shaped by the curve of a whisky flask and the raw character of metal.',
@@ -59,16 +59,16 @@ const foudre: ProjectStory = {
   sections: [
     spread('Background', 'A flask for fragrance',
       '위스키 플라스크의 인체공학적 형태를 모티브로 휴대성을 높였습니다. 관습적인 유리병 대신 금속을 선택해, 니치 향수의 차별적인 분위기와 촉각적 경험을 만들었습니다.',
-      f('macro', 920, 970), f('suspended', 450, 359)),
+      f('macro', 1840, 1940), f('suspended', 1800, 2040)),
     spread('Product', 'Chain, cap & connection',
       '체인과 긴 연결 구조는 플라스크의 정체성을 드러냅니다. 하단부를 분리해 체인을 연장할 수 있는 가변형 구조를 적용하고, 캡의 에칭 텍스처로 세부적인 인상을 더했습니다.',
-      f('body', 920, 967), f('cap', 920, 500)),
+      f('body', 2125, 2234), f('cap', 2400, 1304)),
     { chapter: 'Branding', kind: 'strip', text: { title: 'Raw, cold, unrefined',
       body: '차갑고 묵직한 금속의 물성을 브랜드의 중심에 놓았습니다. 정제되지 않은 날것의 미학을 제품 이미지와 캠페인 그래픽으로 확장했습니다.' },
-      images: [f('campaign-01', 920, 685), f('campaign-02', 920.665, 970)] },
+      images: [f('hands', 1430, 946), f('campaign-01', 920, 685), f('campaign-02', 920.665, 970)] },
     { chapter: 'Process', kind: 'strip', text: { title: 'A scent you can touch',
       body: '표면을 문지르면 향이 퍼지는 인형을 제작했습니다. 시각적 이미지에 머무르지 않고, 만지고 향을 맡으며 브랜드를 경험하는 인터랙티브 오브제입니다.' },
-      images: [f('merchandise', 920, 963), f('dolls', 448.798, 450), f('making', 919, 215)] },
+      images: [f('merchandise', 920, 963), f('dolls', 448.798, 450), f('making', 1116, 1606)] },
   ],
 };
 
