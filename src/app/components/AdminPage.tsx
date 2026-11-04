@@ -4,6 +4,7 @@ import { db } from '../../lib/firebase';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { onAuthChange, isAdmin, adminLogout } from '../../lib/authService';
+import { markAdminBrowser } from '../../lib/visitService';
 import {
     getPortfolioByCategory,
     updateProject,
@@ -53,6 +54,8 @@ export default function AdminPage() {
     useEffect(() => {
         if (authChecked && (!user || !isAdmin(user))) {
             navigate('/');
+        } else if (authChecked) {
+            markAdminBrowser();
         }
     }, [authChecked, user, navigate]);
 
@@ -403,6 +406,12 @@ export default function AdminPage() {
                     <span className="text-[10px] uppercase tracking-[0.3em] opacity-40">Admin Dashboard</span>
                 </div>
                 <div className="flex items-center gap-4">
+                    <button
+                        onClick={() => navigate('/admin/visitors')}
+                        className="text-[10px] uppercase tracking-widest opacity-60 hover:opacity-100 transition-opacity mr-2"
+                    >
+                        Visitors
+                    </button>
                     <button
                         onClick={handleMigrateLegacyData}
                         className="text-[10px] uppercase font-bold text-red-500 tracking-widest hover:opacity-100 opacity-60 transition-opacity mr-4"

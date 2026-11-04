@@ -9,6 +9,8 @@ const items: Array<{ key: ActivePage; label: string; index: string; to: string }
   { key: 'about', label: 'About', index: '4', to: '/about' },
 ];
 const typedLabels = new Set<ActivePage>();
+// Motion carries a small pulsing dot until the visitor has opened it once (MotionGallery marks it seen).
+const motionSeen = () => { try { return localStorage.getItem('motion-seen') === '1'; } catch { return true; } };
 const typingCadence = [82, 148, 66, 116, 91, 164, 74, 132];
 
 function TypingTab({ item, active, exposed = false }: { item: typeof items[number]; active: boolean; exposed?: boolean }) {
@@ -32,7 +34,7 @@ function TypingTab({ item, active, exposed = false }: { item: typeof items[numbe
   }, [item.key, item.label]);
   useEffect(() => { if (active) typeLabel(); return () => { if (timerRef.current) window.clearTimeout(timerRef.current); }; }, [active, typeLabel]);
   return <Link to={item.to} className={'editorial-tab ' + (active ? 'is-active' : '') + (exposed ? ' is-exposed' : '')} aria-label={item.label} aria-keyshortcuts={item.index} aria-current={active ? 'page' : undefined} onMouseEnter={typeLabel} onFocus={typeLabel}>
-    <span className="editorial-tab-label"><span>{exposed ? item.label : text}</span><span className="editorial-tab-caret" aria-hidden="true">|</span></span>
+    <span className="editorial-tab-label"><span>{exposed ? item.label : text}</span>{item.key === 'motion' && !active && !motionSeen() && <span className="editorial-tab-new" aria-hidden="true" />}<span className="editorial-tab-caret" aria-hidden="true">|</span></span>
   </Link>;
 }
 

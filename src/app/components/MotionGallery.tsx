@@ -32,6 +32,8 @@ export default function MotionGallery() {
     navigate('/motion/' + pieces[(index + step + pieces.length) % pieces.length].id, { replace: true });
   };
 
+  useEffect(() => { try { localStorage.setItem('motion-seen', '1'); } catch { /* the nav dot simply stays */ } }, []);
+
   useEffect(() => {
     const keydown = (event: KeyboardEvent) => {
       if ((event.target as HTMLElement).closest('input, textarea, select, [contenteditable="true"]')) return;
