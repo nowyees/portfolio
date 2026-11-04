@@ -88,21 +88,18 @@ export default function Home() {
       const radius = Math.min(width * .33, height * .31, 315) * (1 - sink * .3);
       const mobile = width < 700;
       const arrive = arrival.current;
-      // one more place on the orb for the Motion card, near the equator so it comes round to the front
-      const total = items.length + 1, motionSlot = Math.floor(total / 2);
-      for (let i = 0; i < total; i++) {
+      items.forEach((_, i) => {
         const node = cardsRef.current[i];
-        if (!node) continue;
-        const slot = i === items.length ? motionSlot : i >= motionSlot ? i + 1 : i;
-        const py = 1 - 2 * (slot + .5) / total;
+        if (!node) return;
+        const py = 1 - 2 * (i + .5) / items.length;
         const spread = Math.sqrt(1 - py * py);
-        const angle = slot * 2.39996323 + r.y;
+        const angle = i * 2.39996323 + r.y;
         const px = Math.cos(angle) * spread;
         const pz = Math.sin(angle) * spread;
         const y = py * Math.cos(r.x) - pz * Math.sin(r.x);
         const z = py * Math.sin(r.x) + pz * Math.cos(r.x);
         const depth = .76 + (z + 1) * .19;
-        let w = (mobile ? 54 : 76) * depth * (i === items.length ? 1.18 : 1), tx = px * radius, ty = y * radius;
+        let w = (mobile ? 58 : 82) * depth, tx = px * radius, ty = y * radius;
         const start = arrive?.from[i];
         if (arrive && start) {
           const p = easeInOut(Math.max(0, Math.min(1, (now - arrive.start - Math.min(i * 14, 260)) / 1150)));
@@ -116,7 +113,7 @@ export default function Home() {
         node.style.filter = back > .01 ? 'blur(' + (back * 3.5).toFixed(2) + 'px)' : '';
         node.style.opacity = r.leaving ? '' : String(1 - back * .18);
         if (f.index === i) node.style.filter = '';
-      }
+      });
       if (arrive && now - arrive.start > 1500) arrival.current = null;
       frame = requestAnimationFrame(tick);
     };
@@ -188,24 +185,6 @@ export default function Home() {
               </Link>
             );
           })}
-          {/* Motion: the only moving card on the orb, so visitors find the interactive pieces */}
-          <Link className={'space-card is-motion' + (preview === items.length ? ' is-preview' : '')} to="/motion"
-            ref={node => { cardsRef.current[items.length] = node; }}
-            aria-label="Open Motion — interactive pieces"
-            onPointerEnter={event => { if (event.pointerType === 'mouse') showPreview(items.length); }}
-            onPointerLeave={() => { if (focus.current.index === items.length) clearPreview(); }}
-            onFocus={event => { if (event.currentTarget.matches(':focus-visible')) showPreview(items.length); }}
-            onBlur={() => { if (focus.current.index === items.length) clearPreview(); }}
-            onClick={event => openProject(event, '/motion')}
-          >
-            <span className="space-preview-meta is-year" aria-hidden="true">Interactive</span>
-            <span className="space-card-image">
-              <video src="/projects/motion/tail-loop.mp4" poster="/projects/motion/tail-loop.webp" muted loop playsInline
-                autoPlay={!prefersReducedMotion()} preload="auto" aria-hidden="true" />
-              <span className="space-motion-tag" aria-hidden="true">Play</span>
-            </span>
-            <span className="space-preview-meta is-title" aria-hidden="true">Motion — try the robots</span>
-          </Link>
         </div>
       </main>
     </SiteShell>

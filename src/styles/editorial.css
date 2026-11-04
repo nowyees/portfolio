@@ -12,10 +12,7 @@
 .editorial-nav nav .editorial-tab.is-exposed { width:auto; }
 .editorial-tab.is-exposed::before { opacity:0; }
 .editorial-tab.is-exposed .editorial-tab-label { opacity:.42; font-size:8.5px; letter-spacing:.04em; transition:opacity .18s ease; }
-.editorial-tab.is-exposed:not(:hover):not(:focus-visible) .editorial-tab-new { display:inline-block; width:3.5px; height:3.5px; margin:0 0 5px 1.5px; border-radius:50%; background:var(--ink); animation:tab-new 1.6s ease-in-out infinite; }
-@keyframes tab-new { 50% { opacity:.25; } }
-@media (prefers-reduced-motion:reduce) { .editorial-tab-new { animation:none; } }
-.editorial-tab-caret { visibility:hidden; }
+.editorial-tab.is-exposed:not(:hover):not(:focus-visible) .editorial-tab-caret { visibility:hidden; }
 .editorial-site { min-height:100dvh; background:var(--paper); color:var(--ink); font-family:var(--sans); font-size:14px; letter-spacing:-.025em; }
 .editorial-site a { color:inherit; text-decoration:none; }
 .editorial-site button { font:inherit; color:inherit; cursor:pointer; }
@@ -58,10 +55,6 @@
 .space-preview-meta.is-year { left:-3px; bottom:calc(100% + 3px); white-space:nowrap; }
 .space-preview-meta.is-title { right:-3px; top:calc(100% + 3px); max-width:min(260px,calc(100vw - 32px)); overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
 .space-card.is-preview { z-index:999!important; }
-.space-card.is-motion .space-card-image { position:relative; aspect-ratio:420/392; background:#fff; outline:1px solid #dcdcdc; outline-offset:-1px; }
-.space-card.is-motion video { width:100%; height:100%; display:block; object-fit:contain; pointer-events:none; }
-.space-motion-tag { position:absolute; left:4px; bottom:4px; display:flex; align-items:center; gap:3px; padding:2px 4px 2px 3px; background:var(--ink); color:var(--paper); font:500 7px/1 var(--sans); letter-spacing:.08em; text-transform:uppercase; }
-.space-motion-tag::before { content:''; width:0; height:0; border-style:solid; border-width:2.5px 0 2.5px 4px; border-color:transparent transparent transparent currentColor; }
 .space-card.is-preview::after,.space-card.is-preview .space-preview-meta { opacity:1; }
 .editorial-site .space-card.is-preview:focus-visible { outline:0; }
 .gallery-intro { height:33.5vh; min-height:245px; display:flex; align-items:center; justify-content:center; gap:5px; padding:13vh 16px 0; font:400 16px/1.35 var(--sans); text-align:center; }
