@@ -4,7 +4,6 @@ import SiteShell from './SiteShell';
 import AstroTail from './AstroTail';
 import DualArmIK from './DualArmIK';
 import HorseMotion from './HorseMotion';
-import MiroInteraction from './MiroInteraction';
 
 // Rigged pieces you can move, one at a time; the arrows (or ← →) step through them.
 type Guide = { pointer: [string, string]; touch: [string, string] };   // [Korean, English]
@@ -18,8 +17,6 @@ const pieces: Array<{ id: string; title: string; note: string; guide?: Guide; Pi
   { id: 'horse', title: 'Reckless', note: 'Racing quadruped', Piece: HorseMotion, guide: {
     pointer: ['클릭하면 준비 자세를 취해요', 'Click to make it crouch ready'],
     touch: ['탭하면 준비 자세를 취해요', 'Tap to make it crouch ready'] } },
-  // MIRO's own guide shows on the video, so no guide line here; its webcam link sits up top instead.
-  { id: 'miro', title: 'Miro', note: 'Interaction web', Piece: MiroInteraction },
 ];
 
 export default function MotionGallery() {
