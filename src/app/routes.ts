@@ -13,6 +13,8 @@ export const router = createBrowserRouter([
   { path: "/project/:category/:id", Component: ProjectDetail },
   // The review index is local-only; public Projects keeps its original layout.
   ...(import.meta.env.DEV ? [{ path: "/drafts/editorial", lazy: async () => ({ Component: (await import("./components/EditorialDraftIndex")).default }) }] : []),
+  // local-only: the Visitors page filled with made-up visits, to review its charts without signing in
+  ...(import.meta.env.DEV ? [{ path: "/drafts/visitors", lazy: async () => ({ Component: (await import("./components/AdminVisitorsDemo")).default }) }] : []),
   { path: "/admin", Component: AdminPage },
   { path: "/admin/visitors", lazy: async () => ({ Component: (await import("./components/AdminVisitors")).default }) },
   { path: "/freedive", Component: FreeDive },
