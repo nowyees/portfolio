@@ -155,7 +155,7 @@ export default function RobotLab() {
     const composer = new EffectComposer(renderer);
     composer.addPass(new RenderPass(scene, camera));
     composer.addPass(new ShaderPass(SanitizeShader));
-    composer.addPass(new UnrealBloomPass(new THREE.Vector2(mount.clientWidth, mount.clientHeight), 0.32, 0.35, 1.0));
+    composer.addPass(new UnrealBloomPass(new THREE.Vector2(mount.clientWidth, mount.clientHeight), 0.24, 0.25, 1.0));
     composer.addPass(new OutputPass());
     const film = new ShaderPass(FilmShader);
     composer.addPass(film);
