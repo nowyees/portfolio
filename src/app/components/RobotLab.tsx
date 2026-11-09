@@ -550,14 +550,21 @@ export default function RobotLab() {
     };
   }, []);
 
-  // Inside a Lab sheet: the sheet tells the scene when it has scrolled out of view, and the sound goes off with it.
-  // It stays off on the way back; the visitor turns it on again with the switch.
+  // Inside a Lab sheet: the sheet tells the scene when it scrolls out of view and back. The sound goes off as it
+  // leaves and comes back on as it returns, unless the visitor had switched it off themselves.
+  const mutedRef = useRef(muted); mutedRef.current = muted;
+  const autoMuted = useRef(false);
   useEffect(() => {
     if (!FRAMED) return;
     const receive = (event: MessageEvent) => {
-      if (event.origin !== location.origin || event.data?.robotCell !== 'hidden') return;
-      audioRef.current?.setMuted(true);
-      setMuted(true);
+      if (event.origin !== location.origin) return;
+      const a = audioRef.current;
+      if (event.data?.robotCell === 'hidden' && !mutedRef.current) {
+        a?.setMuted(true); setMuted(true); autoMuted.current = true;
+      } else if (event.data?.robotCell === 'shown' && autoMuted.current) {
+        autoMuted.current = false;
+        a?.start(ROBOT_IDS.length); a?.setMuted(false); setMuted(false);
+      }
     };
     window.addEventListener('message', receive);
     return () => window.removeEventListener('message', receive);
@@ -567,6 +574,7 @@ export default function RobotLab() {
     const a = audioRef.current;
     if (!a) return;
     const m = !muted;
+    autoMuted.current = false;   // the visitor's own choice wins over the automatic one
     if (!m) a.start(ROBOT_IDS.length);
     a.setMuted(m);
     setMuted(m);

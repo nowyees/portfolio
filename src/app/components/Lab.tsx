@@ -56,12 +56,13 @@ function Plate({ e }: { e: Experiment }) {
     io.observe(el);
     return () => io.disconnect();
   }, []);
-  // A framed scene with sound (the robot cell) is told when its sheet leaves the view, so it can fall silent.
+  // A framed scene with sound (the robot cell) is told when its sheet leaves the view and comes back, so it can
+  // fall silent while away and pick its sound up again on return.
   useEffect(() => {
     const el = ref.current;
     if (!el || !piece.frame || !near) return;
     const io = new IntersectionObserver(([entry]) => {
-      if (!entry.isIntersecting) el.querySelector('iframe')?.contentWindow?.postMessage({ robotCell: 'hidden' }, location.origin);
+      el.querySelector('iframe')?.contentWindow?.postMessage({ robotCell: entry.isIntersecting ? 'shown' : 'hidden' }, location.origin);
     });
     io.observe(el);
     return () => io.disconnect();
