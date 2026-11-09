@@ -107,8 +107,7 @@ export default function AstroTail({ className }: { className?: string }) {
     const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
     renderer.setClearColor(0x000000, 0);
     host.appendChild(renderer.domElement);
-    // Hint beside the tail tip inviting the visitor to move the cursor: it fades once they do, and comes back a
-    // while after the cursor leaves.
+    // Hint beside the tail tip inviting the visitor to move the cursor; it stays, riding along with the tip.
     const hint = document.createElement('div');
     hint.className = 'astro-hint';
     hint.innerHTML = '<span class="astro-hint-mark"><i></i></span><span class="astro-hint-label">Move</span>';
@@ -117,15 +116,14 @@ export default function AstroTail({ className }: { className?: string }) {
     const cursor = document.createElement('div');
     cursor.className = 'astro-cursor';
     host.appendChild(cursor);
-    const HINT = { hideAfter: .6, returnAfter: 2.5 };     // seconds of moving before it hides; of absence before it returns
-    let movedFor = 0, awayFor = 0, hintShown = true;
+    const hintShown = true;
     const hintPoint = new THREE.Vector3();
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(30, 1, .05, 60);
-    const normalMaterial = new THREE.MeshNormalMaterial();
+    const normalMaterial = new THREE.MeshNormalMaterial({ side: THREE.DoubleSide });  // cracks between shells show the far side, not background
     scene.overrideMaterial = normalMaterial;
-    const target = new THREE.WebGLRenderTarget(1, 1, { depthTexture: new THREE.DepthTexture(1, 1) });
+    const target = new THREE.WebGLRenderTarget(1, 1, { depthTexture: new THREE.DepthTexture(1, 1, THREE.FloatType) });
     const edgeMaterial = new THREE.ShaderMaterial({
       ...edgeShader, transparent: true,
       uniforms: { tNormal: { value: target.texture }, tDepth: { value: target.depthTexture }, texel: { value: new THREE.Vector2() }, near: { value: camera.near }, far: { value: camera.far }, crease: { value: .1 } },
@@ -426,14 +424,8 @@ export default function AstroTail({ className }: { className?: string }) {
       segments.forEach((s, i) => { s.group.position.copy(P[i]); s.group.quaternion.copy(F[i]); });
     };
 
-    let hintTime = -1;
-    const placeHint = (now: number) => {
-      const dt = hintTime < 0 ? 0 : Math.min(.1, Math.max(0, now - hintTime)); hintTime = now;
-      if (pointer.inside) { movedFor += dt; awayFor = 0; } else { awayFor += dt; movedFor = 0; }
-      if (hintShown && movedFor > HINT.hideAfter) hintShown = false;
-      else if (!hintShown && awayFor > HINT.returnAfter) hintShown = true;
+    const placeHint = (_now: number) => {
       hint.classList.toggle('is-shown', hintShown);
-      if (!hintShown) return;
       hintPoint.copy(P[P.length - 1]).project(camera);
       const x = (hintPoint.x + 1) / 2 * host.clientWidth, y = (1 - hintPoint.y) / 2 * host.clientHeight;
       hint.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;

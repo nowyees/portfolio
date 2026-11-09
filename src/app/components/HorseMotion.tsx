@@ -25,6 +25,7 @@ const READY = { crouch: 1, hold: 1, rise: 1 };
 export default function HorseMotion({ className }: { className?: string }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const launchRef = useRef<(() => void) | null>(null);
+  const hintRef = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState('Loading HORSE…');
   useEffect(() => {
     const host = hostRef.current!;
@@ -36,20 +37,24 @@ export default function HorseMotion({ className }: { className?: string }) {
     const scene = new THREE.Scene(), modelRoot = new THREE.Group(); scene.add(modelRoot);
     const camera = new THREE.OrthographicCamera(-2.5, 2.5, 1.5, -1.5, 1, 12);
     camera.position.set(0, 0, 6); camera.lookAt(0, 0, 0);
-    const normal = new THREE.MeshNormalMaterial(); scene.overrideMaterial = normal;
-    const target = new THREE.WebGLRenderTarget(1, 1, { depthTexture: new THREE.DepthTexture(1, 1) });
+    const normal = new THREE.MeshNormalMaterial({ side: THREE.DoubleSide }); scene.overrideMaterial = normal;  // both faces: cracks between shells show the far side, not background
+    const target = new THREE.WebGLRenderTarget(1, 1, { depthTexture: new THREE.DepthTexture(1, 1, THREE.FloatType) });
     const lines = new THREE.WebGLRenderTarget(1, 1);
     // The shared edge shader reconstructs perspective depth; an orthographic camera's depth is linear.
     const edge = new THREE.ShaderMaterial({ ...edgeShader, transparent: true,
-      fragmentShader: edgeShader.fragmentShader.replace('near * far / (far - d * (far - near))', 'near + d * (far - near)'),
+      fragmentShader: edgeShader.fragmentShader.replace('near * far / (far - d * (far - near))', 'near + d * (far - near)')
+        // its body is built of overlapping shells a hair apart: only a real step in depth (a limb in front) draws
+        .replace('smoothstep(.008, .03, depthEdge)', 'smoothstep(.035, .07, depthEdge)'),
       uniforms: { tNormal: { value: target.texture }, tDepth: { value: target.depthTexture }, texel: { value: new THREE.Vector2() },
-        near: { value: camera.near }, far: { value: camera.far }, crease: { value: .12 } } });
+        near: { value: camera.near }, far: { value: camera.far }, crease: { value: .22 } } });
     const down = new THREE.ShaderMaterial({ ...downsampleShader, transparent: true,
       uniforms: { tLines: { value: lines.texture }, pixel: { value: new THREE.Vector2() }, speck: { value: 2.4 } } });
     const plane = new THREE.PlaneGeometry(2, 2), quadCamera = new THREE.Camera();
     const edgeScene = new THREE.Scene(), screenScene = new THREE.Scene();
     edgeScene.add(new THREE.Mesh(plane, edge)); screenScene.add(new THREE.Mesh(plane, down));
     let radius = 1.9, modelScale = 1;
+    // A standing hint over its back, as on the tail: what to do (click), always shown.
+    const hintAnchor = new THREE.Vector3(NaN, 0, 0), hintPoint = new THREE.Vector3();
     const resize = () => {
       const w = Math.max(1, host.clientWidth), h = Math.max(1, host.clientHeight);
       const dpr = Math.min(window.devicePixelRatio || 1, 2), ratio = dpr * 2;
@@ -162,6 +167,7 @@ export default function HorseMotion({ className }: { className?: string }) {
       stand = toLocal(gait.stand); crouch = toLocal(gait.crouch);
       walk = gait.walk.poses.map(toLocal);
       const bounds = new THREE.Box3().setFromObject(gltf.scene);
+      hintAnchor.set((bounds.min.x + bounds.max.x) / 2, bounds.max.y, (bounds.min.z + bounds.max.z) / 2);
       radius = bounds.getBoundingSphere(new THREE.Sphere()).radius; resize();
       setStatus('');
     }).catch(error => { if (!disposed) { console.error('HORSE motion:', error); setStatus('HORSE could not load. Please refresh.'); } });
@@ -262,6 +268,12 @@ export default function HorseMotion({ className }: { className?: string }) {
         }
         host.dataset.motionState = ready ? 'ready' : 'walking';
       }
+      const hint = hintRef.current;
+      if (hint && !Number.isNaN(hintAnchor.x)) {
+        hintPoint.copy(hintAnchor).applyMatrix4(modelRoot.matrixWorld).project(camera);
+        hint.style.transform = `translate(${((hintPoint.x + 1) / 2 * host.clientWidth).toFixed(1)}px, ${((1 - hintPoint.y) / 2 * host.clientHeight).toFixed(1)}px)`;
+        hint.classList.add('is-shown');
+      }
       renderer.setRenderTarget(target); renderer.render(scene, camera); renderer.setRenderTarget(lines); renderer.render(edgeScene, quadCamera);
       renderer.setRenderTarget(null); renderer.render(screenScene, quadCamera);
       frame = requestAnimationFrame(tick);
@@ -275,6 +287,7 @@ export default function HorseMotion({ className }: { className?: string }) {
   }, []);
   return <div className={`${className || ''} horse-interactive`} role="group" tabIndex={0} aria-label="HORSE, walking on the spot. Click, tap or press Space to make it crouch ready and rise again." onKeyDown={event => { if (event.key === ' ' && !event.repeat) { event.preventDefault(); launchRef.current?.(); } }}>
     <div ref={hostRef} style={{ position: 'absolute', inset: 0 }} />
+    <div ref={hintRef} className="astro-hint is-click" aria-hidden="true"><span className="astro-hint-mark"><i /></span><span className="astro-hint-label">Click</span></div>
     {status && <p role="status" className="robot-loading">{status}</p>}
   </div>;
 }

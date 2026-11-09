@@ -41,8 +41,8 @@ export default function DualArmIK({ className }: { className?: string }) {
     camera.position.set(0, .78, 4); camera.lookAt(0, .78, 0);
     // Every mesh draws view normals; a highlighted part draws them with alpha .75, which the edge pass draws bolder.
     // (transparent + NoBlending: opaque materials have their alpha forced to 1, and blending would mix the normals.)
-    const normal = new THREE.MeshNormalMaterial(), marked = new THREE.MeshNormalMaterial({ opacity: .75, transparent: true, blending: THREE.NoBlending });
-    const target = new THREE.WebGLRenderTarget(1, 1, { depthTexture: new THREE.DepthTexture(1, 1) });
+    const normal = new THREE.MeshNormalMaterial({ side: THREE.DoubleSide }), marked = new THREE.MeshNormalMaterial({ side: THREE.DoubleSide, opacity: .75, transparent: true, blending: THREE.NoBlending });
+    const target = new THREE.WebGLRenderTarget(1, 1, { depthTexture: new THREE.DepthTexture(1, 1, THREE.FloatType) });
     const lines = new THREE.WebGLRenderTarget(1, 1);
     const edge = new THREE.ShaderMaterial({ ...edgeShader, transparent: true, uniforms: {
       tNormal: { value: target.texture }, tDepth: { value: target.depthTexture },
@@ -69,6 +69,11 @@ export default function DualArmIK({ className }: { className?: string }) {
     };
     const observer = new ResizeObserver(resize); observer.observe(host); resize();
     const cursor = document.createElement('div'); cursor.className = 'astro-cursor'; host.appendChild(cursor);
+    // A standing hint beside a hand, as on the tail: what to do, riding along with the part.
+    const hint = document.createElement('div'); hint.className = 'astro-hint is-drag';
+    hint.innerHTML = '<span class="astro-hint-mark"><i></i></span><span class="astro-hint-label">Drag</span>';
+    host.appendChild(hint);
+    const hintPoint = new THREE.Vector3(), hintBox = new THREE.Box3();
     const pointer = new THREE.Vector2(), ray = new THREE.Raycaster();
     let pressed = false, dragged = false, selection: RobotSelection | null = null, hovered: RobotSelection | null = null;
     let controls: ReturnType<typeof createRobotControls> | null = null;
@@ -235,6 +240,12 @@ export default function DualArmIK({ className }: { className?: string }) {
       controls?.update(dt);
       // The part being dragged stays red until released; otherwise the one under the cursor.
       highlight(pressed ? selection : hovered);
+      const hand = controls?.hands.L;   // the robot faces us: its left hand is on screen right, so the hint reads outward
+      if (hand) {
+        hintBox.setFromObject(hand).getCenter(hintPoint).project(camera);   // the middle of the hand itself
+        hint.style.transform = `translate(${((hintPoint.x + 1) / 2 * host.clientWidth).toFixed(1)}px, ${((1 - hintPoint.y) / 2 * host.clientHeight).toFixed(1)}px)`;
+        hint.classList.add('is-shown');
+      }
       renderer.setRenderTarget(target); renderer.render(scene, camera);
       renderer.setRenderTarget(lines); renderer.render(edgeScene, quadCamera);
       renderer.setRenderTarget(null); renderer.render(screenScene, quadCamera);
@@ -246,7 +257,7 @@ export default function DualArmIK({ className }: { className?: string }) {
       host.removeEventListener('pointermove', move); host.removeEventListener('pointerdown', start); host.removeEventListener('dblclick', resetPose);
       host.removeEventListener('pointerup', end); host.removeEventListener('pointercancel', end); host.removeEventListener('pointerleave', leave);
       disposeModel(scene); draco.dispose(); normal.dispose(); marked.dispose(); target.dispose(); lines.dispose(); edge.dispose(); down.dispose(); plane.dispose(); renderer.dispose();
-      renderer.domElement.remove(); cursor.remove();
+      renderer.domElement.remove(); cursor.remove(); hint.remove();
     };
   }, []);
   return <div className={`${className || ''} robot-interactive`} role="group" aria-label="Articulated robot. Hover a part to see what moves; drag it to move it, click a hand to fold its fingers, open them, then turn its thumb (one per click); double-click to reset.">
