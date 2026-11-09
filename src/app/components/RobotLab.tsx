@@ -3,7 +3,6 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
@@ -91,8 +90,27 @@ export default function RobotLab() {
     scene.background = new THREE.Color(BG);
     scene.fog = new THREE.FogExp2(BG, 0.065);
     const pmrem = new THREE.PMREMGenerator(renderer);
-    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-    scene.environmentIntensity = 0.16;
+    scene.environmentIntensity = 0.2;
+    // Reflection environment = a black room with one glowing light wall behind the cell.
+    // Glossy paint and metal pick the wall up as rim highlights while their fronts stay dark.
+    const buildEnv = (wallZ: number, wallY: number, wallW: number, wallH: number) => {
+      const env = new THREE.Scene();
+      env.background = new THREE.Color(0x010101);
+      const panel = new THREE.Mesh(
+        new THREE.PlaneGeometry(wallW, wallH),
+        new THREE.MeshBasicMaterial({ color: new THREE.Color(0.9, 0.95, 1).multiplyScalar(6), side: THREE.DoubleSide }),
+      );
+      panel.position.set(0, wallY, wallZ);
+      env.add(panel);
+      // faint top strip so upward-facing surfaces aren't pure black
+      const top = new THREE.Mesh(new THREE.PlaneGeometry(10, 2), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.25, 0.25, 0.27) }));
+      top.rotation.x = Math.PI / 2;
+      top.position.set(0, 7, 0);
+      env.add(top);
+      scene.environment?.dispose();
+      scene.environment = pmrem.fromScene(env, 0.02).texture;
+    };
+    buildEnv(-6, 3, 16, 5);
 
     const camera = new THREE.PerspectiveCamera(32, mount.clientWidth / mount.clientHeight, 0.05, 200);
     camera.position.set(-2.6, 1.7, 7.6);
@@ -101,11 +119,13 @@ export default function RobotLab() {
     controls.dampingFactor = 0.06;
     controls.target.set(0, 0.85, 0);
     controls.maxPolarAngle = Math.PI * 0.48;
-    controls.minDistance = 2.2;
-    controls.maxDistance = 12;
+    controls.minDistance = 3;
+    controls.maxDistance = 7.8; // the room's walls are just beyond this
+    controls.minAzimuthAngle = -Math.PI * 0.3; // only the front half: behind the cell is the light wall
+    controls.maxAzimuthAngle = Math.PI * 0.3;
     controls.enablePan = false;
     controls.autoRotate = true;
-    controls.autoRotateSpeed = 0.35;
+    controls.autoRotateSpeed = 0.3;
 
     // Lighting: one hard top spot on the car, cool rim from behind, dim backlit wall
     const spot = new THREE.SpotLight(0xfff4e8, 95, 14, 0.6, 0.9, 1.6);
@@ -120,7 +140,7 @@ export default function RobotLab() {
     scene.add(rim);
     scene.add(new THREE.HemisphereLight(0x8090a0, 0x020202, 0.06));
     // light from the glowing back wall onto the cell
-    const wallWash = new THREE.RectAreaLight(0xdfe8ff, 0.55, 16, 5);
+    const wallWash = new THREE.RectAreaLight(0xdfe8ff, 0.35, 16, 5);
     scene.add(wallWash);
     // accent spots: one narrow cone over each robot (placed once the model is loaded)
     const accentSpots: THREE.SpotLight[] = [];
@@ -129,7 +149,7 @@ export default function RobotLab() {
     const reflector = new Reflector(new THREE.PlaneGeometry(60, 60), {
       textureWidth: Math.floor(mount.clientWidth * (touch ? 0.4 : 0.6)),
       textureHeight: Math.floor(mount.clientHeight * (touch ? 0.4 : 0.6)),
-      color: 0x7a7a80,
+      color: 0x3a3a3f,
     });
     reflector.rotation.x = -Math.PI / 2;
     reflector.position.y = -0.002;
@@ -193,10 +213,30 @@ export default function RobotLab() {
             }
             if (m.name === 'Floor_Epoxy') {
               m.color.set(0x030304); m.roughness = 0.22; m.metalness = 0; m.map = null;
-              m.envMapIntensity = 0.35; m.transparent = true; m.opacity = 0.86;
+              m.envMapIntensity = 0.12; m.transparent = true; m.opacity = 0.86;
             }
             // back wall is a frosted light wall: bright, slightly cool, so the robots read as silhouettes
-            if (m.name === 'Wall_Frosted') { m.emissive.setRGB(0.85, 0.9, 1.0); m.emissiveIntensity = 1.15; m.color.set(0x000000); }
+            if (m.name === 'Wall_Frosted') {
+              // backlit frosted panels: lamps behind, brightest through the middle band, falling off up and down
+              m.color.set(0x000000);
+              m.emissive.setRGB(0.88, 0.93, 1.0);
+              m.emissiveIntensity = 3.2;
+              m.roughness = 0.6;
+              m.onBeforeCompile = (sh: any) => {
+                sh.vertexShader = sh.vertexShader
+                  .replace('#include <common>', '#include <common>\nvarying vec3 vWallPos;')
+                  .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvWallPos = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+                sh.fragmentShader = sh.fragmentShader
+                  .replace('#include <common>', '#include <common>\nvarying vec3 vWallPos;')
+                  .replace(
+                    '#include <emissivemap_fragment>',
+                    `#include <emissivemap_fragment>
+                    float band = exp(-pow((vWallPos.y - 2.3) / 1.9, 2.0));
+                    float side = 1.0 - 0.35 * smoothstep(3.0, 9.0, abs(vWallPos.x));
+                    totalEmissiveRadiance *= (0.18 + 0.82 * band) * side;`,
+                  );
+              };
+            }
             if (m.transmission > 0) {
               m.transmission = 0; m.transparent = true; m.depthWrite = false;
               m.roughness = Math.min(m.roughness, 0.05);
@@ -261,6 +301,8 @@ export default function RobotLab() {
           const dir = Math.sign(-wc.z) || 1; // towards the room centre
           wallWash.position.set(wc.x, wc.y, wc.z + dir * 0.3);
           wallWash.lookAt(wc.x, wc.y * 0.6, 0);
+          const size = wb.getSize(new THREE.Vector3());
+          buildEnv(wc.z, wc.y, Math.max(size.x, 4), Math.max(size.y, 2));
         }
         // accent cone over each robot; brightens while that robot works
         robots.forEach((r) => {
@@ -408,6 +450,10 @@ export default function RobotLab() {
         cables.forEach((c) => c.update());
       }
 
+      // idle drift swings back and forth inside the allowed arc instead of stopping at its edge
+      const az = controls.getAzimuthalAngle();
+      if (az > controls.maxAzimuthAngle - 0.02 && controls.autoRotateSpeed < 0) controls.autoRotateSpeed *= -1;
+      if (az < controls.minAzimuthAngle + 0.02 && controls.autoRotateSpeed > 0) controls.autoRotateSpeed *= -1;
       controls.update();
       // place hotspot dots: robots at their tool tip, the car above its roof
       if (robots.length) {
