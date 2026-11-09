@@ -127,23 +127,10 @@ export default function RobotLab() {
     controls.autoRotate = true;
     controls.autoRotateSpeed = 0.3;
 
-    // Lighting: one hard top spot on the car, cool rim from behind, dim backlit wall
-    const spot = new THREE.SpotLight(0xfff4e8, 95, 14, 0.6, 0.9, 1.6);
-    spot.position.set(0.3, 7, 1.2);
-    spot.target.position.set(0, 0.4, 0);
-    spot.castShadow = true;
-    spot.shadow.mapSize.set(touch ? 1024 : 2048, touch ? 1024 : 2048);
-    spot.shadow.bias = -0.0004;
-    scene.add(spot, spot.target);
-    const rim = new THREE.DirectionalLight(0x9fbfff, 0.7);
-    rim.position.set(-3, 5, -8);
-    scene.add(rim);
-    scene.add(new THREE.HemisphereLight(0x8090a0, 0x020202, 0.06));
-    // light from the glowing back wall onto the cell
-    const wallWash = new THREE.RectAreaLight(0xdfe8ff, 0.35, 16, 5);
+    // Lighting: the glowing back wall is the only light (no overhead lights) —
+    // everything reads as a silhouette with rim light from behind.
+    const wallWash = new THREE.RectAreaLight(0xdfe8ff, 0.7, 16, 5);
     scene.add(wallWash);
-    // accent spots: one narrow cone over each robot (placed once the model is loaded)
-    const accentSpots: THREE.SpotLight[] = [];
 
     // Glossy epoxy floor: planar mirror under the semi-transparent floor mesh
     const reflector = new Reflector(new THREE.PlaneGeometry(60, 60), {
@@ -158,7 +145,7 @@ export default function RobotLab() {
     const composer = new EffectComposer(renderer);
     composer.addPass(new RenderPass(scene, camera));
     composer.addPass(new ShaderPass(SanitizeShader));
-    composer.addPass(new UnrealBloomPass(new THREE.Vector2(mount.clientWidth, mount.clientHeight), 0.4, 0.25, 0.95));
+    composer.addPass(new UnrealBloomPass(new THREE.Vector2(mount.clientWidth, mount.clientHeight), 0.16, 0.15, 1.0));
     composer.addPass(new OutputPass());
     const film = new ShaderPass(FilmShader);
     composer.addPass(film);
@@ -235,7 +222,7 @@ export default function RobotLab() {
               // backlit frosted panels, every tile the same brightness
               m.color.set(0x000000);
               m.emissive.setRGB(0.88, 0.93, 1.0);
-              m.emissiveIntensity = 1.6;
+              m.emissiveIntensity = 4.5; // reads as white, not grey
               m.roughness = 0.6;
             }
             if (m.transmission > 0) {
@@ -319,16 +306,6 @@ export default function RobotLab() {
         inner('Ceiling', (b) => (room.max.y = b.min.y));
         room.expandByScalar(-0.45);
 
-        // accent cone over each robot; brightens while that robot works
-        robots.forEach((r) => {
-          const c = r.box.getCenter(new THREE.Vector3());
-          const s = new THREE.SpotLight(0xffffff, 0, 9, 0.32, 0.6, 1.5);
-          s.position.set(c.x, 6.2, c.z);
-          s.target.position.set(c.x, 0, c.z);
-          s.userData.base = 45;
-          scene.add(s, s.target);
-          accentSpots.push(s);
-        });
 
         const body = root.getObjectByName('CarBody');
         if (body) carBox = new THREE.Box3().setFromObject(body).expandByScalar(0.15);
@@ -457,8 +434,6 @@ export default function RobotLab() {
         const hot = hovered === r || hovered === 'car' ? 1 : 0;
         const glow = 1 + 3 * Math.min(1, Math.max(0, r.x)) + hot * 1.5 * (0.6 + 0.4 * Math.sin(t * 6));
         r.leds.forEach((m) => (m.emissiveIntensity = (m.userData.base ?? 1) * glow));
-        const s = accentSpots[i];
-        if (s) s.intensity = s.userData.base * (1 + 0.8 * Math.min(1, Math.max(0, r.x)) + hot * 0.9);
       });
       if (cables.length) {
         scene.updateMatrixWorld();
@@ -537,7 +512,7 @@ export default function RobotLab() {
               hotspotRefs.current[i] = el;
             }}
             className="absolute left-0 top-0 pointer-events-none transition-opacity duration-500"
-            style={{ opacity: 0 }}
+            style={{ opacity: 0, mixBlendMode: 'difference' }} // stays visible over the white wall and the dark robots
           >
             <span className="absolute -left-[14px] -top-[14px] h-[28px] w-[28px] rounded-full border border-white/70 animate-ping" />
             <span className="absolute -left-[11px] -top-[11px] h-[22px] w-[22px] rounded-full border border-white/50 bg-white/10" />
@@ -545,7 +520,7 @@ export default function RobotLab() {
           </div>
         ))}
       {loaded && !introDone && !FRAMED && (
-        <div className="absolute inset-x-0 top-[14%] flex flex-col items-center gap-2 pointer-events-none text-center">
+        <div className="absolute inset-x-0 top-[14%] flex flex-col items-center gap-2 pointer-events-none text-center" style={{ mixBlendMode: 'difference' }}>
           <span className="text-[11px] tracking-[0.4em] text-white/85 animate-pulse">CLICK A ROBOT TO MOVE IT</span>
           <span className="text-[9px] tracking-[0.3em] text-white/40">CLICK THE CAR TO MOVE ALL FOUR · DRAG TO LOOK AROUND</span>
         </div>
