@@ -255,17 +255,25 @@
 .astro-hint-mark i { position:absolute; top:50%; left:50%; width:9px; height:9px; margin:-5px 0 0 -5px; border:1px solid var(--ink); border-radius:50%; background:var(--paper); animation:astro-hint-swing 1.8s cubic-bezier(.45,0,.55,1) infinite alternate; }
 .astro-hint-label { font:500 10px/1 var(--sans); text-transform:uppercase; letter-spacing:.075em; color:var(--ink); }
 @keyframes astro-hint-swing { from { transform:translateX(-13px); } to { transform:translateX(13px); } }
-/* Reckless: a tap (the ring presses in) instead of a swing; Miro's arm: the swing runs up and down, as a drag */
-.astro-hint.is-click .astro-hint-mark::before { display:none; }
-.astro-hint.is-click .astro-hint-mark i { animation:astro-hint-tap 1.3s cubic-bezier(.45,0,.55,1) infinite; }
-@keyframes astro-hint-tap { 0%, 100% { transform:scale(1); } 45% { transform:scale(.55); background:var(--ink); } }
+/* Click hints (Reckless's body, Miro's hands): the ring sits on the part itself and sends out a ripple, a dotted
+   lead runs to the word. Drag hints (Miro's arms): the ring swings up and down. Flipped hints read leftward. */
+.astro-hint.is-click { margin:-7px 0 0 -5px; }
+.astro-hint.is-click .astro-hint-mark { width:40px; }
+.astro-hint.is-click .astro-hint-mark::before { left:12px; }
+.astro-hint.is-click .astro-hint-mark i { left:0; margin:-5px 0 0 0; animation:none; }
+.astro-hint.is-click .astro-hint-mark i::after { content:''; position:absolute; inset:-1px; border:1px solid var(--ink); border-radius:50%; animation:astro-hint-ripple 1.6s cubic-bezier(.2,.7,.3,1) infinite; }
+@keyframes astro-hint-ripple { from { transform:scale(1); opacity:.9; } to { transform:scale(2.8); opacity:0; } }
 .astro-hint.is-drag .astro-hint-mark { width:14px; height:34px; margin:-10px 0; }
 .astro-hint.is-drag .astro-hint-mark::before { left:50%; right:auto; top:0; bottom:0; border-top:0; border-left:1px dotted #999; }
 .astro-hint.is-drag .astro-hint-mark i { animation-name:astro-hint-lift; }
+.astro-hint.is-flip { flex-direction:row-reverse; translate:-100% 0; margin-left:-26px; }
+.astro-hint.is-click.is-flip { margin-left:5px; }
+.astro-hint.is-click.is-flip .astro-hint-mark::before { left:0; right:12px; }
+.astro-hint.is-click.is-flip .astro-hint-mark i { left:auto; right:0; }
 @keyframes astro-hint-lift { from { transform:translateY(-13px); } to { transform:translateY(13px); } }
 .robot-interactive { cursor:default; }
 .robot-loading { position:absolute; top:48%; width:100%; text-align:center; font:12px/1.5 var(--sans); pointer-events:none; }
-@media (prefers-reduced-motion: reduce) { .astro-hint-mark i { animation:none; } }
+@media (prefers-reduced-motion: reduce) { .astro-hint-mark i, .astro-hint-mark i::after { animation:none; } }
 
 /* LUNARIS — designed frames with high-resolution sources, pinned studies and scroll-led motion. */
 .project-detail.is-story {

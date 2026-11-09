@@ -53,7 +53,7 @@ export default function HorseMotion({ className }: { className?: string }) {
     const edgeScene = new THREE.Scene(), screenScene = new THREE.Scene();
     edgeScene.add(new THREE.Mesh(plane, edge)); screenScene.add(new THREE.Mesh(plane, down));
     let radius = 1.9, modelScale = 1;
-    // A standing hint over its back, as on the tail: what to do (click), always shown.
+    // A standing hint on its body, as on the tail: what to do (click), always shown.
     const hintAnchor = new THREE.Vector3(NaN, 0, 0), hintPoint = new THREE.Vector3();
     const resize = () => {
       const w = Math.max(1, host.clientWidth), h = Math.max(1, host.clientHeight);
@@ -167,7 +167,7 @@ export default function HorseMotion({ className }: { className?: string }) {
       stand = toLocal(gait.stand); crouch = toLocal(gait.crouch);
       walk = gait.walk.poses.map(toLocal);
       const bounds = new THREE.Box3().setFromObject(gltf.scene);
-      hintAnchor.set((bounds.min.x + bounds.max.x) / 2, bounds.max.y, (bounds.min.z + bounds.max.z) / 2);
+      hintAnchor.set((bounds.min.x + bounds.max.x) / 2, bounds.min.y + (bounds.max.y - bounds.min.y) * .74, (bounds.min.z + bounds.max.z) / 2);   // on the body
       radius = bounds.getBoundingSphere(new THREE.Sphere()).radius; resize();
       setStatus('');
     }).catch(error => { if (!disposed) { console.error('HORSE motion:', error); setStatus('HORSE could not load. Please refresh.'); } });
