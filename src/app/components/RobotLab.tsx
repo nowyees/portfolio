@@ -21,6 +21,8 @@ import { LabAudio } from '../../lib/labAudio';
 
 const ROBOT_IDS = ['RobotFL', 'RobotFR', 'RobotRL', 'RobotRR'];
 const IDLE_HINT = 'CLICK A ROBOT OR THE CAR';
+// Shown inside a Lab sheet (an iframe), the scene keeps only its click cues and a sound switch; the sheet has the words.
+const FRAMED = typeof window !== 'undefined' && window.top !== window.self;
 
 // Removes NaN/Inf pixels before bloom (otherwise bloom smears them into black blocks)
 const SanitizeShader = {
@@ -542,7 +544,7 @@ export default function RobotLab() {
             <span className="absolute -left-[3px] -top-[3px] h-[6px] w-[6px] rounded-full bg-white shadow-[0_0_8px_2px_rgba(255,255,255,0.8)]" />
           </div>
         ))}
-      {loaded && !introDone && (
+      {loaded && !introDone && !FRAMED && (
         <div className="absolute inset-x-0 top-[14%] flex flex-col items-center gap-2 pointer-events-none text-center">
           <span className="text-[11px] tracking-[0.4em] text-white/85 animate-pulse">CLICK A ROBOT TO MOVE IT</span>
           <span className="text-[9px] tracking-[0.3em] text-white/40">CLICK THE CAR TO MOVE ALL FOUR · DRAG TO LOOK AROUND</span>
@@ -553,7 +555,12 @@ export default function RobotLab() {
           LOADING {progress}%
         </div>
       )}
-      <div className="absolute left-4 right-4 bottom-4 flex flex-wrap items-end justify-between gap-2 text-[10px] tracking-[0.25em] text-white/45 pointer-events-none">
+      {FRAMED ? (
+        <button className="absolute bottom-4 left-1/2 -translate-x-1/2 border border-white/30 px-3.5 py-2 text-white/85 hover:bg-white/10"
+          style={{ font: "600 11px/1 'Inter Tight', sans-serif", letterSpacing: '-.01em' }} onClick={toggleSound}>
+          {muted ? 'SOUND OFF' : 'SOUND ON'}
+        </button>
+      ) : <div className="absolute left-4 right-4 bottom-4 flex flex-wrap items-end justify-between gap-2 text-[10px] tracking-[0.25em] text-white/45 pointer-events-none">
         <div className="flex flex-col gap-1">
           <span className="text-white/75">{hint}</span>
           <span>ROBOT CELL · BLENDER → THREE.JS · {fps} FPS</span>
@@ -561,7 +568,7 @@ export default function RobotLab() {
         <button className="pointer-events-auto border border-white/25 px-3 py-1.5 hover:bg-white/10" onClick={toggleSound}>
           {muted ? 'SOUND OFF' : 'SOUND ON'}
         </button>
-      </div>
+      </div>}
     </div>
   );
 }
