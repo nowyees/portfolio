@@ -10,6 +10,9 @@ import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { Reflector } from 'three/examples/jsm/objects/Reflector.js';
+import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js';
+
+RectAreaLightUniformsLib.init();
 import { RobotCable, cableMaterial, type CableData } from '../../lib/robotCables';
 import { LabAudio } from '../../lib/labAudio';
 
@@ -38,7 +41,7 @@ const FilmShader = {
     float h(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233))) * 43758.5453); }
     void main(){ vec4 c = texture2D(tDiffuse, vUv);
       vec2 d = vUv - .5; float vig = smoothstep(.85, .25, length(d * vec2(1.15, 1.)));
-      c.rgb *= mix(.35, 1., vig);
+      c.rgb *= mix(.12, 1., vig);
       c.rgb += (h(vUv * 1000. + fract(uTime) * 91.7) - .5) * .045;
       gl_FragColor = c; }`,
 };
@@ -55,7 +58,6 @@ type Robot = {
   box: THREE.Box3;
 };
 
-const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
 export default function RobotLab() {
   const mountRef = useRef<HTMLDivElement>(null);
@@ -64,6 +66,9 @@ export default function RobotLab() {
   const [fps, setFps] = useState(0);
   const [hint, setHint] = useState(IDLE_HINT);
   const [muted, setMuted] = useState(false);
+  const [introDone, setIntroDone] = useState(false);
+  // pulsing dots over each robot's tool and the car: the cue that they can be clicked
+  const hotspotRefs = useRef<(HTMLDivElement | null)[]>([]);
   const audioRef = useRef<LabAudio | null>(null);
 
   useEffect(() => {
@@ -84,10 +89,10 @@ export default function RobotLab() {
     const BG = 0x050506;
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(BG);
-    scene.fog = new THREE.FogExp2(BG, 0.05);
+    scene.fog = new THREE.FogExp2(BG, 0.065);
     const pmrem = new THREE.PMREMGenerator(renderer);
     scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-    scene.environmentIntensity = 0.3;
+    scene.environmentIntensity = 0.16;
 
     const camera = new THREE.PerspectiveCamera(32, mount.clientWidth / mount.clientHeight, 0.05, 200);
     camera.position.set(-2.6, 1.7, 7.6);
@@ -113,7 +118,12 @@ export default function RobotLab() {
     const rim = new THREE.DirectionalLight(0x9fbfff, 0.7);
     rim.position.set(-3, 5, -8);
     scene.add(rim);
-    scene.add(new THREE.HemisphereLight(0x8090a0, 0x050505, 0.25));
+    scene.add(new THREE.HemisphereLight(0x8090a0, 0x020202, 0.06));
+    // light from the glowing back wall onto the cell
+    const wallWash = new THREE.RectAreaLight(0xdfe8ff, 0.55, 16, 5);
+    scene.add(wallWash);
+    // accent spots: one narrow cone over each robot (placed once the model is loaded)
+    const accentSpots: THREE.SpotLight[] = [];
 
     // Glossy epoxy floor: planar mirror under the semi-transparent floor mesh
     const reflector = new Reflector(new THREE.PlaneGeometry(60, 60), {
@@ -128,7 +138,7 @@ export default function RobotLab() {
     const composer = new EffectComposer(renderer);
     composer.addPass(new RenderPass(scene, camera));
     composer.addPass(new ShaderPass(SanitizeShader));
-    composer.addPass(new UnrealBloomPass(new THREE.Vector2(mount.clientWidth, mount.clientHeight), 0.55, 0.5, 0.85));
+    composer.addPass(new UnrealBloomPass(new THREE.Vector2(mount.clientWidth, mount.clientHeight), 0.4, 0.25, 0.95));
     composer.addPass(new OutputPass());
     const film = new ShaderPass(FilmShader);
     composer.addPass(film);
@@ -141,9 +151,6 @@ export default function RobotLab() {
     const robots: Robot[] = [];
     const cables: RobotCable[] = [];
     let carBox = new THREE.Box3(new THREE.Vector3(-1, 0, -2.3), new THREE.Vector3(1, 1.3, 2.3));
-    let busy = false;
-    type Pose = { p: THREE.Vector3; t: THREE.Vector3 };
-    let camTween: { from: Pose; to: Pose; start: number; dur: number } | null = null;
     const timers: { at: number; fn: () => void }[] = [];
     const clock = new THREE.Clock();
     const now = () => clock.elapsedTime;
@@ -185,10 +192,11 @@ export default function RobotLab() {
               if (e > 2.5) m.emissiveIntensity = (m.emissiveIntensity ?? 1) * (2.5 / e);
             }
             if (m.name === 'Floor_Epoxy') {
-              m.color.set(0x0a0a0c); m.roughness = 0.25; m.metalness = 0; m.map = null;
-              m.envMapIntensity = 0.6; m.transparent = true; m.opacity = 0.8;
+              m.color.set(0x030304); m.roughness = 0.22; m.metalness = 0; m.map = null;
+              m.envMapIntensity = 0.35; m.transparent = true; m.opacity = 0.86;
             }
-            if (m.name === 'Wall_Frosted') m.emissiveIntensity *= 0.3; // dim backlight, not a lightbox
+            // back wall is a frosted light wall: bright, slightly cool, so the robots read as silhouettes
+            if (m.name === 'Wall_Frosted') { m.emissive.setRGB(0.85, 0.9, 1.0); m.emissiveIntensity = 1.15; m.color.set(0x000000); }
             if (m.transmission > 0) {
               m.transmission = 0; m.transparent = true; m.depthWrite = false;
               m.roughness = Math.min(m.roughness, 0.05);
@@ -245,6 +253,26 @@ export default function RobotLab() {
           r.leds.push(o.material);
         });
 
+        // wall wash sits just in front of the glowing back wall, facing the cell
+        const backWall = root.getObjectByName('BackWall');
+        if (backWall) {
+          const wb = new THREE.Box3().setFromObject(backWall);
+          const wc = wb.getCenter(new THREE.Vector3());
+          const dir = Math.sign(-wc.z) || 1; // towards the room centre
+          wallWash.position.set(wc.x, wc.y, wc.z + dir * 0.3);
+          wallWash.lookAt(wc.x, wc.y * 0.6, 0);
+        }
+        // accent cone over each robot; brightens while that robot works
+        robots.forEach((r) => {
+          const c = r.box.getCenter(new THREE.Vector3());
+          const s = new THREE.SpotLight(0xffffff, 0, 9, 0.32, 0.6, 1.5);
+          s.position.set(c.x, 6.2, c.z);
+          s.target.position.set(c.x, 0, c.z);
+          s.userData.base = 45;
+          scene.add(s, s.target);
+          accentSpots.push(s);
+        });
+
         const body = root.getObjectByName('CarBody');
         if (body) carBox = new THREE.Box3().setFromObject(body).expandByScalar(0.15);
 
@@ -265,56 +293,23 @@ export default function RobotLab() {
       (err) => console.error(err),
     );
 
-    // ---- camera moves
-    const flyTo = (p: THREE.Vector3, t: THREE.Vector3, dur: number) => {
-      camTween = { from: { p: camera.position.clone(), t: controls.target.clone() }, to: { p, t }, start: now(), dur };
-      audio.whoosh(dur);
+    // ---- clicks only move the robots; the camera stays wherever the viewer put it
+    const engaged = new Set<Robot>();
+    const updateHint = () =>
+      setHint(engaged.size ? [...engaged].map((r) => r.id.replace('Robot', 'AXIS ')).join(' · ') + ' · WORKING' : IDLE_HINT);
+    const work = (r: Robot, delay = 0) => {
+      if (engaged.has(r)) return;
+      engaged.add(r);
+      updateHint();
+      after(delay, () => (r.target = 1));
+      after(delay + 3.6, () => (r.target = 0));
+      after(delay + 5.2, () => {
+        engaged.delete(r);
+        updateHint();
+      });
     };
-    const carCenter = () => carBox.getCenter(new THREE.Vector3());
-    const begin = (label: string) => {
-      busy = true;
-      controls.autoRotate = false;
-      controls.enabled = false;
-      setHint(label);
-      return { p: camera.position.clone(), t: controls.target.clone() };
-    };
-    const end = () => {
-      busy = false;
-      controls.enabled = true;
-      controls.autoRotate = true;
-      setHint(IDLE_HINT);
-    };
-
-    const focusRobot = (r: Robot) => {
-      const home = begin(r.id.replace('Robot', 'AXIS / '));
-      const rc = r.box.getCenter(new THREE.Vector3());
-      const cc = carCenter();
-      const out = new THREE.Vector3(rc.x - cc.x, 0, rc.z - cc.z).normalize();
-      // Robots stand in pairs along the car, so look from the open end (front robots from the
-      // front, rear robots from the rear), at the robot and where its tool meets the car.
-      const side = new THREE.Vector3(-out.z, 0, out.x);
-      if (side.z * (rc.z - cc.z) < 0) side.negate();
-      const target = new THREE.Vector3().lerpVectors(new THREE.Vector3(rc.x, 1.2, rc.z), new THREE.Vector3(cc.x, 0.6, cc.z), 0.45);
-      const pos = target.clone().addScaledVector(side, 4.2).addScaledVector(out, 0.9).add(new THREE.Vector3(0, 1.2, 0));
-      flyTo(pos, target, 1.6);
-      after(0.7, () => (r.target = 1));
-      after(4.4, () => (r.target = 0));
-      after(5.6, () => flyTo(home.p, home.t, 1.8));
-      after(7.5, end);
-    };
-
-    const focusCar = () => {
-      const home = begin('ALL AXES · WORKING');
-      const cc = carCenter();
-      const dir = new THREE.Vector3().subVectors(camera.position, cc).setY(0).normalize();
-      const target = new THREE.Vector3(cc.x, 0.65, cc.z);
-      const pos = target.clone().addScaledVector(dir, 5.6).add(new THREE.Vector3(0, 1.3, 0));
-      flyTo(pos, target, 1.8);
-      robots.forEach((r, i) => after(0.8 + i * 0.18, () => (r.target = 1)));
-      robots.forEach((r, i) => after(5.2 + i * 0.18, () => (r.target = 0)));
-      after(6.6, () => flyTo(home.p, home.t, 1.9));
-      after(8.6, end);
-    };
+    const focusRobot = (r: Robot) => work(r);
+    const focusCar = () => robots.forEach((r, i) => work(r, i * 0.18));
 
     // ---- picking against per-robot / car boxes (cheap, no triangle raycast)
     const ray = new THREE.Raycaster();
@@ -340,23 +335,28 @@ export default function RobotLab() {
       if (!audio.muted) audio.start(ROBOT_IDS.length); // audio may only start after a user gesture
     };
     const onUp = (e: PointerEvent) => {
-      if (!down || busy || !robots.length) return;
+      if (!down || !robots.length) return;
       const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y);
       down = null;
       if (moved > 6) return; // a drag (orbit), not a click
       const target = pick(e);
+      if (target) setIntroDone(true);
       if (target === 'car') focusCar();
       else if (target) focusRobot(target);
     };
     let lastHover = 0;
+    let hovered: Robot | 'car' | null = null;
+    const onLeave = () => (hovered = null);
     const onMove = (e: PointerEvent) => {
       if (e.buttons || performance.now() - lastHover < 80) return;
       lastHover = performance.now();
-      renderer.domElement.style.cursor = !busy && pick(e) ? 'pointer' : 'grab';
+      hovered = pick(e);
+      renderer.domElement.style.cursor = hovered ? 'pointer' : 'grab';
     };
     renderer.domElement.addEventListener('pointerdown', onDown);
     renderer.domElement.addEventListener('pointerup', onUp);
     renderer.domElement.addEventListener('pointermove', onMove);
+    renderer.domElement.addEventListener('pointerleave', onLeave);
 
     const onResize = () => {
       const w = mount.clientWidth, h = mount.clientHeight;
@@ -369,6 +369,7 @@ export default function RobotLab() {
 
     // ---- loop
     let frames = 0, acc = 0, raf = 0;
+    const tmpV = new THREE.Vector3();
     const tick = () => {
       raf = requestAnimationFrame(tick);
       const dt = Math.min(clock.getDelta(), 0.05);
@@ -396,22 +397,34 @@ export default function RobotLab() {
         const breathe = 0.025 * (0.5 + 0.5 * Math.sin(t * 0.7 + r.phase));
         const w = Math.min(1, Math.max(0, r.x)) * (1 - breathe) + breathe;
         r.joints.forEach((j) => j.obj.quaternion.slerpQuaternions(j.rest, j.work, w));
-        const glow = 1 + 3 * Math.min(1, Math.max(0, r.x));
+        const hot = hovered === r || hovered === 'car' ? 1 : 0;
+        const glow = 1 + 3 * Math.min(1, Math.max(0, r.x)) + hot * 1.5 * (0.6 + 0.4 * Math.sin(t * 6));
         r.leds.forEach((m) => (m.emissiveIntensity = (m.userData.base ?? 1) * glow));
+        const s = accentSpots[i];
+        if (s) s.intensity = s.userData.base * (1 + 0.8 * Math.min(1, Math.max(0, r.x)) + hot * 0.9);
       });
       if (cables.length) {
         scene.updateMatrixWorld();
         cables.forEach((c) => c.update());
       }
 
-      if (camTween) {
-        const k = Math.min(1, (t - camTween.start) / camTween.dur);
-        const e = easeInOut(k);
-        camera.position.lerpVectors(camTween.from.p, camTween.to.p, e);
-        controls.target.lerpVectors(camTween.from.t, camTween.to.t, e);
-        if (k >= 1) camTween = null;
-      }
       controls.update();
+      // place hotspot dots: robots at their tool tip, the car above its roof
+      if (robots.length) {
+        const w = mount.clientWidth, h = mount.clientHeight;
+        for (let i = 0; i <= robots.length; i++) {
+          const el = hotspotRefs.current[i];
+          if (!el) continue;
+          const r = robots[i];
+          if (r) r.joints[r.joints.length - 1].obj.getWorldPosition(tmpV);
+          else carBox.getCenter(tmpV).setY(carBox.max.y + 0.1);
+          tmpV.project(camera);
+          const busy = r ? engaged.has(r) : engaged.size > 0;
+          const visible = tmpV.z < 1 && Math.abs(tmpV.x) < 1.05 && Math.abs(tmpV.y) < 1.05 && !busy;
+          el.style.opacity = visible ? '1' : '0';
+          el.style.transform = `translate(${((tmpV.x + 1) / 2) * w}px, ${((1 - tmpV.y) / 2) * h}px)`;
+        }
+      }
       film.uniforms.uTime.value = t;
       composer.render();
 
@@ -432,6 +445,7 @@ export default function RobotLab() {
       renderer.domElement.removeEventListener('pointerdown', onDown);
       renderer.domElement.removeEventListener('pointerup', onUp);
       renderer.domElement.removeEventListener('pointermove', onMove);
+      renderer.domElement.removeEventListener('pointerleave', onLeave);
       controls.dispose();
       draco.dispose();
       composer.dispose();
@@ -453,6 +467,27 @@ export default function RobotLab() {
   return (
     <div className="fixed inset-0 bg-[#050506] text-white select-none" style={{ fontFamily: 'ui-monospace, monospace' }}>
       <div ref={mountRef} className="absolute inset-0" style={{ cursor: 'grab' }} />
+      {loaded &&
+        [...ROBOT_IDS, 'car'].map((id, i) => (
+          <div
+            key={id}
+            ref={(el) => {
+              hotspotRefs.current[i] = el;
+            }}
+            className="absolute left-0 top-0 pointer-events-none transition-opacity duration-500"
+            style={{ opacity: 0 }}
+          >
+            <span className="absolute -left-[14px] -top-[14px] h-[28px] w-[28px] rounded-full border border-white/70 animate-ping" />
+            <span className="absolute -left-[11px] -top-[11px] h-[22px] w-[22px] rounded-full border border-white/50 bg-white/10" />
+            <span className="absolute -left-[3px] -top-[3px] h-[6px] w-[6px] rounded-full bg-white shadow-[0_0_8px_2px_rgba(255,255,255,0.8)]" />
+          </div>
+        ))}
+      {loaded && !introDone && (
+        <div className="absolute inset-x-0 top-[14%] flex flex-col items-center gap-2 pointer-events-none text-center">
+          <span className="text-[11px] tracking-[0.4em] text-white/85 animate-pulse">CLICK A ROBOT TO MOVE IT</span>
+          <span className="text-[9px] tracking-[0.3em] text-white/40">CLICK THE CAR TO MOVE ALL FOUR · DRAG TO LOOK AROUND</span>
+        </div>
+      )}
       {!loaded && (
         <div className="absolute inset-0 flex items-center justify-center text-[10px] tracking-[0.35em] text-white/50">
           LOADING {progress}%
