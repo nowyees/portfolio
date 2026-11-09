@@ -524,11 +524,13 @@ export default function RobotLab() {
         }
 
       // dim the room around whatever is hovered or working (smoothly, ~0.2s)
-      const want = hovered || engaged.size ? 1 : 0;
+      // stage lighting only while hovering something idle; once clicked, the room goes back to normal for the move
+      const stage = hovered === 'car' ? (engaged.size ? null : 'car') : hovered && !engaged.has(hovered) ? hovered : null;
+      const want = stage ? 1 : 0;
       focus += (want - focus) * Math.min(1, dt * 7);
-      const carFocus = hovered === 'car' || engaged.size === robots.length;
+      const carFocus = stage === 'car';
       // the back wall's own glow stays on while hovering; only its spill and the other lights dim
-      const subject = hovered ?? (engaged.size === 1 ? [...engaged][0] : engaged.size ? 'car' : null);
+      const subject = stage;
       if (subject) {
         const box = subject === 'car' ? carBox : subject.box;
         box.getCenter(tmpV);
@@ -560,7 +562,7 @@ export default function RobotLab() {
         const w = Math.min(1, Math.max(0, r.x)) * (1 - breathe) + breathe;
         r.joints.forEach((j) => j.obj.quaternion.slerpQuaternions(j.rest, j.work, w));
         const hot = hovered === r || hovered === 'car' ? 1 : 0;
-        const lit = hot || engaged.has(r) ? 1 : 0; // in the spotlight while hovered or working
+        const lit = stage === r || stage === 'car' ? 1 : 0; // in the spotlight while hovered (not while moving)
         const glow = 1 + 3 * Math.min(1, Math.max(0, r.x)) + hot * 1.5 * (0.6 + 0.4 * Math.sin(t * 6));
         r.leds.forEach((m) => (m.emissiveIntensity = (m.userData.base ?? 1) * glow));
         const s = accentSpots[i];
