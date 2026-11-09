@@ -600,3 +600,22 @@
 .story-links { margin-top:clamp(48px,8vh,96px); }
 .story-links p { display:flex; flex-wrap:wrap; gap:12px 32px; }
 .story-links a { font:400 15px/1.4 var(--story-sans); }
+
+/* Space (desktop): a note either side of the orb, and the current page's tab as a black pill. */
+.space-note { display:none; }
+@media (min-width:1280px) {
+  .space-note { --orb-clear:max(calc(min(33vw, 31dvh, 315px) + 76px), 28.6vw); display:flex; flex-direction:column; position:absolute; top:50%; z-index:1; margin:0;
+    transform:translateY(-50%); pointer-events:none; font:400 12px/1.22 'Inter Tight', var(--sans); letter-spacing:.01em; color:var(--ink); }
+  .space-note.is-left { right:calc(50% + var(--orb-clear)); display:block; width:16.2em; text-transform:uppercase; }
+  .space-note.is-right { left:calc(50% + var(--orb-clear)); white-space:nowrap; }
+  .space-note-line { text-transform:uppercase; }
+  .space-note a { pointer-events:auto; }
+  .space-note a:hover { text-decoration:underline; text-underline-offset:3px; }
+  .space-note-rest { visibility:hidden; }
+  .space-note-caret { display:inline-block; width:1px; height:1em; margin:0 0 -.14em 1px; background:currentColor; animation:nav-caret .72s step-end infinite; }
+}
+@media (min-width:761px) {
+  .editorial-nav nav:has(.is-exposed) .editorial-tab.is-active { overflow:visible; }
+  .editorial-tab.is-exposed.is-active .editorial-tab-label { padding:4px 10px 3px; border-radius:999px; background:var(--ink); color:#fff; opacity:1; }
+  .editorial-tab.is-exposed.is-active .editorial-tab-caret { display:none; }
+}
