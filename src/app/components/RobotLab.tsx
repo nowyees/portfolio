@@ -105,13 +105,31 @@ export default function RobotLab() {
       );
       panel.position.set(0, wallY, wallZ);
       env.add(panel);
-      // faint top strip so upward-facing surfaces aren't pure black
-      const top = new THREE.Mesh(new THREE.PlaneGeometry(10, 2), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.25, 0.25, 0.27) }));
+      // overhead softbox (like the studio's area lights in Blender): upward-facing curves of the
+      // paint — e.g. the hood scoop — reflect a soft light instead of a black ceiling
+      const top = new THREE.Mesh(
+        new THREE.PlaneGeometry(9, 6),
+        new THREE.MeshBasicMaterial({ color: new THREE.Color(0.9, 0.9, 0.95).multiplyScalar(1.4), side: THREE.DoubleSide }),
+      );
       top.rotation.x = Math.PI / 2;
-      top.position.set(0, 7, 0);
+      top.position.set(0, 6.5, 0.5);
       env.add(top);
+      // soft fill on the viewer's side of the room: surfaces facing the camera (the hood scoop)
+      // reflect a dim grey instead of a black void
+      const front = new THREE.Mesh(
+        new THREE.PlaneGeometry(18, 7),
+        new THREE.MeshBasicMaterial({ color: new THREE.Color(0.55, 0.56, 0.6), side: THREE.DoubleSide }),
+      );
+      front.position.set(0, 3, 9);
+      env.add(front);
+      // dim surround so nothing reflects pure black
+      const dome = new THREE.Mesh(
+        new THREE.SphereGeometry(30, 16, 8),
+        new THREE.MeshBasicMaterial({ color: new THREE.Color(0.1, 0.1, 0.11), side: THREE.BackSide }),
+      );
+      env.add(dome);
       scene.environment?.dispose();
-      scene.environment = pmrem.fromScene(env, 0.02).texture;
+      scene.environment = pmrem.fromScene(env, 0.04).texture;
     };
     buildEnv(-6, 3, 16, 5);
 
@@ -134,6 +152,13 @@ export default function RobotLab() {
     scene.add(wallWash);
     // soft overhead spot on the car (kept low so the back wall stays the key light)
     const spot = new THREE.SpotLight(0xfff4e8, 50, 14, 0.6, 0.9, 1.6);
+    // "focus" stage lighting: hovering (or working) robots keep their light, the rest of the room dims
+    let wallMat: THREE.MeshStandardMaterial | null = null;
+    let focus = 0;
+    // key light that swings onto the hovered robot (or the car) from the viewer's side
+    const focusLight = new THREE.SpotLight(0xffffff, 0, 12, 0.32, 0.55, 1.4);
+    const focusAim = new THREE.Vector3(0, 1, 0);
+    scene.add(focusLight, focusLight.target);
     spot.position.set(0.3, 7, 1.2);
     spot.target.position.set(0, 0.4, 0);
     spot.castShadow = true;
@@ -243,6 +268,7 @@ export default function RobotLab() {
               m.color.set(0x000000);
               m.emissive.setRGB(0.88, 0.93, 1.0);
               m.emissiveIntensity = 4.5; // reads as white, not grey
+              wallMat = m;
               m.roughness = 0.6;
             }
             if (m.transmission > 0) {
@@ -375,7 +401,7 @@ export default function RobotLab() {
         root.updateMatrixWorld(true);
         cables.forEach((c) => c.update());
         setLoaded(true);
-        if (import.meta.env.DEV) (window as any).__lab = { renderer, composer, scene, reflector, spot }; // profiling in dev only
+        if (import.meta.env.DEV) (window as any).__lab = { renderer, composer, scene, reflector, spot, camera, controls, orbitPos: () => orbitPos }; // profiling in dev only
       },
       (e) => e.total && setProgress(Math.round((e.loaded / e.total) * 100)),
       (err) => console.error(err),
@@ -499,6 +525,26 @@ export default function RobotLab() {
           fn();
         }
 
+      // dim the room around whatever is hovered or working (smoothly, ~0.2s)
+      const want = hovered || engaged.size ? 1 : 0;
+      focus += (want - focus) * Math.min(1, dt * 7);
+      const carFocus = hovered === 'car' || engaged.size === robots.length;
+      if (wallMat) wallMat.emissiveIntensity = 4.5 * (1 - 0.8 * focus);
+      const subject = hovered ?? (engaged.size === 1 ? [...engaged][0] : engaged.size ? 'car' : null);
+      if (subject) {
+        const box = subject === 'car' ? carBox : subject.box;
+        box.getCenter(tmpV);
+        focusAim.lerp(tmpV, Math.min(1, dt * 8));
+      }
+      focusLight.target.position.copy(focusAim);
+      // sit between the camera and the subject, high up, so the faces the viewer sees get lit
+      focusLight.position.copy(camera.position).sub(focusAim).setY(0).normalize().multiplyScalar(3).add(focusAim).setY(focusAim.y + 4);
+      focusLight.angle = subject === 'car' ? 0.5 : 0.32;
+      focusLight.intensity = 160 * focus;
+      wallWash.intensity = 0.7 * (1 - 0.8 * focus);
+      scene.environmentIntensity = 0.2 * (1 - 0.7 * focus);
+      spot.intensity = 50 * (carFocus ? 1 + 0.8 * focus : 1 - 0.75 * focus);
+
       // robots: critically damped spring toward the target pose + slight idle breathing (no hard cuts)
       robots.forEach((r, i) => {
         const k = 7, c = 2 * Math.sqrt(k);
@@ -516,10 +562,14 @@ export default function RobotLab() {
         const w = Math.min(1, Math.max(0, r.x)) * (1 - breathe) + breathe;
         r.joints.forEach((j) => j.obj.quaternion.slerpQuaternions(j.rest, j.work, w));
         const hot = hovered === r || hovered === 'car' ? 1 : 0;
+        const lit = hot || engaged.has(r) ? 1 : 0; // in the spotlight while hovered or working
         const glow = 1 + 3 * Math.min(1, Math.max(0, r.x)) + hot * 1.5 * (0.6 + 0.4 * Math.sin(t * 6));
         r.leds.forEach((m) => (m.emissiveIntensity = (m.userData.base ?? 1) * glow));
         const s = accentSpots[i];
-        if (s) s.intensity = s.userData.base * (1 + 0.8 * Math.min(1, Math.max(0, r.x)) + hot * 0.9);
+        if (s)
+          s.intensity = lit
+            ? s.userData.base * (1 + 0.8 * Math.min(1, Math.max(0, r.x)) + 2.5 * focus)
+            : s.userData.base * (1 - 0.9 * focus);
       });
       if (cables.length) {
         scene.updateMatrixWorld();
