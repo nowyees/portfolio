@@ -120,9 +120,7 @@ export default function RobotLab() {
     controls.target.set(0, 0.85, 0);
     controls.maxPolarAngle = Math.PI * 0.48;
     controls.minDistance = 3;
-    controls.maxDistance = 7.8; // the room's walls are just beyond this
-    controls.minAzimuthAngle = -Math.PI * 0.3; // only the front half: behind the cell is the light wall
-    controls.maxAzimuthAngle = Math.PI * 0.3;
+    controls.maxDistance = 9; // further limited per direction by the room walls (see keepInRoom)
     controls.enablePan = false;
     controls.autoRotate = true;
     controls.autoRotateSpeed = 0.3;
@@ -162,6 +160,21 @@ export default function RobotLab() {
     composer.addPass(new OutputPass());
     const film = new ShaderPass(FilmShader);
     composer.addPass(film);
+
+    // camera may go anywhere inside this box (filled from the wall meshes once loaded)
+    const room = new THREE.Box3(new THREE.Vector3(-11, 0.2, -5.5), new THREE.Vector3(11, 7, 14));
+    const off = new THREE.Vector3();
+    const orbitPos = camera.position.clone();
+    const keepInRoom = () => {
+      off.subVectors(camera.position, controls.target);
+      let k = 1;
+      for (const ax of ['x', 'y', 'z'] as const) {
+        const p = controls.target[ax] + off[ax];
+        if (p > room.max[ax] && off[ax] > 0) k = Math.min(k, (room.max[ax] - controls.target[ax]) / off[ax]);
+        if (p < room.min[ax] && off[ax] < 0) k = Math.min(k, (room.min[ax] - controls.target[ax]) / off[ax]);
+      }
+      if (k < 1) camera.position.copy(controls.target).addScaledVector(off, Math.max(k, 0.05));
+    };
 
     const carPaint = new THREE.MeshPhysicalMaterial({
       name: 'Web_CarPaint', color: 0x5c080d, metalness: 0.55, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.04,
@@ -217,25 +230,11 @@ export default function RobotLab() {
             }
             // back wall is a frosted light wall: bright, slightly cool, so the robots read as silhouettes
             if (m.name === 'Wall_Frosted') {
-              // backlit frosted panels: lamps behind, brightest through the middle band, falling off up and down
+              // backlit frosted panels, every tile the same brightness
               m.color.set(0x000000);
               m.emissive.setRGB(0.88, 0.93, 1.0);
-              m.emissiveIntensity = 3.2;
+              m.emissiveIntensity = 1.6;
               m.roughness = 0.6;
-              m.onBeforeCompile = (sh: any) => {
-                sh.vertexShader = sh.vertexShader
-                  .replace('#include <common>', '#include <common>\nvarying vec3 vWallPos;')
-                  .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvWallPos = (modelMatrix * vec4(transformed, 1.0)).xyz;');
-                sh.fragmentShader = sh.fragmentShader
-                  .replace('#include <common>', '#include <common>\nvarying vec3 vWallPos;')
-                  .replace(
-                    '#include <emissivemap_fragment>',
-                    `#include <emissivemap_fragment>
-                    float band = exp(-pow((vWallPos.y - 2.3) / 1.9, 2.0));
-                    float side = 1.0 - 0.35 * smoothstep(3.0, 9.0, abs(vWallPos.x));
-                    totalEmissiveRadiance *= (0.18 + 0.82 * band) * side;`,
-                  );
-              };
             }
             if (m.transmission > 0) {
               m.transmission = 0; m.transparent = true; m.depthWrite = false;
@@ -304,6 +303,20 @@ export default function RobotLab() {
           const size = wb.getSize(new THREE.Vector3());
           buildEnv(wc.z, wc.y, Math.max(size.x, 4), Math.max(size.y, 2));
         }
+        // room interior from the wall meshes, so the camera can orbit all the way round without leaving it
+        const inner = (name: string, pick: (b: THREE.Box3, c: THREE.Vector3) => void) => {
+          const o = root.getObjectByName(name);
+          if (!o) return;
+          const b = new THREE.Box3().setFromObject(o);
+          pick(b, b.getCenter(new THREE.Vector3()));
+        };
+        inner('WallL', (b) => (room.min.x = b.max.x));
+        inner('WallR', (b) => (room.max.x = b.min.x));
+        inner('BackWall', (b, c) => (c.z < 0 ? (room.min.z = b.max.z) : (room.max.z = b.min.z)));
+        inner('WallFront', (b, c) => (c.z > 0 ? (room.max.z = b.min.z) : (room.min.z = b.max.z)));
+        inner('Ceiling', (b) => (room.max.y = b.min.y));
+        room.expandByScalar(-0.45);
+
         // accent cone over each robot; brightens while that robot works
         robots.forEach((r) => {
           const c = r.box.getCenter(new THREE.Vector3());
@@ -450,11 +463,12 @@ export default function RobotLab() {
         cables.forEach((c) => c.update());
       }
 
-      // idle drift swings back and forth inside the allowed arc instead of stopping at its edge
-      const az = controls.getAzimuthalAngle();
-      if (az > controls.maxAzimuthAngle - 0.02 && controls.autoRotateSpeed < 0) controls.autoRotateSpeed *= -1;
-      if (az < controls.minAzimuthAngle + 0.02 && controls.autoRotateSpeed > 0) controls.autoRotateSpeed *= -1;
+      // orbit on the unclamped position, then pull the rendered camera in front of any wall,
+      // so the viewing distance comes back by itself once the wall is no longer behind it
+      camera.position.copy(orbitPos);
       controls.update();
+      orbitPos.copy(camera.position);
+      keepInRoom();
       // place hotspot dots: robots at their tool tip, the car above its roof
       if (robots.length) {
         const w = mount.clientWidth, h = mount.clientHeight;
