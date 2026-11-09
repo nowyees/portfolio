@@ -20,5 +20,7 @@ export const router = createBrowserRouter([
   { path: "/freedive", Component: FreeDive },
   // three.js only loads when this route is visited
   { path: "/motion/:id?", lazy: async () => ({ Component: (await import("./components/MotionGallery")).default }) },
+  // Blender robot-hand car scene, real-time (three.js loads only here)
+  { path: "/lab/robot", lazy: async () => ({ Component: (await import("./components/RobotLab")).default }) },
   { path: "/lab", loader: () => redirect("/motion") },
 ]);
