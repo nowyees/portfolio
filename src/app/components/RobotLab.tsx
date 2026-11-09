@@ -10,6 +10,7 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { Reflector } from 'three/examples/jsm/objects/Reflector.js';
 import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js';
+import { mergeStatic } from '../../lib/mergeStatic';
 
 RectAreaLightUniformsLib.init();
 import { RobotCable, cableMaterial, type CableData } from '../../lib/robotCables';
@@ -144,13 +145,21 @@ export default function RobotLab() {
 
     // Glossy epoxy floor: planar mirror under the semi-transparent floor mesh
     const reflector = new Reflector(new THREE.PlaneGeometry(60, 60), {
-      textureWidth: Math.floor(mount.clientWidth * (touch ? 0.4 : 0.6)),
-      textureHeight: Math.floor(mount.clientHeight * (touch ? 0.4 : 0.6)),
+      textureWidth: Math.floor(mount.clientWidth * (touch ? 0.35 : 0.45)),
+      textureHeight: Math.floor(mount.clientHeight * (touch ? 0.35 : 0.45)),
       color: 0x3a3a3f,
     });
     reflector.rotation.x = -Math.PI / 2;
     reflector.position.y = -0.002;
     scene.add(reflector);
+    // The mirror re-renders the whole scene; refresh it every other frame (motion here is slow,
+    // a one-frame-old reflection is invisible). Same for the spot's shadow map.
+    let frameNo = 0;
+    const reflect = reflector.onBeforeRender.bind(reflector);
+    reflector.onBeforeRender = (...args: Parameters<typeof reflect>) => {
+      if (frameNo % 2 === 0) reflect(...args);
+    };
+    renderer.shadowMap.autoUpdate = false;
 
     const composer = new EffectComposer(renderer);
     composer.addPass(new RenderPass(scene, camera));
@@ -350,6 +359,10 @@ export default function RobotLab() {
         const body = root.getObjectByName('CarBody');
         if (body) carBox = new THREE.Box3().setFromObject(body).expandByScalar(0.15);
 
+        // ---- performance: ~1,400 meshes -> one per (moving part, material)
+        const merged = mergeStatic(root, (o) => /_J\d$/.test(o.name) || ROBOT_IDS.includes(o.name));
+        if (import.meta.env.DEV) console.info('[robot lab] meshes', merged.before, '->', merged.after);
+
         // ---- live cables
         const cableData = await cablesReq;
         if (disposed) return;
@@ -362,6 +375,7 @@ export default function RobotLab() {
         root.updateMatrixWorld(true);
         cables.forEach((c) => c.update());
         setLoaded(true);
+        if (import.meta.env.DEV) (window as any).__lab = { renderer, composer, scene, reflector, spot }; // profiling in dev only
       },
       (e) => e.total && setProgress(Math.round((e.loaded / e.total) * 100)),
       (err) => console.error(err),
@@ -535,6 +549,8 @@ export default function RobotLab() {
         }
       }
       film.uniforms.uTime.value = t;
+      frameNo++;
+      if (frameNo % 2 === 0) renderer.shadowMap.needsUpdate = true;
       composer.render();
 
       frames++;
