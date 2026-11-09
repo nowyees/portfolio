@@ -550,6 +550,19 @@ export default function RobotLab() {
     };
   }, []);
 
+  // Inside a Lab sheet: the sheet tells the scene when it has scrolled out of view, and the sound goes off with it.
+  // It stays off on the way back; the visitor turns it on again with the switch.
+  useEffect(() => {
+    if (!FRAMED) return;
+    const receive = (event: MessageEvent) => {
+      if (event.origin !== location.origin || event.data?.robotCell !== 'hidden') return;
+      audioRef.current?.setMuted(true);
+      setMuted(true);
+    };
+    window.addEventListener('message', receive);
+    return () => window.removeEventListener('message', receive);
+  }, []);
+
   const toggleSound = () => {
     const a = audioRef.current;
     if (!a) return;

@@ -56,6 +56,16 @@ function Plate({ e }: { e: Experiment }) {
     io.observe(el);
     return () => io.disconnect();
   }, []);
+  // A framed scene with sound (the robot cell) is told when its sheet leaves the view, so it can fall silent.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !piece.frame || !near) return;
+    const io = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) el.querySelector('iframe')?.contentWindow?.postMessage({ robotCell: 'hidden' }, location.origin);
+    });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [near, piece.frame]);
   return (
     <div ref={ref} className={'lab-sheet-plate is-live' + (piece.web ? ' is-web' : '') + (piece.frame ? ' is-frame' : '')}>
       {!near ? <Media media={e.media} alt={e.name} />
