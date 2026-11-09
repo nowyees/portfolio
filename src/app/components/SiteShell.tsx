@@ -5,7 +5,7 @@ type ActivePage = 'space' | 'projects' | 'motion' | 'about';
 const items: Array<{ key: ActivePage; label: string; index: string; to: string }> = [
   { key: 'space', label: 'Space', index: '1', to: '/' },
   { key: 'projects', label: 'Projects', index: '2', to: '/projects' },
-  { key: 'motion', label: 'Motion', index: '3', to: '/motion' },
+  { key: 'motion', label: 'Lab', index: '3', to: '/lab' },
   { key: 'about', label: 'About', index: '4', to: '/about' },
 ];
 const typedLabels = new Set<ActivePage>();

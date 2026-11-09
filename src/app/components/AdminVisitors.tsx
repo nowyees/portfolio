@@ -124,8 +124,8 @@ export default function AdminVisitors({ demo }: { demo?: Visit[] }) {
 
   const pageName = useMemo(() => {
     const titles = new Map(projects.map(p => ['/project/' + p.category + '/' + p.id, p.title]));
-    const fixed: Record<string, string> = { '/': 'Space (home)', '/projects': 'Projects', '/about': 'About', '/motion': 'Motion' };
-    return (path: string) => titles.get(path) || fixed[path] || (path.startsWith('/motion/') ? 'Motion · ' + path.slice(8) : path);
+    const fixed: Record<string, string> = { '/': 'Space (home)', '/projects': 'Projects', '/about': 'About', '/motion': 'Motion', '/lab': 'Lab' };
+    return (path: string) => titles.get(path) || fixed[path] || (path.startsWith('/motion/') ? 'Motion · ' + path.slice(8) : path.startsWith('/lab/') ? 'Lab · ' + path.slice(5) : path);
   }, [projects]);
 
   const a = useMemo(() => {

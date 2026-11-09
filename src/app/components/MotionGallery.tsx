@@ -1,9 +1,11 @@
 import React, { useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { Link, useNavigate, useParams } from 'react-router';
 import SiteShell from './SiteShell';
 import AstroTail from './AstroTail';
 import DualArmIK from './DualArmIK';
 import HorseMotion from './HorseMotion';
+import { experiments } from '../../lib/labExperiments';
+import '../../styles/lab.css';
 
 // Rigged pieces you can move, one at a time; the arrows (or ← →) step through them.
 type Guide = { pointer: [string, string]; touch: [string, string] };   // [Korean, English]
@@ -26,7 +28,7 @@ export default function MotionGallery() {
   const single = pieces.length < 2;
   const go = (step: number) => {
     if (single) return;
-    navigate('/motion/' + pieces[(index + step + pieces.length) % pieces.length].id, { replace: true });
+    navigate('/lab/' + pieces[(index + step + pieces.length) % pieces.length].id, { replace: true });
   };
 
   useEffect(() => {
@@ -52,7 +54,8 @@ export default function MotionGallery() {
         </p>}
         <button type="button" className="motion-arrow is-prev" aria-label="Previous piece" disabled={single} onClick={() => go(-1)}><span aria-hidden="true" /></button>
         <button type="button" className="motion-arrow is-next" aria-label="Next piece" disabled={single} onClick={() => go(1)}><span aria-hidden="true" /></button>
-        <p className="motion-caption"><em>{title}</em> — {note}<span className="motion-count">{count(index + 1)} / {count(pieces.length)}</span></p>
+        <Link to="/lab" className="lab-pill lab-back">[←] Lab index</Link>
+        <p className="motion-caption lab-glass"><span className="motion-code">[{experiments.find(e => e.to === '/lab/' + pieces[index].id)?.code}]</span><em>{title}</em> — {note}<span className="motion-count">{count(index + 1)} / {count(pieces.length)}</span></p>
       </main>
     </SiteShell>
   );

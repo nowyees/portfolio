@@ -19,8 +19,10 @@ export const router = createBrowserRouter([
   { path: "/admin/visitors", lazy: async () => ({ Component: (await import("./components/AdminVisitors")).default }) },
   { path: "/freedive", Component: FreeDive },
   // three.js only loads when this route is visited
-  { path: "/motion/:id?", lazy: async () => ({ Component: (await import("./components/MotionGallery")).default }) },
+  // Lab: the experiment index, and each live rig on its own page (three.js loads only there); /motion was its old name
+  { path: "/lab", lazy: async () => ({ Component: (await import("./components/Lab")).default }) },
+  { path: "/lab/:id", lazy: async () => ({ Component: (await import("./components/MotionGallery")).default }) },
+  { path: "/motion/:id?", loader: ({ params }) => redirect(params.id ? "/lab/" + params.id : "/lab") },
   // Blender robot-hand car scene, real-time (three.js loads only here)
   { path: "/lab/robot", lazy: async () => ({ Component: (await import("./components/RobotLab")).default }) },
-  { path: "/lab", loader: () => redirect("/motion") },
 ]);
