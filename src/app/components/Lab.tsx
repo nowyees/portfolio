@@ -39,7 +39,7 @@ function useReveal<T extends HTMLElement>() {
 // The live pieces themselves, mounted into their sheet once it comes near the screen (and kept after).
 type Piece = React.LazyExoticComponent<React.ComponentType<{ className?: string }>>;
 const pieces: Record<string, { Piece?: Piece; frame?: string; hint: string; type: string; open: string; web?: boolean }> = {
-  'EX-01': { Piece: lazy(() => import('./AstroTail')), hint: 'Move your cursor across it.', type: 'Live rig, runs in the browser.', open: 'Open full screen' },
+  'EX-01': { Piece: lazy(() => import('./AstroTail')), hint: 'Move your cursor across it. On a phone, tap around it and the tail swings to where you tapped.', type: 'Live rig, runs in the browser.', open: 'Open full screen' },
   'EX-02': { Piece: lazy(() => import('./DualArmIK')), hint: 'Drag an arm, click a hand to close its fingers. Double-click to reset.', type: 'Live rig, runs in the browser.', open: 'Open full screen' },
   'EX-03': { Piece: lazy(() => import('./HorseMotion')), hint: 'Click it to crouch, click again to rise.', type: 'Live rig, runs in the browser.', open: 'Open full screen' },
   'EX-04': { Piece: lazy(() => import('./MiroInteraction')), hint: 'Call Miro, then pick a gesture. Turn on the webcam to use your own hands.', type: 'Interactive web, gesture recognition.', open: 'Open the web', web: true },

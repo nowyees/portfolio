@@ -110,7 +110,10 @@ export default function AstroTail({ className }: { className?: string }) {
     // Hint beside the tail tip inviting the visitor to move the cursor; it stays, riding along with the tip.
     const hint = document.createElement('div');
     hint.className = 'astro-hint';
-    hint.innerHTML = '<span class="astro-hint-mark"><i></i></span><span class="astro-hint-label">Move</span>';
+    // On a touch screen the tail swings to where you tap (a drag would fight the page scroll), so the hint says so.
+    const touchScreen = window.matchMedia('(pointer: coarse)').matches;
+    if (touchScreen) hint.classList.add('is-click');
+    hint.innerHTML = `<span class="astro-hint-mark"><i></i></span><span class="astro-hint-label">${touchScreen ? 'Tap around' : 'Move'}</span>`;
     host.appendChild(hint);
     // A drawn cursor (ring + dot) in place of the system one, which is hard to see over the hairlines.
     const cursor = document.createElement('div');
@@ -428,6 +431,7 @@ export default function AstroTail({ className }: { className?: string }) {
       hint.classList.toggle('is-shown', hintShown);
       hintPoint.copy(P[P.length - 1]).project(camera);
       const x = (hintPoint.x + 1) / 2 * host.clientWidth, y = (1 - hintPoint.y) / 2 * host.clientHeight;
+      hint.classList.toggle('is-flip', x < host.clientWidth / 2);   // the word reads away from the body
       hint.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
     };
     const tick = (now: number) => {
@@ -441,14 +445,19 @@ export default function AstroTail({ className }: { className?: string }) {
       renderer.setRenderTarget(null); renderer.clear(); renderer.render(screenScene, quadCamera);
     };
 
+    let touched = false;
     const move = (event: PointerEvent) => {
+      // touch: only a tap aims the tail (sliding a finger scrolls the page), and the tail stays aimed after it
+      touched = event.pointerType === 'touch';
+      if (touched && event.type === 'pointermove') return;
       const r = host.getBoundingClientRect();
       pointer.x = (event.clientX - r.left) / r.width * 2 - 1; pointer.y = -((event.clientY - r.top) / r.height * 2 - 1);
       pointer.inside = true;
       cursor.style.transform = `translate(${event.clientX - r.left}px, ${event.clientY - r.top}px)`;
-      cursor.classList.toggle('is-shown', event.pointerType === 'mouse' || event.pointerType === 'pen');
+      cursor.classList.toggle('is-shown', true);
+      if (touched) setTimeout(() => cursor.classList.remove('is-shown'), 700);   // the tapped spot shows briefly
     };
-    const leave = () => { pointer.inside = false; cursor.classList.remove('is-shown'); };
+    const leave = () => { if (touched) return; pointer.inside = false; cursor.classList.remove('is-shown'); };
     host.addEventListener('pointerdown', move); host.addEventListener('pointermove', move); host.addEventListener('pointerleave', leave);
 
     const draco = new DRACOLoader().setDecoderPath('/draco/');

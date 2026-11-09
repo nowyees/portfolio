@@ -12,7 +12,7 @@ type Guide = { pointer: [string, string]; touch: [string, string] };   // [Korea
 const pieces: Array<{ id: string; title: string; note: string; guide?: Guide; Piece: React.ComponentType<{ className?: string }> }> = [
   { id: 'astronaut-tail', title: 'Graduation work', note: 'Robotic tail', Piece: AstroTail, guide: {
     pointer: ['마우스를 움직여 꼬리를 흔들어 보세요', 'Move your cursor to swing the tail'],
-    touch: ['화면을 쓸어 꼬리를 흔들어 보세요', 'Drag across the screen to swing the tail'] } },
+    touch: ['꼬리 주변을 탭하면 그쪽으로 휘어요', 'Tap around it to swing the tail'] } },
   { id: 'dual-arm-ik', title: 'Miro', note: 'Future home robotics', Piece: DualArmIK, guide: {
     pointer: ['선이 굵어지는 부분을 끌어서 움직여 보세요', 'Drag a part whose lines turn bold to move it'],
     touch: ['로봇의 부분을 끌어서 움직여 보세요', 'Drag a part of the robot to move it'] } },
