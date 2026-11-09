@@ -382,6 +382,20 @@ export default function RobotLab() {
       });
     };
     const focusRobot = (r: Robot) => work(r);
+    // idle nudge: when nobody has clicked for a while, one robot twitches a little —
+    // a hint that the arms respond, without starting a full move
+    let lastInput = 0;
+    let lastNudge = 0;
+    let nudgeIdx = 0;
+    const nudge = (t: number) => {
+      if (!robots.length || engaged.size || t - lastInput < 5 || t - lastNudge < 6.5) return;
+      lastNudge = t;
+      const r = robots[nudgeIdx++ % robots.length];
+      r.target = 0.2;
+      after(0.6, () => {
+        if (!engaged.has(r)) r.target = 0;
+      });
+    };
     const focusCar = () => robots.forEach((r, i) => work(r, i * 0.18));
 
     // ---- picking against per-robot / car boxes (cheap, no triangle raycast)
@@ -413,6 +427,7 @@ export default function RobotLab() {
       down = null;
       if (moved > 6) return; // a drag (orbit), not a click
       const target = pick(e);
+      lastInput = now();
       if (target) setIntroDone(true);
       if (target === 'car') focusCar();
       else if (target) focusRobot(target);
@@ -448,6 +463,7 @@ export default function RobotLab() {
       const dt = Math.min(clock.getDelta(), 0.05);
       const t = now();
 
+      nudge(t);
       for (let i = timers.length - 1; i >= 0; i--)
         if (t >= timers[i].at) {
           const fn = timers[i].fn;
@@ -461,12 +477,13 @@ export default function RobotLab() {
         r.v += (k * (r.target - r.x) - c * r.v) * dt;
         r.x += r.v * dt;
         const speed = Math.abs(r.v);
-        if (speed > 0.05) r.moving = true;
+        // the end-of-travel clunk only after a real move (an idle nudge peaks well below 0.4)
+        if (speed > 0.4) r.moving = true;
         else if (r.moving && Math.abs(r.target - r.x) < 0.01) {
           r.moving = false;
           audio.clunk();
         }
-        audio.setServo(i, speed);
+        audio.setServo(i, r.target === 0.2 || (!engaged.has(r) && r.target === 0) ? speed * 0.35 : speed);
         const breathe = 0.025 * (0.5 + 0.5 * Math.sin(t * 0.7 + r.phase));
         const w = Math.min(1, Math.max(0, r.x)) * (1 - breathe) + breathe;
         r.joints.forEach((j) => j.obj.quaternion.slerpQuaternions(j.rest, j.work, w));
@@ -553,15 +570,18 @@ export default function RobotLab() {
               hotspotRefs.current[i] = el;
             }}
             className="absolute left-0 top-0 pointer-events-none transition-opacity duration-500"
-            style={{ opacity: 0, mixBlendMode: 'difference' }} // stays visible over the white wall and the dark robots
+            // white with a dark halo so it reads over both the white wall and the black robots
+            style={{ opacity: 0, filter: 'drop-shadow(0 0 2px rgba(0,0,0,0.9)) drop-shadow(0 0 6px rgba(0,0,0,0.5))' }}
           >
-            <span className="absolute -left-[14px] -top-[14px] h-[28px] w-[28px] rounded-full border border-white/70 animate-ping" />
-            <span className="absolute -left-[11px] -top-[11px] h-[22px] w-[22px] rounded-full border border-white/50 bg-white/10" />
-            <span className="absolute -left-[3px] -top-[3px] h-[6px] w-[6px] rounded-full bg-white shadow-[0_0_8px_2px_rgba(255,255,255,0.8)]" />
+            {/* two staggered ripples, a steady ring and a bright core */}
+            <span className="absolute -left-[22px] -top-[22px] h-[44px] w-[44px] rounded-full border-2 border-white/80 animate-ping" style={{ animationDuration: '1.8s' }} />
+            <span className="absolute -left-[22px] -top-[22px] h-[44px] w-[44px] rounded-full border border-white/60 animate-ping" style={{ animationDuration: '1.8s', animationDelay: '0.9s' }} />
+            <span className="absolute -left-[14px] -top-[14px] h-[28px] w-[28px] rounded-full border-2 border-white/90 bg-white/15" />
+            <span className="absolute -left-[4px] -top-[4px] h-[8px] w-[8px] rounded-full bg-white shadow-[0_0_10px_3px_rgba(255,255,255,0.9)]" />
           </div>
         ))}
       {loaded && !introDone && !FRAMED && (
-        <div className="absolute inset-x-0 top-[14%] flex flex-col items-center gap-2 pointer-events-none text-center" style={{ mixBlendMode: 'difference' }}>
+        <div className="absolute inset-x-0 bottom-[16%] flex flex-col items-center gap-2 pointer-events-none text-center">
           <span className="text-[11px] tracking-[0.4em] text-white/85 animate-pulse">CLICK A ROBOT TO MOVE IT</span>
           <span className="text-[9px] tracking-[0.3em] text-white/40">CLICK THE CAR TO MOVE ALL FOUR · DRAG TO LOOK AROUND</span>
         </div>
