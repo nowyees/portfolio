@@ -54,8 +54,8 @@ export default function MotionGallery() {
         </p>}
         <button type="button" className="motion-arrow is-prev" aria-label="Previous piece" disabled={single} onClick={() => go(-1)}><span aria-hidden="true" /></button>
         <button type="button" className="motion-arrow is-next" aria-label="Next piece" disabled={single} onClick={() => go(1)}><span aria-hidden="true" /></button>
-        <Link to="/lab" className="lab-pill lab-back">[←] Lab index</Link>
-        <p className="motion-caption lab-glass"><span className="motion-code">[{experiments.find(e => e.to === '/lab/' + pieces[index].id)?.code}]</span><em>{title}</em> — {note}<span className="motion-count">{count(index + 1)} / {count(pieces.length)}</span></p>
+        <Link to="/lab" className="lab-pill lab-back">← Lab</Link>
+        <p className="motion-caption lab-glass"><span className="motion-code">{experiments.find(e => e.to === '/lab/' + pieces[index].id)?.code}</span><em>{title}</em> — {note}<span className="motion-count">{count(index + 1)} / {count(pieces.length)}</span></p>
       </main>
     </SiteShell>
   );

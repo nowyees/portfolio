@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import SiteShell from './SiteShell';
 import { experiments, type Experiment } from '../../lib/labExperiments';
@@ -22,9 +22,32 @@ function Media({ media, alt }: { media: Experiment['media']; alt: string }) {
     : <img src={media.src} alt={alt} width={media.w} height={media.h} loading="lazy" />;
 }
 
+// The live rigs themselves, mounted into their sheet once it comes near the screen (and kept after).
+const rigPieces: Record<string, { Piece: React.LazyExoticComponent<React.ComponentType<{ className?: string }>>; hint: string }> = {
+  '/lab/astronaut-tail': { Piece: lazy(() => import('./AstroTail')), hint: 'Move the cursor across it' },
+  '/lab/dual-arm-ik': { Piece: lazy(() => import('./DualArmIK')), hint: 'Drag a hand or an arm' },
+  '/lab/horse': { Piece: lazy(() => import('./HorseMotion')), hint: 'Click to crouch' },
+};
+function LiveRig({ e }: { e: Experiment }) {
+  const ref = useRef<HTMLDivElement>(null), [near, setNear] = useState(false), rig = rigPieces[e.to];
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) { setNear(true); io.disconnect(); } }, { rootMargin: '400px 0px' });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  return (
+    <div ref={ref} className="lab-sheet-plate is-live">
+      {near ? <Suspense fallback={null}><rig.Piece className="lab-rig" /></Suspense> : <Media media={e.media} alt={e.name} />}
+      <span className="lab-live-hint"><i />{rig.hint}</span>
+    </div>
+  );
+}
+
 const Go = ({ e }: { e: Experiment }) => e.external
   ? <a className="lab-go" href={e.to} target="_blank" rel="noreferrer">{e.action} ↗</a>
-  : <Link className="lab-go" to={e.to}>{e.action} →</Link>;
+  : <Link className="lab-go" to={e.to}>{e.kind === 'RIG' ? 'Open full screen' : e.action} →</Link>;
 
 // The cover: an image band, a giant word block, and the specimen floating across the seam.
 function Cover() {
@@ -103,12 +126,12 @@ function Sheet({ e }: { e: Experiment }) {
   return (
     <article className="lab-card lab-sheet" id={e.code} aria-labelledby={e.code + '-name'}>
       <div className="lab-cell lab-sheet-head"><h3 id={e.code + '-name'}>{e.name} — {e.field}</h3></div>
-      <div className="lab-cell lab-sheet-mark"><span>{e.code}</span><b>Jaydne Lab</b></div>
+      <div className="lab-cell lab-sheet-mark"><span>{e.code}</span><span>{e.kind === 'RIG' ? 'Live rig' : 'Study'}</span></div>
       <div className="lab-cell lab-sheet-text">
         <p>{e.note}</p>
         <p className="lab-sheet-big">{e.name}</p>
       </div>
-      <div className="lab-cell lab-sheet-media"><div className={plate}><Media media={e.media} alt={e.name} /></div></div>
+      <div className="lab-cell lab-sheet-media">{rigPieces[e.to] ? <LiveRig e={e} /> : <div className={plate}><Media media={e.media} alt={e.name} /></div>}</div>
       <div className="lab-cell lab-sheet-go"><Go e={e} /></div>
       <div className="lab-cell lab-sheet-spec">
         <h4>Experiment characteristics</h4>
