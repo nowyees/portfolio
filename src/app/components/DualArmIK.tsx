@@ -256,7 +256,8 @@ export default function DualArmIK({ className }: { className?: string }) {
         else for (const o of selectable) if (o.userData.control === h.control) hintBox.union(partBox.setFromObject(o));
         if (hintBox.isEmpty()) continue;
         hintBox.getCenter(hintPoint);
-        if (!h.hand && !h.control.startsWith('arm_')) hintPoint.x += (hintBox.max.x - hintPoint.x) * (h.control === 'head' ? .25 : .5);   // head and base: toward their right edge, so the word sits clear of the body
+        if (!h.hand && !h.control.startsWith('arm_')) hintPoint.x += (hintBox.max.x - hintPoint.x) * (h.control === 'head' ? .08 : .5);
+        if (h.control === 'head') hintPoint.y += (hintBox.max.y - hintPoint.y) * .6;   // up by the crown, where the head turns   // head and base: toward their right edge, so the word sits clear of the body
         hintPoint.project(camera);
         h.el.style.transform = `translate(${((hintPoint.x + 1) / 2 * host.clientWidth).toFixed(1)}px, ${((1 - hintPoint.y) / 2 * host.clientHeight).toFixed(1)}px)`;
         h.el.classList.add('is-shown');
