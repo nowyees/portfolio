@@ -155,7 +155,8 @@ export default function RobotLab() {
     const composer = new EffectComposer(renderer);
     composer.addPass(new RenderPass(scene, camera));
     composer.addPass(new ShaderPass(SanitizeShader));
-    composer.addPass(new UnrealBloomPass(new THREE.Vector2(mount.clientWidth, mount.clientHeight), 0.24, 0.25, 1.0));
+    const bloom = new UnrealBloomPass(new THREE.Vector2(mount.clientWidth, mount.clientHeight), 0.24, 0.25, 1.0);
+    composer.addPass(bloom);
     composer.addPass(new OutputPass());
     const film = new ShaderPass(FilmShader);
     composer.addPass(film);
@@ -455,8 +456,21 @@ export default function RobotLab() {
     };
     window.addEventListener('resize', onResize);
 
+    // ---- adaptive quality: a machine that can't hold ~30fps steps down one level at a time (resolution, then the
+    // floor mirror, then the glow, then resolution again) until it can. Fast machines never leave level 0.
+    let quality = 0, slowFor = 0, calmUntil = performance.now() + 4000;   // measure only once loading has settled
+    const stepDown = () => {
+      quality++;
+      mount.dataset.quality = String(quality);
+      calmUntil = performance.now() + 2500;   // let each step take effect before judging again
+      if (quality === 1) { renderer.setPixelRatio(1); composer.setPixelRatio(1); onResize(); }
+      else if (quality === 2) reflector.visible = false;
+      else if (quality === 3) bloom.enabled = false;
+      else if (quality === 4) { renderer.setPixelRatio(0.7); composer.setPixelRatio(0.7); onResize(); }
+    };
+
     // ---- loop
-    let frames = 0, acc = 0, raf = 0;
+    let frames = 0, acc = 0, raf = 0, wall = performance.now();
     const tmpV = new THREE.Vector3();
     const tick = () => {
       raf = requestAnimationFrame(tick);
@@ -527,8 +541,15 @@ export default function RobotLab() {
       acc += dt;
       if (acc > 0.5) {
         setFps(Math.round(frames / acc));
+        // real frame rate (dt is capped, so it can't tell how slow a slow machine is)
+        const real = frames / ((performance.now() - wall) / 1000);
+        if (performance.now() > calmUntil && quality < 4) {
+          slowFor = real < 30 ? slowFor + 1 : 0;
+          if (slowFor >= 3) { stepDown(); slowFor = 0; }
+        }
         frames = 0;
         acc = 0;
+        wall = performance.now();
       }
     };
     tick();

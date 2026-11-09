@@ -46,29 +46,45 @@ const pieces: Record<string, { Piece?: Piece; frame?: string; hint: string; type
   'EX-02': { Piece: lazy(() => import('./DualArmIK')), hint: 'Drag an arm, click a hand to close its fingers. Double-click to reset.', type: 'Live rig, runs in the browser.', open: 'Open full screen' },
   'EX-03': { Piece: lazy(() => import('./HorseMotion')), hint: 'Click it to crouch, click again to rise.', type: 'Live rig, runs in the browser.', open: 'Open full screen' },
   'EX-04': { Piece: lazy(() => import('./MiroInteraction')), hint: 'Call Miro, then pick a gesture. Turn on the webcam to use your own hands.', type: 'Interactive web, gesture recognition.', open: 'Open the web', web: true },
-  // the robot cell is a full-screen scene of its own (with sound): the sheet shows its recording and links to it
-  'EX-05': { frame: '/lab/robot', hint: 'Open it full screen, then click a robot to move it, or the car to move all four. Drag to look around. It is heavy: a recent computer plays it best.', type: 'Real-time scene, Blender to three.js.', open: 'Open full screen' },
+  // the robot cell is a full-screen scene of its own (with sound), so the sheet runs it in a frame when asked
+  'EX-05': { frame: '/lab/robot', hint: 'Run it here, then click a robot to move it, or the car to move all four. Drag to look around. On a slower computer it lowers its own quality to keep up.', type: 'Real-time scene, Blender to three.js.', open: 'Open full screen' },
 };
 
 // A piece runs only while its sheet is on or near the screen and is taken down again once it is well away, so no
-// more than one or two run at a time. The robot cell is too heavy to run inside the page: its sheet plays the
-// recording and the live scene opens full screen.
+// more than one or two run at a time. The robot cell is heavy: its sheet plays the recording until the visitor runs
+// it (it then lowers its own quality on a slower machine).
+// On a phone a drag on the piece would fight the page scroll, so each piece shows its recording until tapped: then
+// it runs in place and takes the touches (the page stops scrolling there) until "Done" hands them back.
 function Plate({ e }: { e: Experiment }) {
   const ref = useRef<HTMLDivElement>(null), piece = pieces[e.code];
-  const [near, setNear] = useState(false);
-  const [phone] = useState(isPhone), still = (phone && !piece.web) || !!piece.frame;
+  const [near, setNear] = useState(false), [run, setRun] = useState(false);
+  const [phone] = useState(isPhone), tap = phone && !piece.web;
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const io = new IntersectionObserver(([entry]) => setNear(entry.isIntersecting), { rootMargin: '200px 0px' });
+    const io = new IntersectionObserver(([entry]) => { setNear(entry.isIntersecting); if (!entry.isIntersecting) setRun(false); }, { rootMargin: '200px 0px' });
     io.observe(el);
     return () => io.disconnect();
   }, []);
+  // The running robot cell is told when its sheet leaves the view and comes back, so its sound follows.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !piece.frame || !run) return;
+    const io = new IntersectionObserver(([entry]) => {
+      el.querySelector('iframe')?.contentWindow?.postMessage({ robotCell: entry.isIntersecting ? 'shown' : 'hidden' }, location.origin);
+    });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [run, piece.frame]);
+  const asked = !!piece.frame || tap;   // pieces that wait for a tap or click before running
+  const live = near && (!asked || run);
   return (
-    <div ref={ref} className={'lab-sheet-plate is-live' + (piece.web ? ' is-web' : '') + (piece.frame ? ' is-frame' : '') + (e.media.fill ? ' is-fill' : '')}>
-      {!near || still || !piece.Piece ? <Media media={e.media} alt={e.name} />
-        : <Suspense fallback={null}><piece.Piece className={'lab-rig' + (piece.web ? ' lab-web' : '')} /></Suspense>}
-      {still && <Link className="lab-phone-note" to={e.to}>{piece.frame ? 'Play it live, full screen →' : 'Best on a computer · Play full screen →'}</Link>}
+    <div ref={ref} className={'lab-sheet-plate is-live' + (piece.web ? ' is-web' : '') + (piece.frame ? ' is-frame' : '') + (e.media.fill ? ' is-fill' : '') + (tap && run ? ' is-playing' : '')}>
+      {!live ? <Media media={e.media} alt={e.name} />
+        : piece.frame ? <iframe className="lab-frame" src={piece.frame} title={e.name} allow="autoplay; fullscreen" />
+        : piece.Piece && <Suspense fallback={null}><piece.Piece className={'lab-rig' + (piece.web ? ' lab-web' : '')} /></Suspense>}
+      {asked && !run && <button type="button" className="lab-phone-note" onClick={() => setRun(true)}>{tap ? 'Tap to play' : 'Run it here →'}</button>}
+      {tap && run && <button type="button" className="lab-phone-note is-done" onClick={() => setRun(false)}>Done</button>}
     </div>
   );
 }
