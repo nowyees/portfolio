@@ -127,7 +127,6 @@ function Sheet({ e }: { e: Experiment }) {
       <div className="lab-cell lab-sheet-mark"><span>{e.code}</span><span>Live rig</span></div>
       <div className="lab-cell lab-sheet-text">
         <p>{e.note}</p>
-        <p className="lab-sheet-big">{e.name}</p>
       </div>
       <div className="lab-cell lab-sheet-media"><LiveRig e={e} /></div>
       <div className="lab-cell lab-sheet-go"><Link className="lab-go" to={e.to}>Open full screen →</Link></div>
