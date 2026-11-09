@@ -70,7 +70,7 @@ export default function SiteShell({ active, children }: { active: ActivePage; ch
     <a href="#page-content" className="skip-link">Skip to content</a>
     <header className="editorial-nav">
       <div className="editorial-nav-center">
-        <Link to="/" className="editorial-brand" aria-label="Lee Jae Woong — home">LJ .W</Link>
+        <Link to="/" className="editorial-brand" aria-label="Jaydne Studio — home">Jaydne. Studio</Link>
         <nav aria-label="Main">
           {items.map(item => <TypingTab key={item.key} item={item} active={active === item.key} exposed />)}
         </nav>

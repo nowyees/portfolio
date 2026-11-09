@@ -6,11 +6,11 @@ import { easeInOut, holdPageEnter, prefersReducedMotion, projectKey, recedeIntoP
 
 type Arrival = { start: number; from: Array<{ x: number; y: number; w: number } | null> };
 
-// The two notes beside the orb (desktop). On the first visit of a session they type themselves in, left then right;
+// The two notes beside the orb (desktop). On the first visit of a session they type themselves in, both at once;
 // after that (and with reduced motion) they are simply there. Untyped text keeps its place, so nothing shifts.
 const INTRO = 'Exploring the space between objects, people and the stories that connect them.';
 const CONTACT = ['Contact', '→', 'ljwoong1104@gmail.com'];
-const typeCadence = [34, 58, 28, 46, 38, 64, 30, 52];
+const typeCadence = [16, 26, 12, 22, 18, 30, 14, 24];
 let introTyped = false;
 function useTyped(total: number) {
   const [count, setCount] = useState(introTyped ? total : 0);
@@ -24,7 +24,7 @@ function useTyped(total: number) {
       n += 1; setCount(n);
       if (n < total) timer = window.setTimeout(next, typeCadence[n % typeCadence.length]); else introTyped = true;
     };
-    timer = window.setTimeout(next, 700);   // let the orb arrive first
+    timer = window.setTimeout(next, 450);   // let the orb arrive first
     return () => window.clearTimeout(timer);
   }, [total]);
   return count;
@@ -35,8 +35,8 @@ function Typed({ text, from, count }: { text: string; from: number; count: numbe
   return <><span>{text.slice(0, shown)}</span>{typing && <i className="space-note-caret" aria-hidden="true" />}<span className="space-note-rest" aria-hidden="true">{text.slice(shown)}</span></>;
 }
 function SpaceNotes() {
-  const total = INTRO.length + CONTACT.join('').length, count = useTyped(total);
-  let at = INTRO.length;
+  const total = Math.max(INTRO.length, CONTACT.join('').length), count = useTyped(total);
+  let at = 0;   // the right note types alongside the left one
   return <>
     <p className="space-note is-left" aria-label={INTRO}><Typed text={INTRO} from={0} count={count} /></p>
     <p className="space-note is-right">
