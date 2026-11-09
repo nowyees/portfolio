@@ -34,7 +34,7 @@
 
 /* right column: the live piece on a pale plate */
 .lab-sheet-media { padding:6px; }
-.lab-sheet-plate { position:relative; width:100%; aspect-ratio:16 / 9; max-height:calc(100svh - 120px); overflow:hidden; background:#f4f4f2; display:flex; align-items:center; justify-content:center; }
+.lab-sheet-plate { position:relative; width:100%; aspect-ratio:16 / 9; max-height:calc(100svh - 120px); overflow:hidden; background:#fff; display:flex; align-items:center; justify-content:center; }
 .lab-sheet-plate > img, .lab-sheet-plate > video { width:84%; height:88%; object-fit:contain; mix-blend-mode:multiply; }
 .lab-sheet-plate.is-web { aspect-ratio:auto; height:min(calc(100svh - 120px), 860px); max-height:none; }
 .lab-sheet-plate.is-web > img, .lab-sheet-plate.is-web > video { width:auto; height:80%; }

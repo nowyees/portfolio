@@ -69,15 +69,20 @@ export default function DualArmIK({ className }: { className?: string }) {
     };
     const observer = new ResizeObserver(resize); observer.observe(host); resize();
     const cursor = document.createElement('div'); cursor.className = 'astro-cursor'; host.appendChild(cursor);
-    // Standing hints on every part that moves, as on the tail: drag an arm, click a hand. The robot faces us, so its
-    // right side is on screen left; hints there read outward (to the left).
-    const hints = (['L', 'R'] as const).flatMap(side => (['arm', 'hand'] as const).map(kind => {
-      const el = document.createElement('div');
-      el.className = `astro-hint ${kind === 'arm' ? 'is-drag' : 'is-click'}${side === 'R' ? ' is-flip' : ''}`;
-      el.innerHTML = `<span class="astro-hint-mark"><i></i></span><span class="astro-hint-label">${kind === 'arm' ? 'Drag' : 'Click'}</span>`;
+    // Standing hints on every part that moves, as on the tail: turn the head, drag an arm, click a hand, drag the
+    // wheelbase. The robot faces us, so its right side is on screen left; hints there read outward (to the left).
+    type Hint = { el: HTMLDivElement; control: string; hand?: string };
+    const hint = (control: string, label: string, kind: string, hand?: string): Hint => {
+      const el = document.createElement('div'); el.className = `astro-hint ${kind}`;
+      el.innerHTML = `<span class="astro-hint-mark"><i></i></span><span class="astro-hint-label">${label}</span>`;
       host.appendChild(el);
-      return { el, side, kind };
-    }));
+      return { el, control, hand };
+    };
+    const hints = [
+      hint('head', 'Turn', ''), hint('base', 'Drag', ''),
+      hint('arm_L', 'Drag', 'is-drag'), hint('arm_R', 'Drag', 'is-drag is-flip'),
+      hint('', 'Click', 'is-click', 'L'), hint('', 'Click', 'is-click is-flip', 'R'),
+    ];
     const hintPoint = new THREE.Vector3(), hintBox = new THREE.Box3(), partBox = new THREE.Box3();
     const pointer = new THREE.Vector2(), ray = new THREE.Raycaster();
     let pressed = false, dragged = false, selection: RobotSelection | null = null, hovered: RobotSelection | null = null;
@@ -247,10 +252,12 @@ export default function DualArmIK({ className }: { className?: string }) {
       highlight(pressed ? selection : hovered);
       if (controls) for (const h of hints) {
         hintBox.makeEmpty();
-        if (h.kind === 'hand') hintBox.setFromObject(controls.hands[h.side]);
-        else for (const o of selectable) if (o.userData.control === `arm_${h.side}`) hintBox.union(partBox.setFromObject(o));
+        if (h.hand) hintBox.setFromObject(controls.hands[h.hand]);
+        else for (const o of selectable) if (o.userData.control === h.control) hintBox.union(partBox.setFromObject(o));
         if (hintBox.isEmpty()) continue;
-        hintBox.getCenter(hintPoint).project(camera);
+        hintBox.getCenter(hintPoint);
+        if (!h.hand && !h.control.startsWith('arm_')) hintPoint.x += (hintBox.max.x - hintPoint.x) * (h.control === 'head' ? .25 : .5);   // head and base: toward their right edge, so the word sits clear of the body
+        hintPoint.project(camera);
         h.el.style.transform = `translate(${((hintPoint.x + 1) / 2 * host.clientWidth).toFixed(1)}px, ${((1 - hintPoint.y) / 2 * host.clientHeight).toFixed(1)}px)`;
         h.el.classList.add('is-shown');
       }

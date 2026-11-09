@@ -54,7 +54,8 @@ export default function HorseMotion({ className }: { className?: string }) {
     edgeScene.add(new THREE.Mesh(plane, edge)); screenScene.add(new THREE.Mesh(plane, down));
     let radius = 1.9, modelScale = 1;
     // A standing hint on its body, as on the tail: what to do (click), always shown.
-    const hintAnchor = new THREE.Vector3(NaN, 0, 0), hintPoint = new THREE.Vector3();
+    let hintShell: THREE.Mesh | null = null;   // the largest shell riding the body bone: the hint rides with it
+    const hintLocal = new THREE.Vector3(), hintPoint = new THREE.Vector3();
     const resize = () => {
       const w = Math.max(1, host.clientWidth), h = Math.max(1, host.clientHeight);
       const dpr = Math.min(window.devicePixelRatio || 1, 2), ratio = dpr * 2;
@@ -108,6 +109,9 @@ export default function HorseMotion({ className }: { className?: string }) {
       });
       const boneOf = gait.parts.map(name => rig.parts.find(p => p.name === name)!.bone);
       const names = [...new Set(boneOf)], body = 'Bone.026';
+      hintShell = shells.filter((_, i) => boneOf[i] === body).map(o => o as THREE.Mesh)
+        .sort((a, b) => b.geometry.attributes.position.count - a.geometry.attributes.position.count)[0] ?? null;
+      if (hintShell) { hintShell.geometry.computeBoundingBox(); hintShell.geometry.boundingBox!.getCenter(hintLocal); }
       const parentOf = (name: string) => {
         for (let b = rig.bones[name].parent; b; b = rig.bones[b].parent) if (names.includes(b)) return b;
         return name === body ? null : body;
@@ -167,7 +171,6 @@ export default function HorseMotion({ className }: { className?: string }) {
       stand = toLocal(gait.stand); crouch = toLocal(gait.crouch);
       walk = gait.walk.poses.map(toLocal);
       const bounds = new THREE.Box3().setFromObject(gltf.scene);
-      hintAnchor.set((bounds.min.x + bounds.max.x) / 2, bounds.min.y + (bounds.max.y - bounds.min.y) * .74, (bounds.min.z + bounds.max.z) / 2);   // on the body
       radius = bounds.getBoundingSphere(new THREE.Sphere()).radius; resize();
       setStatus('');
     }).catch(error => { if (!disposed) { console.error('HORSE motion:', error); setStatus('HORSE could not load. Please refresh.'); } });
@@ -269,8 +272,9 @@ export default function HorseMotion({ className }: { className?: string }) {
         host.dataset.motionState = ready ? 'ready' : 'walking';
       }
       const hint = hintRef.current;
-      if (hint && !Number.isNaN(hintAnchor.x)) {
-        hintPoint.copy(hintAnchor).applyMatrix4(modelRoot.matrixWorld).project(camera);
+      if (hint && hintShell) {
+        hintShell.updateWorldMatrix(true, false);
+        hintPoint.copy(hintLocal).applyMatrix4(hintShell.matrixWorld).project(camera);
         hint.style.transform = `translate(${((hintPoint.x + 1) / 2 * host.clientWidth).toFixed(1)}px, ${((1 - hintPoint.y) / 2 * host.clientHeight).toFixed(1)}px)`;
         hint.classList.add('is-shown');
       }
