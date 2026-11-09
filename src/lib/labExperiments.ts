@@ -16,7 +16,7 @@ export const experiments: Experiment[] = [
   { code: 'EX-02', name: 'Miro arm', field: 'Future home robotics', kind: 'RIG',
     note: "Miro's two arms on inverse kinematics. Drag a hand or an arm and every joint follows, showing how far the robot can reach.",
     tools: 'Blender / Three.js / IK', input: 'Drag the hands',
-    media: { src: '/projects/lab/miro-arm.webp', w: 560, h: 576 },
+    media: { src: '/projects/lab/miro-arm.mp4', poster: '/projects/lab/miro-arm-poster.webp', w: 720, h: 720, video: true },
     to: '/lab/dual-arm-ik', action: 'Run experiment' },
   { code: 'EX-03', name: 'Reckless', field: 'Racing quadruped', kind: 'RIG',
     note: 'The start position of a racing quadruped. Click and it lowers its body and plants all four feet flat on the ground.',
