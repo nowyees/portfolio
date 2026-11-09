@@ -153,7 +153,6 @@ export default function RobotLab() {
     // soft overhead spot on the car (kept low so the back wall stays the key light)
     const spot = new THREE.SpotLight(0xfff4e8, 50, 14, 0.6, 0.9, 1.6);
     // "focus" stage lighting: hovering (or working) robots keep their light, the rest of the room dims
-    let wallMat: THREE.MeshStandardMaterial | null = null;
     let focus = 0;
     // key light that swings onto the hovered robot (or the car) from the viewer's side
     const focusLight = new THREE.SpotLight(0xffffff, 0, 12, 0.32, 0.55, 1.4);
@@ -268,7 +267,6 @@ export default function RobotLab() {
               m.color.set(0x000000);
               m.emissive.setRGB(0.88, 0.93, 1.0);
               m.emissiveIntensity = 4.5; // reads as white, not grey
-              wallMat = m;
               m.roughness = 0.6;
             }
             if (m.transmission > 0) {
@@ -529,7 +527,7 @@ export default function RobotLab() {
       const want = hovered || engaged.size ? 1 : 0;
       focus += (want - focus) * Math.min(1, dt * 7);
       const carFocus = hovered === 'car' || engaged.size === robots.length;
-      if (wallMat) wallMat.emissiveIntensity = 4.5 * (1 - 0.8 * focus);
+      // the back wall's own glow stays on while hovering; only its spill and the other lights dim
       const subject = hovered ?? (engaged.size === 1 ? [...engaged][0] : engaged.size ? 'car' : null);
       if (subject) {
         const box = subject === 'car' ? carBox : subject.box;
