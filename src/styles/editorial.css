@@ -7,8 +7,8 @@
 }
 
 /* Keep every navigation label visible. */
-.editorial-nav-center:has(.is-exposed) { gap:17px; }
-.editorial-nav nav:has(.is-exposed) { gap:3px; }
+.editorial-nav-center:has(.is-exposed) { gap:36px; }
+.editorial-nav nav:has(.is-exposed) { gap:22px; }
 .editorial-nav nav:has(.is-exposed) .editorial-tab { width:auto; }
 .editorial-nav nav:has(.is-exposed) .editorial-tab-label { font-size:13px; letter-spacing:.01em; }
 .editorial-tab.is-exposed::before { opacity:0; }
@@ -166,6 +166,7 @@
 }
 @media (max-width:600px) {
   .editorial-nav-center, .editorial-nav-center:has(.is-exposed) { gap:13px; }
+  .editorial-nav nav:has(.is-exposed) { gap:3px; }
   .editorial-nav nav:has(.is-exposed) .editorial-tab-label { font-size:11px; letter-spacing:.02em; }
   .editorial-brand { font-size:15px; }
   .editorial-tab { min-height:27px; }
