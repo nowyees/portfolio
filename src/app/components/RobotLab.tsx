@@ -131,6 +131,16 @@ export default function RobotLab() {
     // everything reads as a silhouette with rim light from behind.
     const wallWash = new THREE.RectAreaLight(0xdfe8ff, 0.7, 16, 5);
     scene.add(wallWash);
+    // soft overhead spot on the car (kept low so the back wall stays the key light)
+    const spot = new THREE.SpotLight(0xfff4e8, 50, 14, 0.6, 0.9, 1.6);
+    spot.position.set(0.3, 7, 1.2);
+    spot.target.position.set(0, 0.4, 0);
+    spot.castShadow = true;
+    spot.shadow.mapSize.set(touch ? 1024 : 2048, touch ? 1024 : 2048);
+    spot.shadow.bias = -0.0004;
+    scene.add(spot, spot.target);
+    // accent cone over each robot (placed once the model is loaded); brightens while it works or is hovered
+    const accentSpots: THREE.SpotLight[] = [];
 
     // Glossy epoxy floor: planar mirror under the semi-transparent floor mesh
     const reflector = new Reflector(new THREE.PlaneGeometry(60, 60), {
@@ -145,7 +155,7 @@ export default function RobotLab() {
     const composer = new EffectComposer(renderer);
     composer.addPass(new RenderPass(scene, camera));
     composer.addPass(new ShaderPass(SanitizeShader));
-    composer.addPass(new UnrealBloomPass(new THREE.Vector2(mount.clientWidth, mount.clientHeight), 0.16, 0.15, 1.0));
+    composer.addPass(new UnrealBloomPass(new THREE.Vector2(mount.clientWidth, mount.clientHeight), 0.32, 0.35, 1.0));
     composer.addPass(new OutputPass());
     const film = new ShaderPass(FilmShader);
     composer.addPass(film);
@@ -292,6 +302,35 @@ export default function RobotLab() {
           const size = wb.getSize(new THREE.Vector3());
           buildEnv(wc.z, wc.y, Math.max(size.x, 4), Math.max(size.y, 2));
         }
+        // drop the two side control cabinets (and everything sitting inside their footprint:
+        // door lines, screens, handles, vents, stack lights)
+        const cabinetZones = ['Cabinet', 'Cabinet001']
+          .map((n) => root.getObjectByName(n))
+          .filter((o): o is THREE.Object3D => !!o)
+          .map((o) => {
+            const b = new THREE.Box3().setFromObject(o).expandByScalar(0.1);
+            b.max.y += 1.2; // stack light pole above the cabinet
+            return b;
+          });
+        if (cabinetZones.length) {
+          const mb = new THREE.Box3();
+          root.traverse((o: any) => {
+            if (!o.isMesh) return;
+            mb.setFromObject(o);
+            if (/^(Cabinet|Stack)/.test(o.name) || cabinetZones.some((z) => z.containsBox(mb))) o.visible = false;
+          });
+        }
+
+        robots.forEach((r) => {
+          const c = r.box.getCenter(new THREE.Vector3());
+          const s = new THREE.SpotLight(0xffffff, 0, 9, 0.32, 0.6, 1.5);
+          s.position.set(c.x, 6.2, c.z);
+          s.target.position.set(c.x, 0, c.z);
+          s.userData.base = 24;
+          scene.add(s, s.target);
+          accentSpots.push(s);
+        });
+
         // room interior from the wall meshes, so the camera can orbit all the way round without leaving it
         const inner = (name: string, pick: (b: THREE.Box3, c: THREE.Vector3) => void) => {
           const o = root.getObjectByName(name);
@@ -434,6 +473,8 @@ export default function RobotLab() {
         const hot = hovered === r || hovered === 'car' ? 1 : 0;
         const glow = 1 + 3 * Math.min(1, Math.max(0, r.x)) + hot * 1.5 * (0.6 + 0.4 * Math.sin(t * 6));
         r.leds.forEach((m) => (m.emissiveIntensity = (m.userData.base ?? 1) * glow));
+        const s = accentSpots[i];
+        if (s) s.intensity = s.userData.base * (1 + 0.8 * Math.min(1, Math.max(0, r.x)) + hot * 0.9);
       });
       if (cables.length) {
         scene.updateMatrixWorld();
