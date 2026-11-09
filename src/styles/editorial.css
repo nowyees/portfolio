@@ -7,8 +7,8 @@
 }
 
 /* Keep every navigation label visible. */
-.editorial-nav-center:has(.is-exposed) { gap:28px; }
-.editorial-nav nav:has(.is-exposed) { gap:14px; }
+.editorial-nav-center:has(.is-exposed) { gap:17px; }
+.editorial-nav nav:has(.is-exposed) { gap:3px; }
 .editorial-nav nav:has(.is-exposed) .editorial-tab { width:auto; }
 .editorial-nav nav:has(.is-exposed) .editorial-tab-label { font-size:12.5px; letter-spacing:.03em; }
 .editorial-tab.is-exposed::before { opacity:0; }
@@ -165,8 +165,7 @@
   .about-opening h1 { font-size:clamp(38px,5.3vw,60px); }
 }
 @media (max-width:600px) {
-  .editorial-nav-center, .editorial-nav-center:has(.is-exposed) { gap:16px; }
-  .editorial-nav nav:has(.is-exposed) { gap:9px; }
+  .editorial-nav-center, .editorial-nav-center:has(.is-exposed) { gap:13px; }
   .editorial-nav nav:has(.is-exposed) .editorial-tab-label { font-size:11px; letter-spacing:.02em; }
   .editorial-brand { font-size:15px; }
   .editorial-tab { min-height:27px; }
