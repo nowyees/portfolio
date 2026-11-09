@@ -388,7 +388,7 @@ export default function RobotLab() {
     let lastNudge = 0;
     let nudgeIdx = 0;
     const nudge = (t: number) => {
-      if (!robots.length || engaged.size || t - lastInput < 5 || t - lastNudge < 6.5) return;
+      if (!robots.length || engaged.size || t - lastInput < 3 || t - lastNudge < 3.5) return;
       lastNudge = t;
       const r = robots[nudgeIdx++ % robots.length];
       r.target = 0.2;
