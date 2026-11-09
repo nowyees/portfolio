@@ -2,9 +2,9 @@
    Two sizes of type only: small bold capitals for labels, small regular for text. Columns sit on thirds. */
 .lab { --lab-sans:'Inter Tight', 'Pretendard Variable', Pretendard, sans-serif; --lab-line:rgba(17,17,17,.2);
   --lab-label:600 12px/1.2 var(--lab-sans); --lab-text:400 12.5px/1.3 var(--lab-sans);
-  display:flex; flex-direction:column; padding:60px 0 0; background:#fff; color:var(--ink); font-family:var(--lab-sans);
+  display:flex; flex-direction:column; padding:72px 0 0; background:#fff; color:var(--ink); font-family:var(--lab-sans);
   font-feature-settings:'tnum' 1, 'ss01' 1; -webkit-font-smoothing:antialiased; }
-.lab-card { position:relative; overflow:hidden; background:#fff; border-top:1px solid var(--lab-line); scroll-margin-top:60px; }
+.lab-card { position:relative; overflow:hidden; background:#fff; border-top:1px solid var(--lab-line); scroll-margin-top:72px; }
 .lab-sheet-head h2, .lab-sheet-mark span, .lab-sheet-text h3, .lab-sheet-spec dt, .lab-go, .lab-foot {
   margin:0; font:var(--lab-label); text-transform:uppercase; letter-spacing:-.01em; }
 
@@ -45,12 +45,9 @@
   color:var(--ink); text-decoration:none; white-space:nowrap; font:var(--lab-label); font-size:11px; text-transform:uppercase; letter-spacing:-.01em; }
 .lab-sheet-plate.is-fill > video { width:100%; height:100%; object-fit:cover; mix-blend-mode:normal; }
 /* the site's floating nav gets a white bar here, so the ruled sheets don't run under its words */
-body:has(.lab) .editorial-nav { top:0; height:60px; padding-top:12px; background:rgba(255,255,255,.94); }
-@media (max-width:760px) { body:has(.lab) .editorial-nav { height:54px; } }
+body:has(.lab) .editorial-nav { top:0; height:72px; padding-top:24px; background:rgba(255,255,255,.94); }
+@media (max-width:760px) { body:has(.lab) .editorial-nav { height:64px; } }
 .lab-rig { position:absolute; inset:0; cursor:none; touch-action:pan-y; }
-/* phone: a playing piece takes every touch, so a drag moves the piece instead of the page */
-.lab-sheet-plate.is-playing .lab-rig, .lab-sheet-plate.is-playing .lab-rig canvas, .lab-sheet-plate.is-playing .lab-frame { touch-action:none; }
-.lab .lab-phone-note.is-done { top:12px; bottom:auto; left:auto; right:12px; transform:none; }
 .lab-rig.robot-interactive { cursor:default; }
 .lab-rig canvas { display:block; }
 
@@ -68,7 +65,7 @@ body:has(.lab) .editorial-nav { top:0; height:60px; padding-top:12px; background
 .lab-foot { display:flex; justify-content:space-between; gap:24px; padding:14px 16px 18px; border-top:1px solid var(--lab-line); }
 
 @media (max-width:760px) {
-  .lab { padding-top:54px; --lab-text:400 13px/1.35 var(--lab-sans); }
+  .lab { padding-top:64px; --lab-text:400 13px/1.35 var(--lab-sans); }
   .lab-sheet { grid-template-columns:1fr; grid-template-rows:none; }
   .lab-sheet > :nth-child(odd) { border-right:0; }
   .lab-sheet-head { order:0; } .lab-sheet-mark { order:1; } .lab-sheet-media { order:2; } .lab-sheet-text { order:3; }

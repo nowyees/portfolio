@@ -165,6 +165,16 @@ export default function DualArmIK({ className }: { className?: string }) {
     };
     const leave = () => { if (!pressed) { end(); hovered = null; cursor.classList.remove('is-shown'); } };
     const resetPose = () => { controls?.reset(); for (const side in handStep) delete handStep[side]; };
+    // On a touch screen a drag that starts on a part moves the part, not the page; a drag on empty space still
+    // scrolls. The touch is tested against the parts itself (it can arrive before the pointer event does).
+    let touchOnPart = false;
+    const holdStart = (event: TouchEvent) => {
+      const t = event.touches[0];
+      touchOnPart = !!controls && !!t && !!locate({ clientX: t.clientX, clientY: t.clientY } as PointerEvent);
+      if (touchOnPart && event.cancelable) event.preventDefault();
+    };
+    const holdTouch = (event: TouchEvent) => { if ((touchOnPart || pressed) && event.cancelable) event.preventDefault(); };
+    host.addEventListener('touchstart', holdStart, { passive: false }); host.addEventListener('touchmove', holdTouch, { passive: false });
     host.addEventListener('pointermove', move); host.addEventListener('pointerdown', start); host.addEventListener('dblclick', resetPose);
     host.addEventListener('pointerup', end); host.addEventListener('pointercancel', end); host.addEventListener('pointerleave', leave);
     const draco = new DRACOLoader().setDecoderPath('/draco/');
@@ -270,7 +280,7 @@ export default function DualArmIK({ className }: { className?: string }) {
     frame = requestAnimationFrame(tick);
     return () => {
       disposed = true; abort.abort(); cancelAnimationFrame(frame); observer.disconnect();
-      host.removeEventListener('pointermove', move); host.removeEventListener('pointerdown', start); host.removeEventListener('dblclick', resetPose);
+      host.removeEventListener('touchstart', holdStart); host.removeEventListener('touchmove', holdTouch); host.removeEventListener('pointermove', move); host.removeEventListener('pointerdown', start); host.removeEventListener('dblclick', resetPose);
       host.removeEventListener('pointerup', end); host.removeEventListener('pointercancel', end); host.removeEventListener('pointerleave', leave);
       disposeModel(scene); draco.dispose(); normal.dispose(); marked.dispose(); target.dispose(); lines.dispose(); edge.dispose(); down.dispose(); plane.dispose(); renderer.dispose();
       renderer.domElement.remove(); cursor.remove(); hints.forEach(h => h.el.remove());
