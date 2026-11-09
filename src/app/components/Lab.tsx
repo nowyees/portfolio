@@ -4,7 +4,7 @@ import SiteShell from './SiteShell';
 import { experiments, type Experiment } from '../../lib/labExperiments';
 import '../../styles/lab.css';
 
-const live = experiments.filter(e => e.kind === 'RIG');
+const live = experiments.filter(e => e.kind === 'RIG').sort((a, b) => a.code.localeCompare(b.code));
 
 // Loops play only while on screen; a still poster stands in for reduced motion.
 function Media({ media, alt }: { media: Experiment['media']; alt: string }) {
@@ -38,11 +38,13 @@ function useReveal<T extends HTMLElement>() {
 
 // The live pieces themselves, mounted into their sheet once it comes near the screen (and kept after).
 type Piece = React.LazyExoticComponent<React.ComponentType<{ className?: string }>>;
-const pieces: Record<string, { Piece: Piece; hint: string; type: string; open: string; web?: boolean }> = {
+const pieces: Record<string, { Piece?: Piece; frame?: string; hint: string; type: string; open: string; web?: boolean }> = {
   'EX-01': { Piece: lazy(() => import('./AstroTail')), hint: 'Move your cursor across it.', type: 'Live rig, runs in the browser.', open: 'Open full screen' },
   'EX-02': { Piece: lazy(() => import('./DualArmIK')), hint: 'Drag an arm, click a hand to close its fingers. Double-click to reset.', type: 'Live rig, runs in the browser.', open: 'Open full screen' },
   'EX-03': { Piece: lazy(() => import('./HorseMotion')), hint: 'Click it to crouch, click again to rise.', type: 'Live rig, runs in the browser.', open: 'Open full screen' },
   'EX-04': { Piece: lazy(() => import('./MiroInteraction')), hint: 'Call Miro, then pick a gesture. Turn on the webcam to use your own hands.', type: 'Interactive web, gesture recognition.', open: 'Open the web', web: true },
+  // the robot cell is a full-screen scene of its own (with sound), so the sheet runs it in a frame
+  'EX-05': { frame: '/lab/robot', hint: 'Click a robot to move it, or the car to move all four. Drag to look around.', type: 'Real-time scene, Blender to three.js.', open: 'Open full screen' },
 };
 
 function Plate({ e }: { e: Experiment }) {
@@ -55,8 +57,10 @@ function Plate({ e }: { e: Experiment }) {
     return () => io.disconnect();
   }, []);
   return (
-    <div ref={ref} className={'lab-sheet-plate is-live' + (piece.web ? ' is-web' : '')}>
-      {near ? <Suspense fallback={null}><piece.Piece className={'lab-rig' + (piece.web ? ' lab-web' : '')} /></Suspense> : <Media media={e.media} alt={e.name} />}
+    <div ref={ref} className={'lab-sheet-plate is-live' + (piece.web ? ' is-web' : '') + (piece.frame ? ' is-frame' : '')}>
+      {!near ? <Media media={e.media} alt={e.name} />
+        : piece.frame ? <iframe className="lab-frame" src={piece.frame} title={e.name} allow="autoplay; fullscreen" loading="lazy" />
+        : piece.Piece && <Suspense fallback={null}><piece.Piece className={'lab-rig' + (piece.web ? ' lab-web' : '')} /></Suspense>}
     </div>
   );
 }
@@ -68,7 +72,7 @@ function Sheet({ e }: { e: Experiment }) {
   return (
     <article ref={ref} className="lab-card lab-sheet" id={e.code} aria-labelledby={e.code + '-name'}>
       <div className="lab-cell lab-sheet-head"><h2 id={e.code + '-name'}>{e.name} — {e.field}</h2></div>
-      <div className="lab-cell lab-sheet-mark"><span>{e.code}</span><span>{piece.web ? 'Interactive web' : 'Live rig'}</span></div>
+      <div className="lab-cell lab-sheet-mark"><span>{e.code}</span><span>{piece.web ? 'Interactive web' : piece.frame ? 'Live scene' : 'Live rig'}</span></div>
       <div className="lab-cell lab-sheet-text">
         <p>{e.note}</p>
         <div className="lab-sheet-try"><h3><i aria-hidden="true" />Try it</h3><p>{piece.hint}</p></div>

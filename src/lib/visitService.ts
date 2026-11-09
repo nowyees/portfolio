@@ -103,6 +103,8 @@ function flush() {
 
 export function trackVisit(path: string) {
   if (!isConfigured || current?.path === path) return;
+  // a page shown inside the Lab's frame is part of the Lab visit, not a visit of its own
+  if (window.top !== window.self) { current = null; return; }
   if (/^(localhost|127\.|\[::1\])/.test(location.hostname) || store('local', ADMIN_FLAG)) { current = null; return; }
   flush();
   if (path.startsWith('/admin')) return;
