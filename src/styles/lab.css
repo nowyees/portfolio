@@ -115,6 +115,7 @@
   .lab-sheet > :nth-child(odd) { border-right:0; }
   .lab-sheet-head { order:0; } .lab-sheet-mark { order:1; } .lab-sheet-media { order:2; } .lab-sheet-text { order:3; }
   .lab-sheet-spec { order:4; border-bottom:1px solid var(--lab-line); } .lab-sheet-go { order:5; }
+  .lab-sheet-plate.is-live { aspect-ratio:1; }
   .lab-sheet-text { gap:24px; }
   .lab-foot { flex-direction:column; gap:4px; padding:40px 6px 8px; }
 }
