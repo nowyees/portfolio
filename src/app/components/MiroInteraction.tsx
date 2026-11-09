@@ -5,7 +5,7 @@ import React, { useEffect, useRef, useState } from 'react';
 // only starts if the visitor asks for it. Messages: see the embed section of miro-interaction/app.js.
 const ORIGIN = 'https://nowyees.github.io';
 // Bump `v` after updating the Miro site so the embed never shows a cached older page.
-const SRC = `${ORIGIN}/miro-interaction/?embed&v=38`;
+const SRC = `${ORIGIN}/miro-interaction/?embed&v=39`;
 const ICON = (name: string) => `${ORIGIN}/miro-interaction/guide/${name}.png`;
 
 const GESTURES = [
