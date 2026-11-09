@@ -600,3 +600,14 @@
 .story-links { margin-top:clamp(48px,8vh,96px); }
 .story-links p { display:flex; flex-wrap:wrap; gap:12px 32px; }
 .story-links a { font:400 15px/1.4 var(--story-sans); }
+
+/* Desktop: the top bar is a ruled row like the Lab's sheets: the name in the first third, then one cell per page,
+   divided by hairlines, with the sound switch in a last narrow cell. */
+@media (min-width:761px) {
+  .editorial-nav { top:0; height:48px; background:rgba(255,255,255,.96); border-bottom:1px solid rgba(17,17,17,.2); }
+  .editorial-nav-center, .editorial-nav-center:has(.is-exposed) { display:grid; grid-template-columns:1fr 2fr; gap:0; width:100%; max-width:none; padding:0 48px 0 0; }
+  .editorial-brand { height:48px; padding:0 16px; border-right:1px solid rgba(17,17,17,.2); }
+  .editorial-nav nav, .editorial-nav nav:has(.is-exposed) { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:0; }
+  .editorial-nav nav .editorial-tab, .editorial-nav nav:has(.is-exposed) .editorial-tab { width:auto; height:48px; justify-content:flex-start; padding:0 16px; border-right:1px solid rgba(17,17,17,.2); }
+  .editorial-sound { top:8px; right:8px; }
+}
