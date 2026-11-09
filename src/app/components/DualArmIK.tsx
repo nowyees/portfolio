@@ -73,7 +73,7 @@ export default function DualArmIK({ className }: { className?: string }) {
     // wheelbase. The robot faces us, so its right side is on screen left; hints there read outward (to the left).
     type Hint = { el: HTMLDivElement; control: string; hand?: string };
     const hint = (control: string, label: string, kind: string, hand?: string): Hint => {
-      const el = document.createElement('div'); el.className = `astro-hint ${kind}`;
+      const el = document.createElement('div'); el.className = `astro-hint is-miro ${kind}`;
       el.innerHTML = `<span class="astro-hint-mark"><i></i></span><span class="astro-hint-label">${label}</span>`;
       host.appendChild(el);
       return { el, control, hand };

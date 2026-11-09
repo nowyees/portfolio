@@ -272,6 +272,25 @@
 .astro-hint.is-click.is-flip { margin-left:5px; }
 .astro-hint.is-click.is-flip .astro-hint-mark::before { left:0; right:12px; }
 .astro-hint.is-click.is-flip .astro-hint-mark i { left:auto; right:0; }
+/* Miro's hints sit close to their part (the robot is narrow, its hints many) */
+.astro-hint.is-miro:not(.is-click) { margin-left:8px; gap:6px; }
+.astro-hint.is-miro.is-flip:not(.is-click) { margin-left:-8px; }
+/* phones: the robot draws small, so the hints shrink with it */
+@media (max-width:760px) {
+  .astro-hint { gap:4px; }
+  .astro-hint-label { font-size:8px; letter-spacing:.05em; }
+  .astro-hint-mark { width:22px; height:12px; }
+  .astro-hint-mark i { width:7px; height:7px; margin:-4px 0 0 -4px; }
+  .astro-hint.is-click { margin:-6px 0 0 -4px; }
+  .astro-hint.is-click .astro-hint-mark { width:26px; }
+  .astro-hint.is-click .astro-hint-mark::before { left:9px; }
+  .astro-hint.is-click.is-flip { margin-left:4px; }
+  .astro-hint.is-click.is-flip .astro-hint-mark::before { left:0; right:9px; }
+  .astro-hint.is-click .astro-hint-mark i { margin:-4px 0 0 0; }
+  .astro-hint.is-drag .astro-hint-mark { width:12px; height:24px; margin:-6px 0; }
+  .astro-hint.is-miro:not(.is-click) { margin-left:4px; }
+  .astro-hint.is-miro.is-flip:not(.is-click) { margin-left:-4px; }
+}
 @keyframes astro-hint-lift { from { transform:translateY(-13px); } to { transform:translateY(13px); } }
 .robot-interactive { cursor:default; }
 .robot-loading { position:absolute; top:48%; width:100%; text-align:center; font:12px/1.5 var(--sans); pointer-events:none; }
