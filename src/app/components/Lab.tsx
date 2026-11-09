@@ -5,6 +5,9 @@ import { experiments, type Experiment } from '../../lib/labExperiments';
 import '../../styles/lab.css';
 
 const live = experiments.filter(e => e.kind === 'RIG').sort((a, b) => a.code.localeCompare(b.code));
+// On a phone the 3D pieces stay out of the sheets: dragging them fights the page scroll and several at once stutter.
+// The sheet shows the piece's recording instead and sends the visitor to the full-screen page to play.
+const isPhone = () => window.matchMedia('(max-width: 760px), (pointer: coarse)').matches;
 
 // Loops play only while on screen; a still poster stands in for reduced motion.
 function Media({ media, alt }: { media: Experiment['media']; alt: string }) {
@@ -49,6 +52,7 @@ const pieces: Record<string, { Piece?: Piece; frame?: string; hint: string; type
 
 function Plate({ e }: { e: Experiment }) {
   const ref = useRef<HTMLDivElement>(null), [near, setNear] = useState(false), piece = pieces[e.code];
+  const [phone] = useState(isPhone), still = phone && !piece.web;
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -60,18 +64,19 @@ function Plate({ e }: { e: Experiment }) {
   // fall silent while away and pick its sound up again on return.
   useEffect(() => {
     const el = ref.current;
-    if (!el || !piece.frame || !near) return;
+    if (!el || !piece.frame || !near || still) return;
     const io = new IntersectionObserver(([entry]) => {
       el.querySelector('iframe')?.contentWindow?.postMessage({ robotCell: entry.isIntersecting ? 'shown' : 'hidden' }, location.origin);
     });
     io.observe(el);
     return () => io.disconnect();
-  }, [near, piece.frame]);
+  }, [near, piece.frame, still]);
   return (
-    <div ref={ref} className={'lab-sheet-plate is-live' + (piece.web ? ' is-web' : '') + (piece.frame ? ' is-frame' : '')}>
-      {!near ? <Media media={e.media} alt={e.name} />
+    <div ref={ref} className={'lab-sheet-plate is-live' + (piece.web ? ' is-web' : '') + (piece.frame ? ' is-frame' : '') + (e.media.fill ? ' is-fill' : '')}>
+      {!near || still ? <Media media={e.media} alt={e.name} />
         : piece.frame ? <iframe className="lab-frame" src={piece.frame} title={e.name} allow="autoplay; fullscreen" loading="lazy" />
         : piece.Piece && <Suspense fallback={null}><piece.Piece className={'lab-rig' + (piece.web ? ' lab-web' : '')} /></Suspense>}
+      {still && <Link className="lab-phone-note" to={e.to}>Best on a computer · Play full screen →</Link>}
     </div>
   );
 }

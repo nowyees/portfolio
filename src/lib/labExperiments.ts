@@ -26,7 +26,7 @@ export const experiments: Experiment[] = [
   { code: 'EX-05', name: 'Robot cell', field: 'Robotic manufacturing', kind: 'RIG',
     note: "A Blender scene of four robot arms building a car, rebuilt to run in real time with its lights, reflections and glow. Click a robot and the camera moves in as it reaches for the car; click the car and all four work on it together.",
     tools: 'Blender / Three.js / Web Audio', input: 'Click a robot or the car, drag to look around',
-    media: { src: '/projects/lab/robot-cell.webp', w: 1600, h: 900, fill: true },
+    media: { src: '/projects/lab/robot-cell.mp4', poster: '/projects/lab/robot-cell.webp', w: 1280, h: 720, video: true, fill: true },
     to: '/lab/robot', action: 'Open full screen' },
   { code: 'EX-06', name: 'Lorry eyes', field: 'Character robotics', kind: 'STUDY',
     note: "Lorry's eyes: blink, star and heart states, made for a 2.1-inch round display driven by a Raspberry Pi.",
