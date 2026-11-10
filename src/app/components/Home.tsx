@@ -2,16 +2,14 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 're
 import { Link, useNavigate } from 'react-router';
 import SiteShell from './SiteShell';
 import { usePortfolio, imageUrl } from '../../lib/usePortfolio';
-import { useLang } from '../../lib/i18n';
 import { easeInOut, holdPageEnter, prefersReducedMotion, projectKey, recedeIntoProject, saveOrb, snapshotItem, takeGrid, type SnapshotItem } from '../../lib/orbTransition';
 
 type Arrival = { start: number; from: Array<{ x: number; y: number; w: number } | null> };
 
 // The two notes beside the orb (desktop). On the first visit of a session they type themselves in, both at once;
 // after that (and with reduced motion) they are simply there. Untyped text keeps its place, so nothing shifts.
-const INTRO = { en: 'Exploring the space between objects, people and the stories that connect them.',
-  ko: '사물과 사람, 그리고 그 둘을 잇는 이야기 사이의 공간을 탐구합니다.' };
-const CONTACT = { en: ['Contact', '→', 'ljwoong1104@gmail.com'], ko: ['연락처', '→', 'ljwoong1104@gmail.com'] };
+const INTRO = 'Exploring the space between objects, people and the stories that connect them.';
+const CONTACT = ['Contact', '→', 'ljwoong1104@gmail.com'];
 const typeCadence = [16, 26, 12, 22, 18, 30, 14, 24];
 let introTyped = false;
 function useTyped(total: number) {
@@ -37,13 +35,12 @@ function Typed({ text, from, count }: { text: string; from: number; count: numbe
   return <><span>{text.slice(0, shown)}</span>{typing && <i className="space-note-caret" aria-hidden="true" />}<span className="space-note-rest" aria-hidden="true">{text.slice(shown)}</span></>;
 }
 function SpaceNotes() {
-  const lang = useLang(), intro = INTRO[lang], contact = CONTACT[lang];
-  const total = Math.max(INTRO.en.length, CONTACT.en.join('').length), count = useTyped(total);
+  const total = Math.max(INTRO.length, CONTACT.join('').length), count = useTyped(total);
   let at = 0;   // the right note types alongside the left one
   return <>
-    <p className="space-note is-left" aria-label={intro}><Typed text={intro} from={0} count={count} /></p>
+    <p className="space-note is-left" aria-label={INTRO}><Typed text={INTRO} from={0} count={count} /></p>
     <p className="space-note is-right">
-      {contact.map((line, i) => {
+      {CONTACT.map((line, i) => {
         const from = at; at += line.length;
         const typed = <Typed text={line} from={from} count={count} />;
         return i === 2 ? <a key={line} href={'mailto:' + line} aria-label={'Email ' + line}>{typed}</a> : <span key={line} className="space-note-line">{typed}</span>;

@@ -3,12 +3,10 @@ import { Link, useNavigate } from 'react-router';
 import { usePortfolio, imageUrl } from '../../lib/usePortfolio';
 import { holdPageEnter, makeClone, prefersReducedMotion, projectKey, recedeIntoProject, saveGrid, snapshotItem, takeOrb, type SnapshotItem } from '../../lib/orbTransition';
 import SiteShell from './SiteShell';
-import { useLang } from '../../lib/i18n';
 
 const px = (r: { left: number; top: number; width: number; height: number }) => ({ left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px' });
 
 export default function Projects() {
-  const lang = useLang();
   const projects = usePortfolio();
   const navigate = useNavigate();
   const mainRef = useRef<HTMLElement>(null);
@@ -81,7 +79,7 @@ export default function Projects() {
   return (
     <SiteShell active="projects">
       <main className="projects-page projects-index" ref={mainRef}>
-        <h1 className="gallery-intro">{lang === 'ko' ? <><span>오브제와 시각 경험을</span> <em>골라 모았습니다</em></> : <><span>A Curated Selection of</span> <em>Objects and Visual Experiences</em></>}</h1>
+        <h1 className="gallery-intro"><span>A Curated Selection of</span> <em>Objects and Visual Experiences</em></h1>
         <section className="project-grid" aria-label="Selected projects">
           {projects.map(project => {
             const to = '/project/' + project.category + '/' + project.id;

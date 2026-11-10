@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useT } from '../../lib/i18n';
 
 // The DDP booth piece runs as its own site (webcam + gesture recognition). It is embedded here in its
 // `?embed` mode, which waits for the host: the buttons below stand in for the gestures, and the camera
@@ -10,17 +9,17 @@ const SRC = `${ORIGIN}/miro-interaction/?embed&v=39`;
 const ICON = (name: string) => `${ORIGIN}/miro-interaction/guide/${name}.png`;
 
 const GESTURES = [
-  { name: 'RSP', icon: 'point', label: 'Rock paper scissors', ko: '가위바위보' },
-  { name: 'HI', icon: 'wave', label: 'Wave', ko: '인사' },
-  { name: 'PICTURE', icon: 'v', label: 'Photo', ko: '사진' },
-  { name: 'TOMATO', icon: 'finger-heart', label: 'Heart', ko: '하트' },
+  { name: 'RSP', icon: 'point', label: 'Rock paper scissors' },
+  { name: 'HI', icon: 'wave', label: 'Wave' },
+  { name: 'PICTURE', icon: 'v', label: 'Photo' },
+  { name: 'TOMATO', icon: 'finger-heart', label: 'Heart' },
 ] as const;
 
 type MiroState = { state: string; camera: boolean; status: string };
 const PLAYING = new Set(['RSP', 'HI', 'PICTURE', 'TOMATO']);
 
 export default function MiroInteraction({ className }: { className?: string }) {
-  const frameRef = useRef<HTMLIFrameElement>(null), t = useT();
+  const frameRef = useRef<HTMLIFrameElement>(null);
   const [miro, setMiro] = useState<MiroState>({ state: 'LOADING', camera: false, status: '' });
 
   const send = (message: object) => frameRef.current?.contentWindow?.postMessage(message, ORIGIN);
@@ -41,25 +40,25 @@ export default function MiroInteraction({ className }: { className?: string }) {
   return (
     <div className={`${className ?? ''} miro-piece`}>
       <button type="button" className="miro-camera" disabled={miro.camera} onClick={() => send({ miro: 'camera' })}>
-        {miro.camera ? t('카메라 켜짐 · 손동작으로도 반응해요', 'Camera on · Miro answers your hands too') : t('웹캠으로 해보기', 'Try it with your webcam')}
+        {miro.camera ? 'Camera on · Miro answers your hands too' : 'Try it with your webcam'}
       </button>
       <iframe ref={frameRef} className="miro-frame" src={SRC} title="MIRO interactive web" allow="camera; fullscreen"
         onLoad={() => send({ miro: 'hello' })} />
       <div className="miro-panel">
         <div className="miro-buttons">
           {step === 'call' && (
-            <button type="button" className="miro-button is-call" onClick={() => send({ miro: 'wake' })}>{t('Miro 부르기', 'Call Miro')}</button>
+            <button type="button" className="miro-button is-call" onClick={() => send({ miro: 'wake' })}>Call Miro</button>
           )}
           {(step === 'choose' || step === 'playing') && GESTURES.map(g => (
             <button key={g.name} type="button" className="miro-button" disabled={step !== 'choose'}
               onClick={() => send({ miro: 'gesture', name: g.name })}>
-              <img src={ICON(g.icon)} alt="" />{t(g.ko, g.label)}
+              <img src={ICON(g.icon)} alt="" />{g.label}
             </button>
           ))}
         </div>
         <p className="miro-links">
           {state !== 'IDLE' && state !== 'LOADING' && (
-            <button type="button" onClick={() => send({ miro: 'reset' })}>{t('처음으로', 'Start over')}</button>
+            <button type="button" onClick={() => send({ miro: 'reset' })}>Start over</button>
           )}
         </p>
       </div>
