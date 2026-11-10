@@ -7,14 +7,16 @@ import { storyFor } from '../../lib/projectStories';
 import ProjectStory from './ProjectStory';
 import { editorialDrafts } from '../../lib/projectStoryDrafts';
 import { draftProjectById, editorialDraftCatalog } from '../../lib/editorialDraftCatalog';
+import { localize, useLang } from '../../lib/i18n';
 
 export default function ProjectDetail() {
   const { category, id } = useParams();
   const [searchParams] = useSearchParams();
   const previewDraft = import.meta.env.DEV && searchParams.get('draft') === 'editorial';
   const projects = usePortfolio();
-  const project = projects.find(p => String(p.id) === id && p.category === category)
-    || (category === 'portfolio' && id ? draftProjectById(id) : undefined);
+  const lang = useLang();
+  const project = localize(projects.find(p => String(p.id) === id && p.category === category)
+    || (category === 'portfolio' && id ? draftProjectById(id) : undefined), lang);
   const galleryRef = useRef<HTMLElement>(null);
   const dragRef = useRef({ active: false, moved: false, startX: 0, scrollLeft: 0 });
   useEffect(() => { window.scrollTo(0, 0); }, [id, category]);

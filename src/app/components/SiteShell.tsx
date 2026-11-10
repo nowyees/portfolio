@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
+import { setLang, useLang } from '../../lib/i18n';
 
 type ActivePage = 'space' | 'projects' | 'motion' | 'about';
 const items: Array<{ key: ActivePage; label: string; index: string; to: string }> = [
@@ -34,6 +35,16 @@ function TypingTab({ item, active, exposed = false }: { item: typeof items[numbe
   return <Link to={item.to} className={'editorial-tab ' + (active ? 'is-active' : '') + (exposed ? ' is-exposed' : '')} aria-label={item.label} aria-keyshortcuts={item.index} aria-current={active ? 'page' : undefined} onMouseEnter={typeLabel} onFocus={typeLabel}>
     <span className="editorial-tab-label"><span>{exposed ? item.label : text}</span><span className="editorial-tab-caret" aria-hidden="true">|</span></span>
   </Link>;
+}
+
+// KR / EN: the language in use is dark, the other grey; either word switches to its language.
+function LangSwitch() {
+  const lang = useLang();
+  return <span className="editorial-lang" role="group" aria-label="Language">
+    <button type="button" className={lang === 'ko' ? 'is-on' : ''} aria-pressed={lang === 'ko'} lang="ko" onClick={() => setLang('ko')}>KR</button>
+    <span aria-hidden="true">/</span>
+    <button type="button" className={lang === 'en' ? 'is-on' : ''} aria-pressed={lang === 'en'} lang="en" onClick={() => setLang('en')}>EN</button>
+  </span>;
 }
 
 let soundEnabled = false;
@@ -73,6 +84,7 @@ export default function SiteShell({ active, children }: { active: ActivePage; ch
         <Link to="/" className="editorial-brand" aria-label="Jaydne Studio — home">Jaydne. Studio</Link>
         <nav aria-label="Main">
           {items.map(item => <TypingTab key={item.key} item={item} active={active === item.key} exposed />)}
+          <LangSwitch />
         </nav>
       </div>
       <button type="button" className={'editorial-sound ' + (soundOn ? 'is-on' : '')} aria-label={soundOn ? 'Turn off sound' : 'Turn on sound'} aria-pressed={soundOn}

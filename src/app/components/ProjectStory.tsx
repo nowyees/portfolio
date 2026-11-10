@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { localize, useLang } from '../../lib/i18n';
 import { PIN_STEP, pinnedStepIndex } from '../../lib/pinnedSteps';
 import type { ProjectStory as Story, StoryClip, StoryImage, StoryRow, StorySection, StoryText } from '../../lib/projectStories';
 
@@ -49,7 +50,7 @@ function MotionImage({ clip, active }: { clip: StoryClip; active: boolean }) {
       <p>{clip.guide.sub}</p><p>{clip.guide.title}</p>
     </div></div>}
     <button className={'story-motion-toggle' + (playing ? ' is-playing' : '')} type="button" tabIndex={active ? 0 : -1}
-      aria-label={`${clip.caption} — ${playing ? '일시정지' : '재생'}`} onClick={() => {
+      aria-label={`${clip.caption} — ${playing ? 'Pause' : 'Play'}`} onClick={() => {
         intent.current = playing ? 'pause' : 'play'; syncRef.current();
       }}><span aria-hidden="true" /></button>
   </>;
@@ -311,7 +312,9 @@ function Part({ section, title, chapterNumber }: { section: StorySection; title:
   }
 }
 
-export default function ProjectStory({ story, year, films: projectFilms = [] }: { story: Story; year?: string; films?: Film[] }) {
+export default function ProjectStory({ story: source, year, films: projectFilms = [] }: { story: Story; year?: string; films?: Film[] }) {
+  // in English every Korean text of the story is swapped for its translation
+  const lang = useLang(), story = useMemo(() => localize(source, lang), [source, lang]);
   // the story's own films first, then any the project carries
   const films = [...(story.films || []).map(film => ({ url: film.src, poster: film.poster })), ...projectFilms];
   const rootRef = useRef<HTMLDivElement>(null);
@@ -371,8 +374,8 @@ export default function ProjectStory({ story, year, films: projectFilms = [] }: 
   const editorial = story.presentation === 'editorial';
   const intro = <>
     <div className="story-intro-main">
-      <p className="story-lead story-rv">{story.intro.ko}</p>
-      {story.intro.en && <p className="story-lead-en story-rv" lang="en">{story.intro.en}</p>}
+      <p className="story-lead story-rv">{lang === 'en' ? source.intro.en ?? story.intro.ko : source.intro.ko}</p>
+      {lang === 'ko' && source.intro.en && <p className="story-lead-en story-rv" lang="en">{source.intro.en}</p>}
     </div>
     <dl className="story-facts">{story.facts.map(([term, value]) =>
       <div className="story-rv" key={term}><dt>{term}</dt><dd>{value}</dd></div>)}</dl>

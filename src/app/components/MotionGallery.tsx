@@ -5,6 +5,7 @@ import AstroTail from './AstroTail';
 import DualArmIK from './DualArmIK';
 import HorseMotion from './HorseMotion';
 import { experiments } from '../../lib/labExperiments';
+import { useLang } from '../../lib/i18n';
 import '../../styles/lab.css';
 
 // Rigged pieces you can move, one at a time; the arrows (or ← →) step through them.
@@ -22,7 +23,7 @@ const pieces: Array<{ id: string; title: string; note: string; guide?: Guide; Pi
 ];
 
 export default function MotionGallery() {
-  const { id } = useParams(), navigate = useNavigate();
+  const { id } = useParams(), navigate = useNavigate(), lang = useLang();
   const index = Math.max(0, pieces.findIndex(piece => piece.id === id));
   const { title, note, guide, Piece } = pieces[index];
   const single = pieces.length < 2;
@@ -47,10 +48,10 @@ export default function MotionGallery() {
         <Piece key={pieces[index].id} className="motion-stage" />
         {/* How to play with it: Korean first, English smaller and grey beneath (touch wording on touch screens). */}
         {guide && <p className="motion-guide">
-          <span className="is-pointer">{guide.pointer[0]}</span>
-          <span className="is-touch">{guide.touch[0]}</span>
-          <small className="is-pointer">{guide.pointer[1]}</small>
-          <small className="is-touch">{guide.touch[1]}</small>
+          <span className="is-pointer">{guide.pointer[lang === 'ko' ? 0 : 1]}</span>
+          <span className="is-touch">{guide.touch[lang === 'ko' ? 0 : 1]}</span>
+          {lang === 'ko' && <small className="is-pointer">{guide.pointer[1]}</small>}
+          {lang === 'ko' && <small className="is-touch">{guide.touch[1]}</small>}
         </p>}
         <button type="button" className="motion-arrow is-prev" aria-label="Previous piece" disabled={single} onClick={() => go(-1)}><span aria-hidden="true" /></button>
         <button type="button" className="motion-arrow is-next" aria-label="Next piece" disabled={single} onClick={() => go(1)}><span aria-hidden="true" /></button>
