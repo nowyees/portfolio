@@ -34,8 +34,21 @@ function Typed({ text, from, count }: { text: string; from: number; count: numbe
   const shown = Math.max(0, Math.min(text.length, count - from)), typing = shown > 0 && shown < text.length;
   return <><span>{text.slice(0, shown)}</span>{typing && <i className="space-note-caret" aria-hidden="true" />}<span className="space-note-rest" aria-hidden="true">{text.slice(shown)}</span></>;
 }
+// The address copies itself on a click (the orb page takes drags, so it can't be selected and copied by hand).
+function copyText(text: string) {
+  if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text);
+  const area = document.createElement('textarea');
+  area.value = text; area.style.position = 'fixed'; area.style.opacity = '0';
+  document.body.appendChild(area); area.select(); document.execCommand('copy'); area.remove();
+  return Promise.resolve();
+}
 function SpaceNotes() {
   const total = Math.max(INTRO.length, CONTACT.join('').length), count = useTyped(total);
+  const [copied, setCopied] = useState(false), timer = useRef(0);
+  useEffect(() => () => window.clearTimeout(timer.current), []);
+  const copy = (address: string) => copyText(address).then(() => {
+    setCopied(true); window.clearTimeout(timer.current); timer.current = window.setTimeout(() => setCopied(false), 1600);
+  }).catch(() => { /* clipboard refused: the address stays visible to type */ });
   let at = 0;   // the right note types alongside the left one
   return <>
     <p className="space-note is-left" aria-label={INTRO}><Typed text={INTRO} from={0} count={count} /></p>
@@ -43,8 +56,11 @@ function SpaceNotes() {
       {CONTACT.map((line, i) => {
         const from = at; at += line.length;
         const typed = <Typed text={line} from={from} count={count} />;
-        return i === 2 ? <a key={line} href={'mailto:' + line} aria-label={'Email ' + line}>{typed}</a> : <span key={line} className="space-note-line">{typed}</span>;
+        return i === 2
+          ? <button key={line} type="button" className="space-note-copy" onClick={() => copy(line)} aria-label={'Copy ' + line}>{typed}</button>
+          : <span key={line} className="space-note-line">{typed}</span>;
       })}
+      <small className="space-note-hint" aria-live="polite">{count >= total ? (copied ? 'Copied ✓' : 'Click to copy') : ' '}</small>
     </p>
   </>;
 }

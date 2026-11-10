@@ -609,8 +609,9 @@
   .space-note.is-left { right:calc(50% + var(--orb-clear)); display:block; width:16.2em; text-transform:uppercase; }
   .space-note.is-right { left:calc(50% + var(--orb-clear)); white-space:nowrap; }
   .space-note-line { text-transform:uppercase; }
-  .space-note a { pointer-events:auto; }
-  .space-note a:hover { text-decoration:underline; text-underline-offset:3px; }
+  .space-note-copy { pointer-events:auto; padding:0; border:0; background:none; font:inherit; color:inherit; text-align:left; cursor:copy; }
+  .space-note-copy:hover { text-decoration:underline; text-underline-offset:3px; }
+  .space-note-hint { margin-top:8px; font:400 10px/1.2 'Inter Tight', var(--sans); letter-spacing:.02em; text-transform:uppercase; color:#9a9a96; }
   .space-note-rest { visibility:hidden; }
   .space-note-caret { display:inline-block; width:1px; height:1em; margin:0 0 -.14em 1px; background:currentColor; animation:nav-caret .72s step-end infinite; }
 }
