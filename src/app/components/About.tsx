@@ -18,11 +18,11 @@ type Step = {
 const steps: Step[] = [
   { id: 'ideation', name: 'Ideation',
     ai: [{ tools: 'ChatGPT · Claude · Midjourney', ko: '생각을 넓히고 방향을 빠르게 그려보는 데 사용', en: 'To widen the thinking and sketch directions quickly' }],
-    media: { src: '/projects/lunaris/gripper-blueprint.webp', to: '/project/portfolio/4', label: 'Lunaris' } },
+    media: { src: '/projects/miro/ddp/studio-desk.webp', to: '/projects', label: 'Miro' } },
   { id: 'modeling', name: '3D modeling', human: 'Rhino · Fusion · Blender',
     ai: [{ tools: 'ChatGPT · Claude', ko: '반복 작업 및 프로그램끼리의 모델 추출 자동화', en: 'Automating repetitive work and moving models between programs' },
       { tools: 'Generative 3D', ko: '생성형 3D 모델을 통한 빠른 시각화', en: 'Quick visualisation with generated 3D models' }],
-    media: { src: '/projects/lunaris/arm-detail-1280.webp', to: '/project/portfolio/4', label: 'Lunaris' } },
+    media: { src: '/projects/miro/ddp/modeling.webp', to: '/projects', label: 'Miro' } },
   { id: 'mockup', name: 'Working mockup', branch: 'solid', from: 'modeling', human: 'Rhino · Fusion · Arduino',
     aside: { ko: '손으로 만들고, 직접 움직여 보며 검증합니다', en: 'Built by hand, proven by moving it' },
     media: { src: '/projects/identity/motion/robot-arm.mp4', poster: '/projects/identity/motion/robot-arm.webp', video: true, to: '/project/portfolio/8', label: 'Identity Camouflager' } },
@@ -34,16 +34,16 @@ const steps: Step[] = [
     media: { src: '/projects/lab/horse.mp4', poster: '/projects/lab/horse.webp', video: true, to: '/lab#EX-03', label: 'Lab · Reckless' } },
   { id: 'abc', name: 'ABC file' },
   { id: 'still', name: 'Still image', branch: 'dotted', from: 'modeling', rejoin: 'rendering',
-    media: { src: '/projects/lotty/render-wave.webp', to: '/project/portfolio/15', label: 'Lotty & Lorry' } },
+    media: { src: '/projects/lotty/hero.webp', to: '/project/portfolio/15', label: 'Lotty & Lorry' } },
   { id: 'rendering', name: 'Rendering', human: 'KeyShot · Blender',
     ai: [{ tools: 'ChatGPT · Claude', ko: '기존에 세팅한 재질을 자동화해서 입히는 과정에 사용', en: 'Applying materials I have already set up, automatically' }],
-    media: { src: '/projects/miro/hero.webp', to: '/projects', label: 'Miro' } },
+    media: { src: '/projects/miro/hero-plant.webp', to: '/projects', label: 'Miro' } },
   { id: 'edited', name: 'Image edited', branch: 'dotted', from: 'rendering', human: 'Photoshop · Illustrator',
     ai: [{ tools: 'Midjourney · Firefly · Gemini', ko: '합성된 이미지를 만들기 위해 사용', en: 'For making composited images' }],
     media: { src: '/projects/lunaris/cover.webp', to: '/project/portfolio/4', label: 'Lunaris' } },
   { id: 'video', name: 'Video editing', human: 'After Effects · Premiere',
     ai: [{ tools: 'Google Flow · Gemini', ko: '비디오 합성이나 필요한 영상 데이터 생성', en: 'Compositing video and generating the footage it needs' }],
-    media: { src: '/projects/lotty/tv-highfive.mp4', poster: '/projects/lotty/tv-highfive.webp', video: true, to: '/project/portfolio/15', label: 'Lotty & Lorry' } },
+    media: { src: '/projects/miro/motion/scenario-film.mp4', poster: '/projects/miro/motion/scenario-film.webp', video: true, to: '/projects', label: 'Miro' } },
   { id: 'web', name: 'Web building', human: 'Git',
     ai: [{ tools: 'ChatGPT · Claude', ko: '인터랙션 웹 빌딩이나 구현', en: 'Building and implementing interactive web' }],
     media: { src: '/projects/lab/robot-cell.mp4', poster: '/projects/lab/robot-cell.webp', video: true, to: '/lab#EX-05', label: 'Lab · Robot cell' } },
@@ -85,6 +85,15 @@ export default function About() {
   const [contactOpen, setContactOpen] = useState(false);
   const location = useLocation(), lang = useLang();
   const t = (ko: string, en: string) => lang === 'ko' ? ko : en;
+  const heroRef = useRef<HTMLElement>(null);
+  // the title writes itself in each time it comes back into view
+  useEffect(() => {
+    const el = heroRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([entry]) => el.classList.toggle('is-in', entry.isIntersecting), { threshold: .35 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
   const rootRef = useRef<HTMLDivElement>(null), mainRef = useRef<SVGPathElement>(null), penRef = useRef<SVGCircleElement>(null);
   const [paths, setPaths] = useState<{ main: string; branches: Array<{ id: string; d: string; dotted: boolean }>; w: number; h: number }>({ main: '', branches: [], w: 0, h: 0 });
 
@@ -139,6 +148,7 @@ export default function About() {
       root.querySelectorAll<HTMLElement>('[data-step]').forEach(el => {
         const dot = el.querySelector('.ap-dot')!.getBoundingClientRect();
         if (still || dot.top < innerHeight * .7) el.classList.add('is-in');
+        else if (dot.top > innerHeight * .82) el.classList.remove('is-in');   // the line has pulled back: sleep, to wake again
       });
       steps.filter(s => s.branch).forEach(s => {
         const on = root.querySelector(`[data-step="${s.id}"]`)?.classList.contains('is-in');
@@ -154,9 +164,11 @@ export default function About() {
   let aiCount = 0, side = 0;
   return <SiteShell active="about">
     <main className="about-process">
-      <header className="ap-hero">
-        <p className="ap-kicker">Lee Jaewoong <span aria-hidden="true">→</span></p>
-        <h1>AI Process</h1>
+      <header className="ap-hero" ref={heroRef}>
+        <h1 aria-label="How I work">
+          <span>How I</span> <span>work</span>
+          <svg viewBox="0 0 600 60" preserveAspectRatio="none" aria-hidden="true"><path pathLength={1} d="M8 34 C70 12 120 50 190 30 S300 14 370 34 S500 50 592 22" /></svg>
+        </h1>
         <p className="ap-lead">{t('디자인 프로세스는 손에서 시작해 손으로 끝납니다. AI는 그 사이, 필요한 자리에만 도구처럼 들어옵니다.',
           'The design process starts and ends in the hand. AI comes in between, as a tool, only where it is needed.')}</p>
         <ul className="ap-legend">
