@@ -10,39 +10,38 @@ import '../../styles/about.css';
 // a pale shape lands on the line. The line draws itself as the page scrolls.
 type Step = {
   id: string; name: string;
-  human?: string;                                   // the tools in hand
+  hand: string;                                     // what is in the hand
   ai?: { tools: string; ko: string; en: string }[]; // where AI comes in, and for what
-  aside?: { ko: string; en: string };               // a remark where AI stays out
+  none?: { ko: string; en: string };                // or why it stays out
   media?: { src: string; poster?: string; video?: boolean; to: string; label: string };
 };
 const steps: Step[] = [
-  { id: 'ideation', name: 'Ideation',
-    ai: [{ tools: 'ChatGPT · Claude · Midjourney', ko: '생각을 넓히고 방향을 빠르게 그려보는 데 사용', en: 'To widen the thinking and sketch directions quickly' }],
+  { id: 'ideation', name: 'Ideation', hand: 'Sketch · Mockup',
+    ai: [{ tools: 'ChatGPT · Claude · Midjourney', ko: '방향을 넓게, 빠르게 탐색', en: 'Exploring directions, wide and fast' }],
     media: { src: '/projects/miro/ddp/studio-desk.webp', to: '/projects', label: 'Miro' } },
-  { id: 'modeling', name: '3D modeling', human: 'Rhino · Fusion · Blender',
-    ai: [{ tools: 'ChatGPT · Claude', ko: '반복 작업 및 프로그램끼리의 모델 추출 자동화', en: 'Automating repetitive work and moving models between programs' },
-      { tools: 'Generative 3D', ko: '생성형 3D 모델을 통한 빠른 시각화', en: 'Quick visualisation with generated 3D models' }],
+  { id: 'modeling', name: '3D modeling', hand: 'Rhino · Fusion · Blender',
+    ai: [{ tools: 'ChatGPT · Claude', ko: '반복 작업과 프로그램 간 모델 변환을 자동화', en: 'Automating repetitive work and model transfer between programs' }, { tools: 'Generative 3D', ko: '형태를 빠르게 시각화', en: 'Seeing a form quickly' }],
     media: { src: '/projects/miro/ddp/modeling.webp', to: '/projects', label: 'Miro' } },
-  { id: 'mockup', name: 'Working mockup', human: 'Rhino · Fusion · Arduino',
-    aside: { ko: '손으로 만들고, 직접 움직여 보며 검증합니다', en: 'Built by hand, proven by moving it' },
+  { id: 'mockup', name: 'Working mockup', hand: 'Rhino · Fusion · Arduino',
+    none: { ko: '손으로 만들고 직접 움직여 보며 검증', en: 'Built by hand, proven by moving it' },
     media: { src: '/projects/identity/motion/robot-arm.mp4', poster: '/projects/identity/motion/robot-arm.webp', video: true, to: '/project/portfolio/8', label: 'Identity Camouflager' } },
-  { id: 'rigging', name: 'Rigging', human: 'Blender',
-    ai: [{ tools: 'ChatGPT · Claude', ko: '초기 관절 세팅 및 physical 세팅', en: 'First joint set-up and physics settings' }],
+  { id: 'rigging', name: 'Rigging', hand: 'Blender',
+    ai: [{ tools: 'ChatGPT · Claude', ko: '초기 관절과 물리 세팅', en: 'First joint and physics set-up' }],
     media: { src: '/projects/lab/miro-arm.mp4', poster: '/projects/lab/miro-arm-poster.webp', video: true, to: '/lab#EX-02', label: 'Lab · Miro arm' } },
-  { id: 'motion', name: 'Motion', human: 'Blender',
-    aside: { ko: '아직은 휴먼 터치가 더 낫다고 판단', en: 'Here the human touch is still better' },
+  { id: 'motion', name: 'Motion', hand: 'Blender',
+    none: { ko: '아직은 손이 더 낫다고 판단', en: 'Here the hand is still better' },
     media: { src: '/projects/lab/horse.mp4', poster: '/projects/lab/horse.webp', video: true, to: '/lab#EX-03', label: 'Lab · Reckless' } },
-  { id: 'rendering', name: 'Rendering', human: 'KeyShot · Blender',
-    ai: [{ tools: 'ChatGPT · Claude', ko: '기존에 세팅한 재질을 자동화해서 입히는 과정에 사용', en: 'Applying materials I have already set up, automatically' }],
+  { id: 'rendering', name: 'Rendering', hand: 'KeyShot · Blender',
+    ai: [{ tools: 'ChatGPT · Claude', ko: '세팅해 둔 재질을 자동으로 입히기', en: 'Applying my own materials automatically' }],
     media: { src: '/projects/miro/hero-plant.webp', to: '/projects', label: 'Miro' } },
-  { id: 'edited', name: 'Image editing', human: 'Photoshop · Illustrator',
-    ai: [{ tools: 'Midjourney · Firefly · Gemini', ko: '합성된 이미지를 만들기 위해 사용', en: 'For making composited images' }],
+  { id: 'edited', name: 'Image editing', hand: 'Photoshop · Illustrator',
+    ai: [{ tools: 'Midjourney · Firefly · Gemini', ko: '합성 이미지 제작', en: 'Making composited images' }],
     media: { src: '/projects/lunaris/cover.webp', to: '/project/portfolio/4', label: 'Lunaris' } },
-  { id: 'video', name: 'Video editing', human: 'After Effects · Premiere',
-    ai: [{ tools: 'Google Flow · Gemini', ko: '비디오 합성이나 필요한 영상 데이터 생성', en: 'Compositing video and generating the footage it needs' }],
+  { id: 'video', name: 'Video editing', hand: 'After Effects · Premiere',
+    ai: [{ tools: 'Google Flow · Gemini', ko: '영상 합성과 필요한 소스 생성', en: 'Compositing and generating footage' }],
     media: { src: '/projects/miro/motion/scenario-film.mp4', poster: '/projects/miro/motion/scenario-film.webp', video: true, to: '/projects', label: 'Miro' } },
-  { id: 'web', name: 'Web building', human: 'Git',
-    ai: [{ tools: 'ChatGPT · Claude', ko: '인터랙션 웹 빌딩이나 구현', en: 'Building and implementing interactive web' }],
+  { id: 'web', name: 'Web building', hand: 'Git',
+    ai: [{ tools: 'ChatGPT · Claude', ko: '인터랙션 웹 구현', en: 'Building the interactive web' }],
     media: { src: '/projects/lab/robot-cell.mp4', poster: '/projects/lab/robot-cell.webp', video: true, to: '/lab#EX-05', label: 'Lab · Robot cell' } },
 ];
 
@@ -199,12 +198,11 @@ export default function About() {
           return <section key={s.id} data-step={s.id} className={'ap-step' + (n % 2 ? ' is-flip' : '')}>
             <div className="ap-copy">
               <h2 className="ap-pill"><small aria-hidden="true">{String(n + 1).padStart(2, '0')}</small>{s.name}</h2>
-              {s.human && <p className="ap-human"><span>( Human touch )</span>{s.human}</p>}
-              {s.ai?.map(a => <div className="ap-ai" key={a.tools}>
-                <AiMark i={aiCount++} />
-                <p><span>( AI support )</span><b>{a.tools}</b>{t(a.ko, a.en)}</p>
-              </div>)}
-              {s.aside && <p className="ap-aside">{t(s.aside.ko, s.aside.en)}</p>}
+              <dl className="ap-rows">
+                <div><dt><i className="ap-ink" aria-hidden="true" />Hand</dt><dd><b>{s.hand}</b></dd></div>
+                {s.ai?.map((a, i) => <div key={a.tools}><dt>{i === 0 && <><AiMark i={aiCount++} />AI</>}</dt><dd><b>{a.tools}</b><span>{t(a.ko, a.en)}</span></dd></div>)}
+                {s.none && <div className="is-none"><dt><AiMark i={aiCount++} />AI</dt><dd><b>{t('쓰지 않음', 'Not here')}</b><span>{t(s.none.ko, s.none.en)}</span></dd></div>}
+              </dl>
             </div>
             <i className="ap-dot" aria-hidden="true" />
             <div className="ap-media">{s.media && <Media media={s.media} name={s.name} />}</div>

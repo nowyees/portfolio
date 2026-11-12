@@ -45,20 +45,19 @@
 .ap-pill small { position:absolute; left:-.5em; top:-.95em; font:700 1.25em/1 'Caveat', cursive; letter-spacing:0; text-transform:none; transform:rotate(-8deg); }
 .ap-pill { position:relative; display:inline-block; margin:0 0 22px; padding:13px 26px 12px; border:4px solid var(--ap-ink); border-radius:var(--ap-hand); background:var(--ap-bg);
   font:500 clamp(20px,2vw,30px)/1 var(--ap-sans); letter-spacing:-.04em; text-transform:uppercase; }
-.ap-human { margin:0 0 16px; font:500 16px/1.35 var(--ap-sans); letter-spacing:-.02em; }
-.ap-human span, .ap-ai p span { display:block; margin-bottom:3px; font:500 12px/1.2 var(--ap-sans); letter-spacing:0; opacity:.62; }
-/* AI arrives: a pale shape drops onto the step, turning as it lands */
-.ap-ai { position:relative; display:flex; align-items:flex-start; gap:14px; margin:0 0 12px; padding:16px 18px 16px 16px; background:var(--ap-pale); border-radius:var(--ap-hand); }
-.ap-ai p { margin:0; font:400 15px/1.4 var(--ap-sans); letter-spacing:-.02em; word-break:keep-all; }
-.ap-ai p b { display:block; margin-bottom:3px; font-weight:600; }
+/* every step reads the same way: what the hand does, then what AI does (or that it stays out) */
+.ap-rows { margin:0; border-top:1.5px solid var(--ap-ink); }
+.ap-rows > div { display:grid; grid-template-columns:86px minmax(0,1fr); gap:0 14px; align-items:start; padding:13px 0 12px; border-bottom:1px solid #d9d9d5; }
+.ap-rows > div:last-child { border-bottom:1.5px solid var(--ap-ink); }
+.ap-rows dt { display:flex; align-items:center; gap:8px; min-height:22px; font:700 22px/1 'Caveat', cursive; }
+.ap-rows dd { margin:0; font:400 15px/1.4 var(--ap-sans); letter-spacing:-.02em; word-break:keep-all; }
+.ap-rows dd b { display:block; font-weight:600; font-size:16px; }
+.ap-rows dd span { display:block; margin-top:2px; color:#55554f; }
+.ap-rows .is-none dd b { font-weight:500; color:#8a8a84; }
+.ap-ink { flex:none; width:20px; height:4px; border-radius:4px; background:var(--ap-ink); transform:rotate(-6deg); }
+.ap-rows .ap-shape { width:20px; height:20px; margin:0; }
 .ap-shape { flex:none; width:44px; height:44px; margin-top:2px; }
 .ap-shape path { fill:var(--ap-pale); stroke:var(--ap-ink); stroke-width:6; stroke-linejoin:round; }
-.ap-ai .ap-shape path { fill:#fff; }
-.ap-step .ap-ai { transform:translateY(22px) rotate(-5deg) scale(.86); transform-origin:20% 50%; }
-.ap-step.is-in .ap-ai { transform:none; transition:opacity .5s ease, transform .8s cubic-bezier(.3,1.5,.5,1); }
-.ap-ai .ap-shape { animation:ap-turn 9s linear infinite; }
-@keyframes ap-turn { to { transform:rotate(360deg); } }
-.ap-aside { margin:0; padding-left:14px; border-left:4px solid var(--ap-ink); font:500 16px/1.4 var(--ap-sans); letter-spacing:-.02em; word-break:keep-all; }
 
 /* the work made this way */
 .ap-work { position:relative; display:block; overflow:hidden; border:4px solid var(--ap-ink); border-radius:var(--ap-hand); background:var(--ap-pale); color:var(--ap-ink); text-decoration:none; }
@@ -95,15 +94,12 @@
   .ap-foot { flex-wrap:wrap; }
 }
 @media (prefers-reduced-motion:reduce) {
-  .ap-copy > *, .ap-media > *, .ap-dot, .ap-step .ap-ai { transition:none; }
+  .ap-copy > *, .ap-media > *, .ap-dot { transition:none; }
   .ap-hand-art { animation:none !important; }
-  .ap-ai .ap-shape { animation:none; }
 }
 
 /* (the site resets heading and paragraph margins; these put the page's own spacing back) */
 .about-process .ap-pill { margin:0 0 22px; }
-.about-process .ap-human { margin:0 0 16px; }
-.about-process .ap-ai { margin:0 0 12px; }
 .about-process .ap-end h2 { margin:0 0 clamp(40px,6vw,90px); }
 .about-process .ap-end-grid h3 { margin:0 0 14px; }
 .about-process .ap-end-grid :is(a,p) { margin:0 0 6px; }
