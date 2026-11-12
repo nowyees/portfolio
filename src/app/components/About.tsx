@@ -113,7 +113,11 @@ export default function About() {
       // the line leaves from the end of the stroke under the title, where the hand has hold of it
       const g = root.querySelector<HTMLElement>('.ap-grab')!.getBoundingClientRect();
       const start = { x: g.left - box.left, y: g.top - box.top }, last = mains[mains.length - 1];
-      let main = `M ${start.x.toFixed(1)} ${start.y.toFixed(1)} ` + curve(start, mains[0], 0);
+      // it runs on past the title, curls once into a small loop and drops
+      const k = innerWidth < 760 ? .5 : 1, n = (v: number) => (v * k).toFixed(1);
+      const loop = `c ${n(60)} ${n(6)} ${n(84)} ${n(24)} ${n(80)} ${n(58)} c ${n(-3)} ${n(28)} ${n(-58)} ${n(30)} ${n(-58)} ${n(8)} c 0 ${n(-20)} ${n(44)} ${n(-16)} ${n(50)} ${n(12)} c ${n(5)} ${n(22)} ${n(4)} ${n(40)} ${n(4)} ${n(62)}`;
+      const drop = { x: start.x + 76 * k, y: start.y + 140 * k };
+      let main = `M ${start.x.toFixed(1)} ${start.y.toFixed(1)} ${loop} ` + curve(drop, mains[0], 0);
       mains.slice(1).forEach((p, i) => { main += ' ' + curve(mains[i], p, i + 1); });
       main += ' ' + curve(last, { x: last.x, y: Math.min(box.height - 30, last.y + 300) }, 40);
       setPaths({ main, w: box.width, h: box.height });
@@ -138,11 +142,11 @@ export default function About() {
       frame = 0;
       const top = root.getBoundingClientRect().top, target = innerHeight * .62 - top;
       let i = 0; while (i < 399 && samples[i] < target) i++;
-      const drawn = still ? length : length * i / 399;
+      const drawn = still ? length : Math.min(length * i / 399, scrollY * 3);   // nothing is pulled out until the page moves
       path.style.strokeDashoffset = `${length - drawn}`;
       // the hand holds the end of the line and leans the way it is pulling
       const tip = path.getPointAtLength(drawn), back = path.getPointAtLength(Math.max(0, drawn - 40));
-      const lean = drawn > 40 ? Math.max(-28, Math.min(28, Math.atan2(tip.x - back.x, tip.y - back.y) * 180 / Math.PI * -.7)) : 0;
+      const lean = drawn > 240 ? Math.max(-28, Math.min(28, Math.atan2(tip.x - back.x, tip.y - back.y) * 180 / Math.PI * -.7)) : 0;
       pen.setAttribute('transform', `translate(${tip.x.toFixed(1)} ${tip.y.toFixed(1)})`);
       pen.firstElementChild!.setAttribute('transform', `rotate(${lean.toFixed(1)})`);
       root.classList.toggle('is-pulled', scrollY > 24);
@@ -165,7 +169,7 @@ export default function About() {
         <header className="ap-hero" ref={heroRef}>
           <h1 aria-label="How I work">
             <span>How I</span> <span>work</span>
-            <svg viewBox="0 0 600 60" preserveAspectRatio="none" aria-hidden="true"><path d="M8 34 C70 12 120 50 190 30 S300 14 370 34 S500 50 592 22" /></svg>
+            <svg viewBox="0 0 600 60" preserveAspectRatio="none" aria-hidden="true"><path d="M8 34 C70 12 120 50 190 30 S270 15 300 22" /></svg>
             <i className="ap-grab" aria-hidden="true" />
           </h1>
         </header>
