@@ -20,7 +20,7 @@
 .ap-lines { position:absolute; left:0; top:0; pointer-events:none; overflow:visible; }
 .ap-lines path { fill:none; stroke:var(--ap-ink); stroke-width:5.5; stroke-linecap:round; stroke-linejoin:round; }
 /* the hand that has hold of the end of the line and pulls it down the page */
-.ap-hand { opacity:0; animation:ap-hand-in .5s ease 1.5s forwards; }
+.ap-hand, .ap-main { opacity:0; animation:ap-hand-in .5s ease 1.5s forwards; }
 .ap-hand path { stroke-width:5; }
 .ap-hand .is-fill { fill:var(--ap-bg); stroke:none; }
 .ap-hand-art { transform:scale(.8); }

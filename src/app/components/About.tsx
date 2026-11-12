@@ -92,7 +92,7 @@ export default function About() {
     return () => io.disconnect();
   }, []);
   const rootRef = useRef<HTMLDivElement>(null), mainRef = useRef<SVGPathElement>(null), penRef = useRef<SVGGElement>(null);
-  const [paths, setPaths] = useState({ main: '', w: 0, h: 0 });
+  const [paths, setPaths] = useState({ main: '', w: 0, h: 0, rest: 0 });
 
   useEffect(() => {
     if (location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView();
@@ -120,7 +120,7 @@ export default function About() {
       let main = `M ${start.x.toFixed(1)} ${start.y.toFixed(1)} ${loop} ` + curve(drop, mains[0], 0);
       mains.slice(1).forEach((p, i) => { main += ' ' + curve(mains[i], p, i + 1); });
       main += ' ' + curve(last, { x: last.x, y: Math.min(box.height - 30, last.y + 300) }, 40);
-      setPaths({ main, w: box.width, h: box.height });
+      setPaths({ main, w: box.width, h: box.height, rest: drop.y });
     };
     measure();
     const observer = new ResizeObserver(measure);
@@ -137,16 +137,19 @@ export default function About() {
     const length = path.getTotalLength(), still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const samples = Array.from({ length: 400 }, (_, i) => path.getPointAtLength(length * i / 399).y);
     path.style.strokeDasharray = `${length}`;
+    // at rest the loop is already out, with the hand hanging just under it
+    let r = 0; while (r < 399 && samples[r] < paths.rest) r++;
+    const rest = length * r / 399;
     let frame = 0;
     const update = () => {
       frame = 0;
       const top = root.getBoundingClientRect().top, target = innerHeight * .62 - top;
       let i = 0; while (i < 399 && samples[i] < target) i++;
-      const drawn = still ? length : Math.min(length * i / 399, scrollY * 3);   // nothing is pulled out until the page moves
+      const drawn = still ? length : Math.max(rest, length * i / 399);
       path.style.strokeDashoffset = `${length - drawn}`;
       // the hand holds the end of the line and leans the way it is pulling
       const tip = path.getPointAtLength(drawn), back = path.getPointAtLength(Math.max(0, drawn - 40));
-      const lean = drawn > 240 ? Math.max(-28, Math.min(28, Math.atan2(tip.x - back.x, tip.y - back.y) * 180 / Math.PI * -.7)) : 0;
+      const lean = drawn > rest + 40 ? Math.max(-28, Math.min(28, Math.atan2(tip.x - back.x, tip.y - back.y) * 180 / Math.PI * -.7)) : 0;
       pen.setAttribute('transform', `translate(${tip.x.toFixed(1)} ${tip.y.toFixed(1)})`);
       pen.firstElementChild!.setAttribute('transform', `rotate(${lean.toFixed(1)})`);
       root.classList.toggle('is-pulled', scrollY > 24);
