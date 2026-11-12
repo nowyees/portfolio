@@ -140,12 +140,12 @@ export default function About() {
     // at rest the loop is already out, with the hand hanging just under it
     let r = 0; while (r < 399 && samples[r] < paths.rest) r++;
     const rest = length * r / 399;
-    let frame = 0;
+    let frame = 0, tug = 0, idle = 0;
     const update = () => {
       frame = 0;
       const top = root.getBoundingClientRect().top, target = innerHeight * .62 - top;
       let i = 0; while (i < 399 && samples[i] < target) i++;
-      const drawn = still ? length : Math.max(rest, length * i / 399);
+      const drawn = still ? length : Math.max(rest + tug, length * i / 399);
       path.style.strokeDashoffset = `${length - drawn}`;
       // the hand holds the end of the line and leans the way it is pulling
       const tip = path.getPointAtLength(drawn), back = path.getPointAtLength(Math.max(0, drawn - 40));
@@ -160,9 +160,16 @@ export default function About() {
       });
     };
     const onScroll = () => { if (!frame) frame = requestAnimationFrame(update); };
+    // while the page waits, the hand keeps giving the line a little pull (two quick tugs, then a rest)
+    const breathe = (now: number) => {
+      idle = requestAnimationFrame(breathe);
+      const t = (now % 2200) / 2200, next = scrollY > 24 || t > .5 ? 0 : 16 * Math.abs(Math.sin(t * Math.PI * 4));
+      if (next !== tug) { tug = next; update(); }
+    };
+    if (!still) idle = requestAnimationFrame(breathe);
     update();
     addEventListener('scroll', onScroll, { passive: true }); addEventListener('resize', onScroll);
-    return () => { removeEventListener('scroll', onScroll); removeEventListener('resize', onScroll); cancelAnimationFrame(frame); };
+    return () => { removeEventListener('scroll', onScroll); removeEventListener('resize', onScroll); cancelAnimationFrame(frame); cancelAnimationFrame(idle); };
   }, [paths]);
 
   let aiCount = 0;

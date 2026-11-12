@@ -24,11 +24,9 @@
 .ap-hand path { stroke-width:5; }
 .ap-hand .is-fill { fill:var(--ap-bg); stroke:none; }
 .ap-hand-art { transform:scale(.8); }
-.ap-flow:not(.is-pulled) .ap-hand-art { animation:ap-tug 1.5s ease-in-out 2s infinite; }
 .ap-pull { font:700 26px/1 'Caveat', cursive; fill:var(--ap-ink); transition:opacity .3s; }
 .ap-flow.is-pulled .ap-pull { opacity:0; }
 @keyframes ap-hand-in { to { opacity:1; } }
-@keyframes ap-tug { 0%,100% { transform:scale(.8); } 50% { transform:translateY(9px) scale(.8); } }
 
 /* a step: words on one side of the line, the work on the other */
 .ap-step { position:relative; display:grid; grid-template-columns:minmax(0,1fr) 240px minmax(0,1fr); align-items:center; min-height:min(72svh,580px); padding:40px 0; }
@@ -91,7 +89,6 @@
   .ap-step .ap-copy { grid-column:2 !important; grid-row:1; justify-self:stretch !important; width:auto !important; }
   .ap-step .ap-media { grid-column:2 !important; grid-row:2; justify-self:stretch !important; width:auto !important; margin-top:14px; }
   .ap-hand-art { transform:scale(.5); }
-  @keyframes ap-tug { 0%,100% { transform:scale(.5); } 50% { transform:translateY(7px) scale(.5); } }
   .ap-pull { font-size:20px; }
   .ap-pill small { left:-.2em; }
   .ap-end-grid { grid-template-columns:1fr; gap:28px; }
