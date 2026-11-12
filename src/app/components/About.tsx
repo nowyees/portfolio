@@ -9,7 +9,7 @@ import '../../styles/about.css';
 // human work, from ideation to a working mock-up, a film, a still or an interactive web; where AI steps in as a tool,
 // a pale shape lands on the line. The line draws itself as the page scrolls.
 type Step = {
-  id: string; name: string; branch?: 'solid' | 'dotted'; from?: string; rejoin?: string;
+  id: string; name: string;
   human?: string;                                   // the tools in hand
   ai?: { tools: string; ko: string; en: string }[]; // where AI comes in, and for what
   aside?: { ko: string; en: string };               // a remark where AI stays out
@@ -23,7 +23,7 @@ const steps: Step[] = [
     ai: [{ tools: 'ChatGPT · Claude', ko: '반복 작업 및 프로그램끼리의 모델 추출 자동화', en: 'Automating repetitive work and moving models between programs' },
       { tools: 'Generative 3D', ko: '생성형 3D 모델을 통한 빠른 시각화', en: 'Quick visualisation with generated 3D models' }],
     media: { src: '/projects/miro/ddp/modeling.webp', to: '/projects', label: 'Miro' } },
-  { id: 'mockup', name: 'Working mockup', branch: 'solid', from: 'modeling', human: 'Rhino · Fusion · Arduino',
+  { id: 'mockup', name: 'Working mockup', human: 'Rhino · Fusion · Arduino',
     aside: { ko: '손으로 만들고, 직접 움직여 보며 검증합니다', en: 'Built by hand, proven by moving it' },
     media: { src: '/projects/identity/motion/robot-arm.mp4', poster: '/projects/identity/motion/robot-arm.webp', video: true, to: '/project/portfolio/8', label: 'Identity Camouflager' } },
   { id: 'rigging', name: 'Rigging', human: 'Blender',
@@ -32,13 +32,10 @@ const steps: Step[] = [
   { id: 'motion', name: 'Motion', human: 'Blender',
     aside: { ko: '아직은 휴먼 터치가 더 낫다고 판단', en: 'Here the human touch is still better' },
     media: { src: '/projects/lab/horse.mp4', poster: '/projects/lab/horse.webp', video: true, to: '/lab#EX-03', label: 'Lab · Reckless' } },
-  { id: 'abc', name: 'ABC file' },
-  { id: 'still', name: 'Still image', branch: 'dotted', from: 'modeling', rejoin: 'rendering',
-    media: { src: '/projects/lotty/hero.webp', to: '/project/portfolio/15', label: 'Lotty & Lorry' } },
   { id: 'rendering', name: 'Rendering', human: 'KeyShot · Blender',
     ai: [{ tools: 'ChatGPT · Claude', ko: '기존에 세팅한 재질을 자동화해서 입히는 과정에 사용', en: 'Applying materials I have already set up, automatically' }],
     media: { src: '/projects/miro/hero-plant.webp', to: '/projects', label: 'Miro' } },
-  { id: 'edited', name: 'Image edited', branch: 'dotted', from: 'rendering', human: 'Photoshop · Illustrator',
+  { id: 'edited', name: 'Image editing', human: 'Photoshop · Illustrator',
     ai: [{ tools: 'Midjourney · Firefly · Gemini', ko: '합성된 이미지를 만들기 위해 사용', en: 'For making composited images' }],
     media: { src: '/projects/lunaris/cover.webp', to: '/project/portfolio/4', label: 'Lunaris' } },
   { id: 'video', name: 'Video editing', human: 'After Effects · Premiere',
@@ -94,8 +91,8 @@ export default function About() {
     io.observe(el);
     return () => io.disconnect();
   }, []);
-  const rootRef = useRef<HTMLDivElement>(null), mainRef = useRef<SVGPathElement>(null), penRef = useRef<SVGCircleElement>(null);
-  const [paths, setPaths] = useState<{ main: string; branches: Array<{ id: string; d: string; dotted: boolean }>; w: number; h: number }>({ main: '', branches: [], w: 0, h: 0 });
+  const rootRef = useRef<HTMLDivElement>(null), mainRef = useRef<SVGPathElement>(null), penRef = useRef<SVGGElement>(null);
+  const [paths, setPaths] = useState({ main: '', w: 0, h: 0 });
 
   useEffect(() => {
     if (location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView();
@@ -112,20 +109,20 @@ export default function About() {
         const r = root.querySelector<HTMLElement>(`[data-step="${id}"] .ap-dot`)!.getBoundingClientRect();
         return { x: r.left + r.width / 2 - box.left, y: r.top + r.height / 2 - box.top };
       };
-      const mains = steps.filter(s => !s.branch).map(s => at(s.id));
-      const start = { x: mains[0].x, y: Math.max(0, mains[0].y - 150) };
+      const mains = steps.map(s => at(s.id));
+      // the line leaves from the end of the stroke under the title, where the hand has hold of it
+      const g = root.querySelector<HTMLElement>('.ap-grab')!.getBoundingClientRect();
+      const start = { x: g.left - box.left, y: g.top - box.top }, last = mains[mains.length - 1];
       let main = `M ${start.x.toFixed(1)} ${start.y.toFixed(1)} ` + curve(start, mains[0], 0);
       mains.slice(1).forEach((p, i) => { main += ' ' + curve(mains[i], p, i + 1); });
-      const branches = steps.filter(s => s.branch).flatMap((s, i) => {
-        const a = at(s.from!), b = at(s.id), list = [{ id: s.id, d: `M ${a.x.toFixed(1)} ${a.y.toFixed(1)} ` + curve(a, b, 20 + i), dotted: s.branch === 'dotted' }];
-        if (s.rejoin) { const c = at(s.rejoin); list.push({ id: s.id, d: `M ${b.x.toFixed(1)} ${b.y.toFixed(1)} ` + curve(b, c, 30 + i), dotted: true }); }
-        return list;
-      });
-      setPaths({ main, branches, w: box.width, h: box.height });
+      main += ' ' + curve(last, { x: last.x, y: Math.min(box.height - 30, last.y + 300) }, 40);
+      setPaths({ main, w: box.width, h: box.height });
     };
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(root);
+    observer.observe(root.querySelector('.ap-hero h1')!);   // the title changes size when its font arrives
+    document.fonts?.ready.then(measure);
     return () => observer.disconnect();
   }, [lang]);
 
@@ -143,16 +140,16 @@ export default function About() {
       let i = 0; while (i < 399 && samples[i] < target) i++;
       const drawn = still ? length : length * i / 399;
       path.style.strokeDashoffset = `${length - drawn}`;
-      const tip = path.getPointAtLength(drawn);
-      pen.setAttribute('cx', `${tip.x}`); pen.setAttribute('cy', `${tip.y}`);
+      // the hand holds the end of the line and leans the way it is pulling
+      const tip = path.getPointAtLength(drawn), back = path.getPointAtLength(Math.max(0, drawn - 40));
+      const lean = drawn > 40 ? Math.max(-28, Math.min(28, Math.atan2(tip.x - back.x, tip.y - back.y) * 180 / Math.PI * -.7)) : 0;
+      pen.setAttribute('transform', `translate(${tip.x.toFixed(1)} ${tip.y.toFixed(1)})`);
+      pen.firstElementChild!.setAttribute('transform', `rotate(${lean.toFixed(1)})`);
+      root.classList.toggle('is-pulled', scrollY > 24);
       root.querySelectorAll<HTMLElement>('[data-step]').forEach(el => {
         const dot = el.querySelector('.ap-dot')!.getBoundingClientRect();
         if (still || dot.top < innerHeight * .7) el.classList.add('is-in');
         else if (dot.top > innerHeight * .82) el.classList.remove('is-in');   // the line has pulled back: sleep, to wake again
-      });
-      steps.filter(s => s.branch).forEach(s => {
-        const on = root.querySelector(`[data-step="${s.id}"]`)?.classList.contains('is-in');
-        root.querySelectorAll(`[data-branch="${s.id}"]`).forEach(b => b.classList.toggle('is-in', !!on));
       });
     };
     const onScroll = () => { if (!frame) frame = requestAnimationFrame(update); };
@@ -161,33 +158,33 @@ export default function About() {
     return () => { removeEventListener('scroll', onScroll); removeEventListener('resize', onScroll); cancelAnimationFrame(frame); };
   }, [paths]);
 
-  let aiCount = 0, side = 0;
+  let aiCount = 0;
   return <SiteShell active="about">
     <main className="about-process">
-      <header className="ap-hero" ref={heroRef}>
-        <h1 aria-label="How I work">
-          <span>How I</span> <span>work</span>
-          <svg viewBox="0 0 600 60" preserveAspectRatio="none" aria-hidden="true"><path pathLength={1} d="M8 34 C70 12 120 50 190 30 S300 14 370 34 S500 50 592 22" /></svg>
-        </h1>
-        <p className="ap-lead">{t('디자인 프로세스는 손에서 시작해 손으로 끝납니다. AI는 그 사이, 필요한 자리에만 도구처럼 들어옵니다.',
-          'The design process starts and ends in the hand. AI comes in between, as a tool, only where it is needed.')}</p>
-        <ul className="ap-legend">
-          <li><i className="is-line" />( Human touch )</li>
-          <li><AiMark i={2} />( AI support )</li>
-        </ul>
-      </header>
-
       <div className="ap-flow" ref={rootRef}>
+        <header className="ap-hero" ref={heroRef}>
+          <h1 aria-label="How I work">
+            <span>How I</span> <span>work</span>
+            <svg viewBox="0 0 600 60" preserveAspectRatio="none" aria-hidden="true"><path d="M8 34 C70 12 120 50 190 30 S300 14 370 34 S500 50 592 22" /></svg>
+            <i className="ap-grab" aria-hidden="true" />
+          </h1>
+        </header>
         <svg className="ap-lines" width={paths.w} height={paths.h} viewBox={`0 0 ${paths.w || 1} ${paths.h || 1}`} aria-hidden="true">
-          {paths.branches.map((b, i) => <path key={i} d={b.d} data-branch={b.id} className={'ap-branch' + (b.dotted ? ' is-dotted' : '')} pathLength={b.dotted ? undefined : 1} />)}
           <path ref={mainRef} d={paths.main} className="ap-main" />
-          <circle ref={penRef} r="7" className="ap-pen" />
+          <g ref={penRef} className="ap-hand"><g><g className="ap-hand-art">
+            <path className="is-fill" d="M2 2 C2 -14 16 -26 32 -22 L60 -40 L128 -4 L128 62 L74 66 C50 60 28 40 14 22 Z" />
+            <path d="M128 4 C108 -28 74 -44 50 -36 C30 -28 12 -14 2 0" />
+            <path d="M2 2 C8 14 22 20 34 12 C42 6 44 -4 40 -14" />
+            <path d="M40 -14 C52 -8 58 6 54 20 C50 34 38 44 24 44" />
+            <path d="M54 14 C68 18 74 32 68 46 C62 58 50 64 38 62" />
+            <path d="M68 40 C80 44 84 56 78 66 C72 76 60 78 52 74" />
+            <path d="M78 66 C94 70 112 68 128 58" />
+          </g></g><text className="ap-pull" x="-30" y="112">scroll to pull ↓</text></g>
         </svg>
-        {steps.map(s => {
-          const flip = s.branch ? side % 2 === 0 : side++ % 2 === 1;
-          return <section key={s.id} data-step={s.id} className={'ap-step' + (s.branch ? ' is-branch' : '') + (flip ? ' is-flip' : '') + (!s.media && !s.ai ? ' is-small' : '')}>
+        {steps.map((s, n) => {
+          return <section key={s.id} data-step={s.id} className={'ap-step' + (n % 2 ? ' is-flip' : '')}>
             <div className="ap-copy">
-              <h2 className="ap-pill">{s.name}</h2>
+              <h2 className="ap-pill"><small aria-hidden="true">{String(n + 1).padStart(2, '0')}</small>{s.name}</h2>
               {s.human && <p className="ap-human"><span>( Human touch )</span>{s.human}</p>}
               {s.ai?.map(a => <div className="ap-ai" key={a.tools}>
                 <AiMark i={aiCount++} />
