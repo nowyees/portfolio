@@ -1,227 +1,33 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import SiteShell from './SiteShell';
 import ContactDialog from './ContactDialog';
-import { useLang } from '../../lib/i18n';
-import '../../styles/about.css';
-
-// ABOUT: the design process as one hand-drawn line (after the owner's "AI Process" slide). The black line is the
-// human work, from ideation to a working mock-up, a film, a still or an interactive web; where AI steps in as a tool,
-// a pale shape lands on the line. The line draws itself as the page scrolls.
-type Step = {
-  id: string; name: string;
-  hand: string;                                     // what is in the hand
-  ai?: { tools: string; ko: string; en: string }[]; // where AI comes in, and for what
-  none?: { ko: string; en: string };                // or why it stays out
-  media?: { src: string; poster?: string; video?: boolean; to: string; label: string };
-};
-const steps: Step[] = [
-  { id: 'ideation', name: 'Ideation', hand: 'Sketch · Mockup',
-    ai: [{ tools: 'ChatGPT · Claude · Midjourney', ko: '방향을 넓게, 빠르게 탐색', en: 'Exploring directions, wide and fast' }],
-    media: { src: '/projects/miro/ddp/studio-desk.webp', to: '/projects', label: 'Miro' } },
-  { id: 'modeling', name: '3D modeling', hand: 'Rhino · Fusion · Blender',
-    ai: [{ tools: 'ChatGPT · Claude', ko: '반복 작업과 프로그램 간 모델 변환을 자동화', en: 'Automating repetitive work and model transfer between programs' }, { tools: 'Generative 3D', ko: '형태를 빠르게 시각화', en: 'Seeing a form quickly' }],
-    media: { src: '/projects/miro/ddp/modeling.webp', to: '/projects', label: 'Miro' } },
-  { id: 'mockup', name: 'Working mockup', hand: 'Rhino · Fusion · Arduino',
-    none: { ko: '손으로 만들고 직접 움직여 보며 검증', en: 'Built by hand, proven by moving it' },
-    media: { src: '/projects/identity/motion/robot-arm.mp4', poster: '/projects/identity/motion/robot-arm.webp', video: true, to: '/project/portfolio/8', label: 'Identity Camouflager' } },
-  { id: 'rigging', name: 'Rigging', hand: 'Blender',
-    ai: [{ tools: 'ChatGPT · Claude', ko: '초기 관절과 물리 세팅', en: 'First joint and physics set-up' }],
-    media: { src: '/projects/lab/miro-arm.mp4', poster: '/projects/lab/miro-arm-poster.webp', video: true, to: '/lab#EX-02', label: 'Lab · Miro arm' } },
-  { id: 'motion', name: 'Motion', hand: 'Blender',
-    none: { ko: '아직은 손이 더 낫다고 판단', en: 'Here the hand is still better' },
-    media: { src: '/projects/lab/horse.mp4', poster: '/projects/lab/horse.webp', video: true, to: '/lab#EX-03', label: 'Lab · Reckless' } },
-  { id: 'rendering', name: 'Rendering', hand: 'KeyShot · Blender',
-    ai: [{ tools: 'ChatGPT · Claude', ko: '세팅해 둔 재질을 자동으로 입히기', en: 'Applying my own materials automatically' }],
-    media: { src: '/projects/miro/hero-plant.webp', to: '/projects', label: 'Miro' } },
-  { id: 'edited', name: 'Image editing', hand: 'Photoshop · Illustrator',
-    ai: [{ tools: 'Midjourney · Firefly · Gemini', ko: '합성 이미지 제작', en: 'Making composited images' }],
-    media: { src: '/projects/lunaris/cover.webp', to: '/project/portfolio/4', label: 'Lunaris' } },
-  { id: 'video', name: 'Video editing', hand: 'After Effects · Premiere',
-    ai: [{ tools: 'Google Flow · Gemini', ko: '영상 합성과 필요한 소스 생성', en: 'Compositing and generating footage' }],
-    media: { src: '/projects/miro/motion/scenario-film.mp4', poster: '/projects/miro/motion/scenario-film.webp', video: true, to: '/projects', label: 'Miro' } },
-  { id: 'web', name: 'Web building', hand: 'Git',
-    ai: [{ tools: 'ChatGPT · Claude', ko: '인터랙션 웹 구현', en: 'Building the interactive web' }],
-    media: { src: '/projects/lab/robot-cell.mp4', poster: '/projects/lab/robot-cell.webp', video: true, to: '/lab#EX-05', label: 'Lab · Robot cell' } },
-];
-
-// The pale shapes AI arrives as (after Claude's own cut-paper shapes): triangle, square, circle, diamond.
-const shapes = [
-  'M50 6 C58 20 84 62 94 88 C70 92 28 92 6 88 C18 62 42 20 50 6 Z',
-  'M10 12 C36 8 66 9 90 11 C93 36 92 64 90 90 C64 93 34 92 10 90 C8 64 8 38 10 12 Z',
-  'M50 6 C76 6 94 26 94 50 C94 76 74 94 50 94 C24 94 6 76 6 50 C6 24 24 6 50 6 Z',
-  'M50 4 C62 18 82 38 96 50 C82 62 62 82 50 96 C38 82 18 62 4 50 C18 38 38 18 50 4 Z',
-];
-const AiMark = ({ i }: { i: number }) => <svg className="ap-shape" viewBox="0 0 100 100" aria-hidden="true"><path d={shapes[i % shapes.length]} /></svg>;
-
-function Media({ media, name }: { media: NonNullable<Step['media']>; name: string }) {
-  const ref = useRef<HTMLVideoElement>(null);
-  useEffect(() => {
-    const video = ref.current;
-    if (!video || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const io = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) video.play().catch(() => {}); else video.pause(); }, { threshold: .25 });
-    io.observe(video);
-    return () => io.disconnect();
-  }, []);
-  return <Link className="ap-work" to={media.to} aria-label={name + ' — ' + media.label}>
-    {media.video ? <video ref={ref} src={media.src} poster={media.poster} muted loop playsInline preload="metadata" />
-      : <img src={media.src} alt="" loading="lazy" />}
-    <span>{media.label} →</span>
-  </Link>;
-}
-
-// A wobbly hand-drawn curve between two points: mostly vertical, easing sideways, never quite straight.
-const wobble = (i: number, k: number) => Math.sin(i * 12.9898 + k * 78.233) * (innerWidth < 760 ? 8 : 46);
-const curve = (a: { x: number; y: number }, b: { x: number; y: number }, i: number) => {
-  const dy = b.y - a.y;
-  return `C ${(a.x + wobble(i, 1)).toFixed(1)} ${(a.y + dy * .45).toFixed(1)}, ${(b.x + wobble(i, 2)).toFixed(1)} ${(b.y - dy * .45).toFixed(1)}, ${b.x.toFixed(1)} ${b.y.toFixed(1)}`;
-};
 
 export default function About() {
   const [contactOpen, setContactOpen] = useState(false);
-  const location = useLocation(), lang = useLang();
-  const t = (ko: string, en: string) => lang === 'ko' ? ko : en;
-  const heroRef = useRef<HTMLElement>(null);
-  // the title writes itself in each time it comes back into view
-  useEffect(() => {
-    const el = heroRef.current;
-    if (!el) return;
-    const io = new IntersectionObserver(([entry]) => el.classList.toggle('is-in', entry.isIntersecting), { threshold: .35 });
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-  const rootRef = useRef<HTMLDivElement>(null), mainRef = useRef<SVGPathElement>(null), penRef = useRef<SVGGElement>(null);
-  const [paths, setPaths] = useState({ main: '', w: 0, h: 0, rest: 0 });
-
+  const location = useLocation();
   useEffect(() => {
     if (location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView();
     else window.scrollTo(0, 0);
   }, [location.hash]);
 
-  // Lay the line through the dots of the steps, wherever the layout has put them.
-  useLayoutEffect(() => {
-    const root = rootRef.current;
-    if (!root) return;
-    const measure = () => {
-      const box = root.getBoundingClientRect();
-      const at = (id: string) => {
-        const r = root.querySelector<HTMLElement>(`[data-step="${id}"] .ap-dot`)!.getBoundingClientRect();
-        return { x: r.left + r.width / 2 - box.left, y: r.top + r.height / 2 - box.top };
-      };
-      const mains = steps.map(s => at(s.id));
-      // the line leaves from the end of the stroke under the title, where the hand has hold of it
-      const g = root.querySelector<HTMLElement>('.ap-grab')!.getBoundingClientRect();
-      const start = { x: g.left - box.left, y: g.top - box.top }, last = mains[mains.length - 1];
-      // it runs on past the title, curls once into a small loop and drops
-      const k = innerWidth < 760 ? .5 : 1, n = (v: number) => (v * k).toFixed(1);
-      const loop = `c ${n(60)} ${n(6)} ${n(84)} ${n(24)} ${n(80)} ${n(58)} c ${n(-3)} ${n(28)} ${n(-58)} ${n(30)} ${n(-58)} ${n(8)} c 0 ${n(-20)} ${n(44)} ${n(-16)} ${n(50)} ${n(12)} c ${n(5)} ${n(22)} ${n(4)} ${n(40)} ${n(4)} ${n(62)}`;
-      const drop = { x: start.x + 76 * k, y: start.y + 140 * k };
-      let main = `M ${start.x.toFixed(1)} ${start.y.toFixed(1)} ${loop} ` + curve(drop, mains[0], 0);
-      mains.slice(1).forEach((p, i) => { main += ' ' + curve(mains[i], p, i + 1); });
-      main += ' ' + curve(last, { x: last.x, y: Math.min(box.height - 30, last.y + 300) }, 40);
-      setPaths({ main, w: box.width, h: box.height, rest: drop.y });
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(root);
-    observer.observe(root.querySelector('.ap-hero h1')!);   // the title changes size when its font arrives
-    document.fonts?.ready.then(measure);
-    return () => observer.disconnect();
-  }, [lang]);
-
-  // The line is drawn as far as the middle of the screen; steps and branches wake as it reaches them.
-  useEffect(() => {
-    const root = rootRef.current, path = mainRef.current, pen = penRef.current;
-    if (!root || !path || !pen || !paths.main) return;
-    const length = path.getTotalLength(), still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const samples = Array.from({ length: 400 }, (_, i) => path.getPointAtLength(length * i / 399).y);
-    path.style.strokeDasharray = `${length}`;
-    // at rest the loop is already out, with the hand hanging just under it
-    let r = 0; while (r < 399 && samples[r] < paths.rest) r++;
-    const rest = length * r / 399;
-    let frame = 0, tug = 0, idle = 0;
-    const update = () => {
-      frame = 0;
-      const top = root.getBoundingClientRect().top, target = innerHeight * .62 - top;
-      let i = 0; while (i < 399 && samples[i] < target) i++;
-      const drawn = still ? length : Math.max(rest + tug, length * i / 399);
-      path.style.strokeDashoffset = `${length - drawn}`;
-      // the hand holds the end of the line and leans the way it is pulling
-      const tip = path.getPointAtLength(drawn), back = path.getPointAtLength(Math.max(0, drawn - 40));
-      const lean = drawn > rest + 40 ? Math.max(-28, Math.min(28, Math.atan2(tip.x - back.x, tip.y - back.y) * 180 / Math.PI * -.7)) : 0;
-      pen.setAttribute('transform', `translate(${tip.x.toFixed(1)} ${tip.y.toFixed(1)})`);
-      pen.firstElementChild!.setAttribute('transform', `rotate(${lean.toFixed(1)})`);
-      root.classList.toggle('is-pulled', scrollY > 24);
-      root.querySelectorAll<HTMLElement>('[data-step]').forEach(el => {
-        const dot = el.querySelector('.ap-dot')!.getBoundingClientRect();
-        if (still || dot.top < innerHeight * .7) el.classList.add('is-in');
-        else if (dot.top > innerHeight * .82) el.classList.remove('is-in');   // the line has pulled back: sleep, to wake again
-      });
-    };
-    const onScroll = () => { if (!frame) frame = requestAnimationFrame(update); };
-    // while the page waits, the hand keeps giving the line a little pull (two quick tugs, then a rest)
-    const breathe = (now: number) => {
-      idle = requestAnimationFrame(breathe);
-      const t = (now % 2200) / 2200, next = scrollY > 24 || t > .5 ? 0 : 16 * Math.abs(Math.sin(t * Math.PI * 4));
-      if (next !== tug) { tug = next; update(); }
-    };
-    if (!still) idle = requestAnimationFrame(breathe);
-    update();
-    addEventListener('scroll', onScroll, { passive: true }); addEventListener('resize', onScroll);
-    return () => { removeEventListener('scroll', onScroll); removeEventListener('resize', onScroll); cancelAnimationFrame(frame); cancelAnimationFrame(idle); };
-  }, [paths]);
-
-  let aiCount = 0;
   return <SiteShell active="about">
-    <main className="about-process">
-      <div className="ap-flow" ref={rootRef}>
-        <header className="ap-hero" ref={heroRef}>
-          <h1 aria-label="How I work">
-            <span>How I</span> <span>work</span>
-            <svg viewBox="0 0 600 60" preserveAspectRatio="none" aria-hidden="true"><path d="M8 34 C70 12 120 50 190 30 S270 15 300 22" /></svg>
-            <i className="ap-grab" aria-hidden="true" />
-          </h1>
-        </header>
-        <svg className="ap-lines" width={paths.w} height={paths.h} viewBox={`0 0 ${paths.w || 1} ${paths.h || 1}`} aria-hidden="true">
-          <path ref={mainRef} d={paths.main} className="ap-main" />
-          <g ref={penRef} className="ap-hand"><g><g className="ap-hand-art">
-            <path className="is-fill" d="M2 2 C2 -14 16 -26 32 -22 L60 -40 L128 -4 L128 62 L74 66 C50 60 28 40 14 22 Z" />
-            <path d="M128 4 C108 -28 74 -44 50 -36 C30 -28 12 -14 2 0" />
-            <path d="M2 2 C8 14 22 20 34 12 C42 6 44 -4 40 -14" />
-            <path d="M40 -14 C52 -8 58 6 54 20 C50 34 38 44 24 44" />
-            <path d="M54 14 C68 18 74 32 68 46 C62 58 50 64 38 62" />
-            <path d="M68 40 C80 44 84 56 78 66 C72 76 60 78 52 74" />
-            <path d="M78 66 C94 70 112 68 128 58" />
-          </g></g><text className="ap-pull" x="-30" y="112">scroll to pull ↓</text></g>
-        </svg>
-        {steps.map((s, n) => {
-          return <section key={s.id} data-step={s.id} className={'ap-step' + (n % 2 ? ' is-flip' : '')}>
-            <div className="ap-copy">
-              <h2 className="ap-pill"><small aria-hidden="true">{String(n + 1).padStart(2, '0')}</small>{s.name}</h2>
-              <dl className="ap-rows">
-                <div><dt><i className="ap-ink" aria-hidden="true" />Hand</dt><dd><b>{s.hand}</b></dd></div>
-                {s.ai?.map((a, i) => <div key={a.tools}><dt>{i === 0 && <><AiMark i={aiCount++} />AI</>}</dt><dd><b>{a.tools}</b><span>{t(a.ko, a.en)}</span></dd></div>)}
-                {s.none && <div className="is-none"><dt><AiMark i={aiCount++} />AI</dt><dd><b>{t('쓰지 않음', 'Not here')}</b><span>{t(s.none.ko, s.none.en)}</span></dd></div>}
-              </dl>
-            </div>
-            <i className="ap-dot" aria-hidden="true" />
-            <div className="ap-media">{s.media && <Media media={s.media} name={s.name} />}</div>
-          </section>;
-        })}
-      </div>
-
-      <section id="contact" className="ap-end">
-        <h2>{t('여기까지가 제가 일하는 방식입니다.', 'That is how I work.')}</h2>
-        <div className="ap-end-grid">
-          <div><h3>Contact</h3><a href="mailto:ljwoong1104@gmail.com">ljwoong1104@gmail.com</a><a href="https://instagram.com/now_y_es" target="_blank" rel="noopener noreferrer">Instagram ↗︎</a><a href="tel:010-2380-9280">010-2380-9280</a></div>
-          <div><h3>Selected Press</h3><a href="https://www.dezeen.com/2025/12/15/wearable-device-for-sensory-problems-among-projects-from-hongik-university/" target="_blank" rel="noopener noreferrer">Dezeen 2025 — Lunaris ↗︎</a></div>
-          <div><h3>Lee Jae Woong</h3><p>Design Engineer</p><p>Product · Robotics · Interactive web</p></div>
-        </div>
-        <footer className="ap-foot"><Link to="/">Jaydne. Studio</Link>
-          <button type="button" onClick={() => setContactOpen(true)}>Contact / Admin ↗︎</button>
-          <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>Back to top ↑︎</button></footer>
+    <main className="about-page">
+      <section className="about-opening">
+        <h1>Exploring the space between<br />objects, people and the<br />stories that connect them.</h1>
+        <p>Lee Jae Woong — Design Engineer</p>
       </section>
+      <section className="about-disciplines" aria-label="Design disciplines">
+        <div><h2>Product Design</h2><p>Objects<br />Robotics<br />Wearable Devices<br />Design Engineering</p></div>
+        <div><h2>Visual Exploration</h2><p>Image Making<br />3D Design<br />Speculative Design<br />Fashion &amp; Space</p></div>
+      </section>
+      <section id="contact" className="about-contact-section">
+        <div className="about-press"><h2>Selected Press</h2><a href="https://www.dezeen.com/2025/12/15/wearable-device-for-sensory-problems-among-projects-from-hongik-university/" target="_blank" rel="noopener noreferrer">Dezeen <sup>2025</sup></a><p>LUNARIS</p></div>
+        <div className="about-contact"><h2>Contact</h2><a href="mailto:ljwoong1104@gmail.com">ljwoong1104@gmail.com</a><a href="https://instagram.com/now_y_es" target="_blank" rel="noopener noreferrer">Instagram ↗︎</a><a href="tel:010-2380-9280">010-2380-9280</a><button type="button" onClick={() => setContactOpen(true)}>Contact / Admin ↗︎</button></div>
+      </section>
+      <footer className="about-bottom"><Link to="/">LJ .W</Link><span>Lee Jae Woong</span><button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>Back to top ↑︎</button></footer>
     </main>
     <ContactDialog open={contactOpen} onClose={() => setContactOpen(false)} dark={false} />
   </SiteShell>;
 }
+
