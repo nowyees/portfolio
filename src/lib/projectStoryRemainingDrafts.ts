@@ -123,8 +123,8 @@ const reckless: ProjectStory = {
   name: 'Reckless', discipline: 'Quadruped racing robot', presentation: 'editorial',
   hero: image('reckless/hero'),
   intro: {
-    ko: '속도가 네 발로 달린다면.\n레이싱의 긴장감과 사족 보행의 움직임을 결합한 새로운 모터스포츠 콘셉트입니다.',
-    en: 'What if speed moved on four legs? A quadruped racing concept.',
+    ko: '자율주행 시대에도 속도를 향한 사람들의 욕망은 사라지지 않습니다.\n그 욕망을 채우고 사족 보행 로봇의 기술을 겨루는 무대로, 사족 보행 로봇 레이싱이 자리 잡을 것이라 보았습니다.',
+    en: 'Self-driving will not end the desire for speed. Quadruped robot racing is where that desire, and the technology, could go next.',
   },
   facts: [['Team', 'Solo project'], ['Focus', 'Robot design · Racing concept'], ['Stage', 'Concept study']],
   sections: [
