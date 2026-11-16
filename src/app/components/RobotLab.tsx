@@ -25,6 +25,40 @@ const IDLE_HINT = 'CLICK A ROBOT OR THE CAR';
 // Shown inside a Lab sheet (an iframe), the scene keeps only its click cues and a sound switch; the sheet has the words.
 const FRAMED = typeof window !== 'undefined' && window.top !== window.self;
 
+// Parts too small or too tucked away to show in a shadow or in the floor's reflection (about a fifth of the triangles)
+const HIDDEN_DETAIL = /^(Mesh|Leather Shader|Ceramic brake disc|Nurburgring logo diffuser)$/;
+
+// The car's honeycomb grilles are plain sheets in the model; the material punches the holes (110k triangles saved).
+// Too far away to tell the holes apart, the sheet is drawn whole and darker instead of shimmering.
+const grilleHoles = (m: THREE.Material) => {
+  m.side = THREE.DoubleSide;
+  m.onBeforeCompile = (shader) => {
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', `#include <common>
+varying vec3 vGrillePos;
+varying vec3 vGrilleN;`)
+      .replace('#include <project_vertex>', `#include <project_vertex>
+vGrillePos = (modelMatrix * vec4(transformed, 1.0)).xyz;
+vGrilleN = mat3(modelMatrix) * objectNormal;`);
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', `#include <common>
+varying vec3 vGrillePos;
+varying vec3 vGrilleN;`)
+      .replace('#include <color_fragment>', `#include <color_fragment>
+        {
+          vec3 an = abs(vGrilleN);
+          vec2 uv = (an.x > an.y && an.x > an.z ? vGrillePos.zy : an.y > an.z ? vGrillePos.xz : vGrillePos.xy) / 0.012;
+          vec2 r = vec2(1.0, 1.7320508), h = r * 0.5;
+          vec2 a = mod(uv, r) - h, b = mod(uv - h, r) - h;
+          vec2 g = abs(dot(a, a) < dot(b, b) ? a : b);
+          float d = max(dot(g, h), g.x);
+          if (fwidth(uv.x) + fwidth(uv.y) > 0.7) diffuseColor.rgb *= 0.4;
+          else if (d < 0.37) discard;
+        }`);
+  };
+  m.customProgramCacheKey = () => 'grille-holes';
+};
+
 // Removes NaN/Inf pixels before bloom (otherwise bloom smears them into black blocks)
 const SanitizeShader = {
   uniforms: { tDiffuse: { value: null } },
@@ -79,7 +113,7 @@ export default function RobotLab() {
     const audio = new LabAudio();
     audioRef.current = audio;
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, touch ? 1.25 : 1.5));
     renderer.setSize(mount.clientWidth, mount.clientHeight);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -179,9 +213,13 @@ export default function RobotLab() {
     // The mirror re-renders the whole scene; refresh it every other frame (motion here is slow,
     // a one-frame-old reflection is invisible). Same for the spot's shadow map.
     let frameNo = 0;
+    const mirrorSkip: THREE.Object3D[] = [];
     const reflect = reflector.onBeforeRender.bind(reflector);
     reflector.onBeforeRender = (...args: Parameters<typeof reflect>) => {
-      if (frameNo % 2 === 0) reflect(...args);
+      if (frameNo % 2 !== 0) return;
+      mirrorSkip.forEach((o) => (o.visible = false));
+      reflect(...args);
+      mirrorSkip.forEach((o) => (o.visible = true));
     };
     renderer.shadowMap.autoUpdate = false;
 
@@ -228,14 +266,15 @@ export default function RobotLab() {
     const cablesReq = fetch('/models/robot_cell_cables.json').then((r) => r.json() as Promise<CableData[]>);
 
     loader.load(
-      '/models/robot_cell.glb',
+      '/models/robot_cell.glb?v=3',
       async (gltf) => {
         if (disposed) return;
         const root = gltf.scene;
         root.traverse((o: any) => {
           if (o.name === 'Haze') o.visible = false; // Cycles volume box
           if (!o.isMesh) return;
-          o.castShadow = true;
+          // grilles, brake discs and the cabin: their shadows fall where nobody can see them
+          o.castShadow = !HIDDEN_DETAIL.test(o.material?.name ?? '');
           o.receiveShadow = true;
           // decimation can leave zero/NaN normals -> NaN shading
           const n = o.geometry.attributes.normal as THREE.BufferAttribute | undefined;
@@ -257,6 +296,7 @@ export default function RobotLab() {
               const e = (m.emissive.r + m.emissive.g + m.emissive.b) * (m.emissiveIntensity ?? 1);
               if (e > 2.5) m.emissiveIntensity = (m.emissiveIntensity ?? 1) * (2.5 / e);
             }
+            if (m.name === 'Mesh') grilleHoles(m);
             if (m.name === 'Floor_Epoxy') {
               m.color.set(0x030304); m.roughness = 0.22; m.metalness = 0; m.map = null;
               m.envMapIntensity = 0.12; m.transparent = true; m.opacity = 0.86;
@@ -386,6 +426,8 @@ export default function RobotLab() {
         // ---- performance: ~1,400 meshes -> one per (moving part, material)
         const merged = mergeStatic(root, (o) => /_J\d$/.test(o.name) || ROBOT_IDS.includes(o.name));
         if (import.meta.env.DEV) console.info('[robot lab] meshes', merged.before, '->', merged.after);
+        root.traverse((o: any) => { if (o.isMesh && HIDDEN_DETAIL.test(o.material?.name ?? '')) mirrorSkip.push(o); });
+        renderer.shadowMap.needsUpdate = true;
 
         // ---- live cables
         const cableData = await cablesReq;
@@ -496,16 +538,24 @@ export default function RobotLab() {
 
     // ---- adaptive quality: a machine that can't hold ~30fps steps down one level at a time (resolution, then the
     // floor mirror, then the glow, then resolution again) until it can. Fast machines never leave level 0.
-    let quality = 0, slowFor = 0, calmUntil = performance.now() + 4000;   // measure only once loading has settled
+    let quality = 0, slowFor = 0, calmUntil = performance.now() + 3000;   // measure only once loading has settled
     const stepDown = () => {
       quality++;
       mount.dataset.quality = String(quality);
-      calmUntil = performance.now() + 2500;   // let each step take effect before judging again
-      if (quality === 1) { renderer.setPixelRatio(1); composer.setPixelRatio(1); onResize(); }
+      calmUntil = performance.now() + 1500;   // let each step take effect before judging again
+      if (quality === 1) {
+        if (renderer.getPixelRatio() <= 1) { stepDown(); return; }   // already at 1: this step would change nothing
+        renderer.setPixelRatio(1); composer.setPixelRatio(1); onResize();
+      }
       else if (quality === 2) reflector.visible = false;
       else if (quality === 3) bloom.enabled = false;
       else if (quality === 4) { renderer.setPixelRatio(0.7); composer.setPixelRatio(0.7); onResize(); }
     };
+
+    // a laptop's built-in graphics won't hold the full resolution: don't make it prove that first
+    const gl = renderer.getContext(), dbg = gl.getExtension('WEBGL_debug_renderer_info');
+    const chip = dbg ? String(gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL)) : '';
+    if (/Intel|UHD|Iris|Mali|Adreno|PowerVR|SwiftShader|llvmpipe|Basic Render/i.test(chip) && !/Arc/i.test(chip) && renderer.getPixelRatio() > 1) stepDown();
 
     // ---- loop
     let frames = 0, acc = 0, raf = 0, wall = performance.now();
@@ -600,7 +650,7 @@ export default function RobotLab() {
       }
       film.uniforms.uTime.value = t;
       frameNo++;
-      if (frameNo % 2 === 0) renderer.shadowMap.needsUpdate = true;
+      if (frameNo % (robots.some((r) => Math.abs(r.v) > 0.02) ? 2 : 30) === 0) renderer.shadowMap.needsUpdate = true;
       composer.render();
 
       frames++;
@@ -610,8 +660,8 @@ export default function RobotLab() {
         // real frame rate (dt is capped, so it can't tell how slow a slow machine is)
         const real = frames / ((performance.now() - wall) / 1000);
         if (performance.now() > calmUntil && quality < 4) {
-          slowFor = real < 30 ? slowFor + 1 : 0;
-          if (slowFor >= 3) { stepDown(); slowFor = 0; }
+          slowFor = real < 40 ? slowFor + 1 : 0;
+          if (slowFor >= 2) { stepDown(); slowFor = 0; }
         }
         frames = 0;
         acc = 0;

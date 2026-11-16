@@ -1,4 +1,4 @@
-// Pinned studies change scene every PIN_STEP of a screen's height of ordinary scrolling (the page is never held).
+// Pinned studies change scene every PIN_STEP of a screen's height of scrolling; on a wheel or trackpad one push moves one scene.
 export const PIN_STEP = .6;
 
 export function pinnedStepIndex(offset: number, step: number, count: number) {

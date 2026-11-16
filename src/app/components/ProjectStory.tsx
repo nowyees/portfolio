@@ -145,12 +145,45 @@ function Pinned({ steps, chapter, title }: {
     };
     const changeMode = () => { setPinned(mode.matches); update(); };
     const request = () => { if (!frame) frame = requestAnimationFrame(update); };
+    // One swipe, one scene. A trackpad flick keeps sending wheel events while it coasts, which used to carry the page
+    // through every scene at once. While the stage is pinned, a gesture moves exactly one scene and the rest of its
+    // coasting is swallowed; the next scene needs a new push. Leaving past the first or last scene scrolls as usual.
+    let lastTime = 0, lastSize = 0, pushed = 0, spent = false, heldUntil = 0, wasInside = false;
+    const wheel = (event: WheelEvent) => {
+      const now = performance.now(), size = Math.abs(event.deltaY);
+      // a new push: after a pause, or stronger than the event before it (coasting only ever gets weaker)
+      const fresh = now - lastTime > 140 || size > lastSize * 1.5 + 6 || (size >= 50 && size >= lastSize && now > heldUntil);
+      lastTime = now; lastSize = size;
+      if (!mode.matches || event.ctrlKey || Math.abs(event.deltaX) > size) { wasInside = false; return; }
+      const step = window.innerHeight * PIN_STEP, last = (steps.length - 1) * step, at = -element.getBoundingClientRect().top;
+      const inside = at >= -2 && at <= last + 2;
+      if (!inside) { wasInside = false; return; }
+      const index = pinnedStepIndex(at, step, steps.length), down = event.deltaY > 0;
+      const go = (to: number) => {
+        window.scrollTo({ top: window.scrollY + (to * step - at), behavior: 'smooth' });
+        spent = true; pushed = 0; heldUntil = now + 450;
+      };
+      if (!wasInside) {   // coasted in from outside: stop on the nearest scene
+        wasInside = true;
+        if (!fresh) { event.preventDefault(); go(index); return; }
+      }
+      if (spent && (!fresh || now < heldUntil)) { event.preventDefault(); return; }
+      if (spent) { spent = false; pushed = 0; }
+      const aligned = Math.abs(at - index * step) < 3;
+      if (aligned && (down ? index === steps.length - 1 : index === 0)) { wasInside = false; return; }   // out past either end
+      event.preventDefault();
+      pushed += event.deltaY;
+      if (!aligned) go(index);
+      else if (Math.abs(pushed) >= 24) go(index + (down ? 1 : -1));
+    };
     changeMode();
     window.addEventListener('scroll', request, { passive: true });
+    window.addEventListener('wheel', wheel, { passive: false });
     window.addEventListener('resize', request);
     mode.addEventListener('change', changeMode);
     return () => {
       cancelAnimationFrame(frame); window.removeEventListener('scroll', request); window.removeEventListener('resize', request);
+      window.removeEventListener('wheel', wheel);
       mode.removeEventListener('change', changeMode);
     };
   }, [steps]);
