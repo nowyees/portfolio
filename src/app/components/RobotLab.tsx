@@ -7,7 +7,6 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
-import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { Reflector } from 'three/examples/jsm/objects/Reflector.js';
 import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js';
 import { mergeStatic } from '../../lib/mergeStatic';
@@ -59,33 +58,12 @@ varying vec3 vGrilleN;`)
   m.customProgramCacheKey = () => 'grille-holes';
 };
 
-// Removes NaN/Inf pixels before bloom (otherwise bloom smears them into black blocks)
-const SanitizeShader = {
-  uniforms: { tDiffuse: { value: null } },
-  vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.); }',
-  fragmentShader: `uniform sampler2D tDiffuse; varying vec2 vUv;
-    void main(){ vec4 c = texture2D(tDiffuse, vUv);
-      if (any(isnan(c)) || any(isinf(c))) c = vec4(0.,0.,0.,1.);
-      gl_FragColor = min(c, vec4(40.)); }`,
-};
+const PASS_VERTEX = 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.); }';
 
-// Film look: vignette + grain, applied after tonemapping
-const FilmShader = {
-  uniforms: { tDiffuse: { value: null }, uTime: { value: 0 } },
-  vertexShader: SanitizeShader.vertexShader,
-  fragmentShader: `uniform sampler2D tDiffuse; uniform float uTime; varying vec2 vUv;
-    float h(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233))) * 43758.5453); }
-    void main(){ vec4 c = texture2D(tDiffuse, vUv);
-      vec2 d = vUv - .5; float vig = smoothstep(.85, .25, length(d * vec2(1.15, 1.)));
-      c.rgb *= mix(.12, 1., vig);
-      c.rgb += (h(vUv * 1000. + fract(uTime) * 91.7) - .5) * .045;
-      gl_FragColor = c; }`,
-};
-
-// Trial (add ?fx to the address): tone mapping, vignette and grain in one pass instead of three.
+// Last full-screen pass: tone mapping, then the film look (vignette + grain), in one go.
 const FinalShader = {
   uniforms: { tDiffuse: { value: null }, uTime: { value: 0 } },
-  vertexShader: SanitizeShader.vertexShader,
+  vertexShader: PASS_VERTEX,
   fragmentShader: `uniform sampler2D tDiffuse; uniform float uTime; varying vec2 vUv;
     float h(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233))) * 43758.5453); }
     void main(){ gl_FragColor = min(texture2D(tDiffuse, vUv), vec4(40.));
@@ -95,9 +73,6 @@ const FinalShader = {
       gl_FragColor.rgb *= mix(.12, 1., vig);
       gl_FragColor.rgb += (h(vUv * 1000. + fract(uTime) * 91.7) - .5) * .045; }`,
 };
-// Options to compare before deciding: /lab/robot?lights (no accent light over each robot), ?fx (fewer full-screen passes)
-const TRY = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
-
 type Robot = {
   id: string;
   joints: { obj: THREE.Object3D; rest: THREE.Quaternion; work: THREE.Quaternion }[];
@@ -214,8 +189,6 @@ export default function RobotLab() {
     spot.shadow.mapSize.set(touch ? 1024 : 2048, touch ? 1024 : 2048);
     spot.shadow.bias = -0.0004;
     scene.add(spot, spot.target);
-    // accent cone over each robot (placed once the model is loaded); brightens while it works or is hovered
-    const accentSpots: THREE.SpotLight[] = [];
 
     // Glossy epoxy floor: planar mirror under the semi-transparent floor mesh
     const reflector = new Reflector(new THREE.PlaneGeometry(60, 60), {
@@ -241,11 +214,9 @@ export default function RobotLab() {
 
     const composer = new EffectComposer(renderer);
     composer.addPass(new RenderPass(scene, camera));
-    if (!TRY.has('fx')) composer.addPass(new ShaderPass(SanitizeShader));
     const bloom = new UnrealBloomPass(new THREE.Vector2(mount.clientWidth, mount.clientHeight), 0.24, 0.25, 1.0);
     composer.addPass(bloom);
-    if (!TRY.has('fx')) composer.addPass(new OutputPass());
-    const film = new ShaderPass(TRY.has('fx') ? FinalShader : FilmShader);
+    const film = new ShaderPass(FinalShader);
     composer.addPass(film);
 
     // camera may go anywhere inside this box (filled from the wall meshes once loaded)
@@ -411,16 +382,6 @@ export default function RobotLab() {
           });
         }
 
-        if (!TRY.has('lights')) robots.forEach((r) => {
-          const c = r.box.getCenter(new THREE.Vector3());
-          const s = new THREE.SpotLight(0xffffff, 0, 9, 0.32, 0.6, 1.5);
-          s.position.set(c.x, 6.2, c.z);
-          s.target.position.set(c.x, 0, c.z);
-          s.userData.base = 24;
-          scene.add(s, s.target);
-          accentSpots.push(s);
-        });
-
         // room interior from the wall meshes, so the camera can orbit all the way round without leaving it
         const inner = (name: string, pick: (b: THREE.Box3, c: THREE.Vector3) => void) => {
           const o = root.getObjectByName(name);
@@ -535,6 +496,27 @@ export default function RobotLab() {
       hovered = pick(e);
       renderer.domElement.style.cursor = hovered ? 'pointer' : 'grab';
     };
+    // Trackpad: two fingers turn the view, pinch zooms. A mouse wheel zooms.
+    // (Handled here rather than by OrbitControls: the loop re-seats the camera from orbitPos every frame.)
+    let padUntil = 0;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      const now = performance.now();
+      const pad = e.deltaMode === 0 && !e.ctrlKey && (e.deltaX !== 0 || Math.abs(e.deltaY) < 40 || now < padUntil);
+      if (pad) {
+        padUntil = now + 250;
+        const k = (2 * Math.PI) / renderer.domElement.clientHeight * 0.6;
+        (controls as any)._rotateLeft(e.deltaX * k);
+        (controls as any)._rotateUp(e.deltaY * k);
+        return;
+      }
+      const dy = (e.deltaMode === 1 ? e.deltaY * 33 : e.deltaY) * (e.ctrlKey ? 10 : 1);   // pinch arrives as small ctrl+wheel steps
+      off.subVectors(orbitPos, controls.target);
+      const len = Math.min(controls.maxDistance, Math.max(controls.minDistance, off.length() * Math.pow(0.95, -dy * 0.01)));
+      orbitPos.copy(controls.target).addScaledVector(off.normalize(), len);
+    };
+    renderer.domElement.addEventListener('wheel', onWheel, { capture: true, passive: false });
     renderer.domElement.addEventListener('pointerdown', onDown);
     renderer.domElement.addEventListener('pointerup', onUp);
     renderer.domElement.addEventListener('pointermove', onMove);
@@ -628,11 +610,6 @@ export default function RobotLab() {
         const lit = stage === r || stage === 'car' ? 1 : 0; // in the spotlight while hovered (not while moving)
         const glow = 1 + 3 * Math.min(1, Math.max(0, r.x)) + hot * 1.5 * (0.6 + 0.4 * Math.sin(t * 6));
         r.leds.forEach((m) => (m.emissiveIntensity = (m.userData.base ?? 1) * glow));
-        const s = accentSpots[i];
-        if (s)
-          s.intensity = lit
-            ? s.userData.base * (1 + 0.8 * Math.min(1, Math.max(0, r.x)) + 2.5 * focus)
-            : s.userData.base * (1 - 0.9 * focus);
       });
       if (cables.length) {
         scene.updateMatrixWorld();
@@ -687,6 +664,7 @@ export default function RobotLab() {
       disposed = true;
       cancelAnimationFrame(raf);
       window.removeEventListener('resize', onResize);
+      renderer.domElement.removeEventListener('wheel', onWheel, { capture: true });
       renderer.domElement.removeEventListener('pointerdown', onDown);
       renderer.domElement.removeEventListener('pointerup', onUp);
       renderer.domElement.removeEventListener('pointermove', onMove);
