@@ -47,31 +47,32 @@ const pieces: Record<string, { Piece?: Piece; frame?: string; hint: string; type
   'EX-05': { frame: '/lab/robot', hint: 'Click a robot to move it, or the car to move all four. Drag to look around. On a slower computer it lowers its own quality to keep up.', type: 'Real-time scene, Blender to three.js.', open: 'Open full screen' },
 };
 
-// A piece runs while its sheet is on or near the screen and is taken down once it is well away, so no more than one
-// or two run at a time. (The robot cell lowers its own quality on a slower machine.)
+// A piece is loaded when its sheet first comes near the screen and then stays loaded, so scrolling back to it is
+// instant; while its sheet is away it stops drawing (data-away), so no more than one or two run at a time.
+// The Miro site is the exception: it is taken down when away, so its camera never keeps running off screen.
 function Plate({ e }: { e: Experiment }) {
   const ref = useRef<HTMLDivElement>(null), piece = pieces[e.code];
-  const [near, setNear] = useState(false);
+  const [near, setNear] = useState(false), [seen, setSeen] = useState(false);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const io = new IntersectionObserver(([entry]) => setNear(entry.isIntersecting), { rootMargin: '200px 0px' });
+    const io = new IntersectionObserver(([entry]) => { setNear(entry.isIntersecting); if (entry.isIntersecting) setSeen(true); }, { rootMargin: '200px 0px' });
     io.observe(el);
     return () => io.disconnect();
   }, []);
   // The robot cell is told when its sheet leaves the view and comes back, so its sound follows.
   useEffect(() => {
     const el = ref.current;
-    if (!el || !piece.frame || !near) return;
+    if (!el || !piece.frame || !seen) return;
     const io = new IntersectionObserver(([entry]) => {
       el.querySelector('iframe')?.contentWindow?.postMessage({ robotCell: entry.isIntersecting ? 'shown' : 'hidden' }, location.origin);
     });
     io.observe(el);
     return () => io.disconnect();
-  }, [near, piece.frame]);
+  }, [seen, piece.frame]);
   return (
-    <div ref={ref} className={'lab-sheet-plate is-live' + (piece.web ? ' is-web' : '') + (piece.frame ? ' is-frame' : '') + (e.media.fill ? ' is-fill' : '')}>
-      {!near ? <Media media={e.media} alt={e.name} />
+    <div ref={ref} data-away={near ? undefined : ''} className={'lab-sheet-plate is-live' + (piece.web ? ' is-web' : '') + (piece.frame ? ' is-frame' : '') + (e.media.fill ? ' is-fill' : '')}>
+      {!(piece.web ? near : seen) ? <Media media={e.media} alt={e.name} />
         : piece.frame ? <iframe className="lab-frame" src={piece.frame} title={e.name} allow="autoplay; fullscreen" />
         : piece.Piece && <Suspense fallback={null}><piece.Piece className={'lab-rig' + (piece.web ? ' lab-web' : '')} /></Suspense>}
     </div>

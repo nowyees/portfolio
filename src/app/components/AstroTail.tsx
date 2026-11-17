@@ -436,6 +436,7 @@ export default function AstroTail({ className }: { className?: string }) {
     };
     const tick = (now: number) => {
       frame = requestAnimationFrame(tick);
+      if (host?.closest('[data-away]')) return;   // kept loaded, but idle while its sheet is off screen
       if (!segments.length) return;
       simulate(now / 1000);
       pose();

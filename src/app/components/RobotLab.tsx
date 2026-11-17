@@ -571,6 +571,7 @@ export default function RobotLab() {
     const tmpV = new THREE.Vector3();
     const tick = () => {
       raf = requestAnimationFrame(tick);
+      if (awayRef.current) { clock.getDelta(); frames = 0; acc = 0; wall = performance.now(); return; }
       const dt = Math.min(clock.getDelta(), 0.05);
       const t = now();
 
@@ -696,11 +697,14 @@ export default function RobotLab() {
   // leaves and comes back on as it returns, unless the visitor had switched it off themselves.
   const mutedRef = useRef(muted); mutedRef.current = muted;
   const autoMuted = useRef(false);
+  const awayRef = useRef(false);   // its sheet is off screen: stay loaded, stop drawing
   useEffect(() => {
     if (!FRAMED) return;
     const receive = (event: MessageEvent) => {
       if (event.origin !== location.origin) return;
       const a = audioRef.current;
+      if (event.data?.robotCell === 'hidden') awayRef.current = true;
+      else if (event.data?.robotCell === 'shown') awayRef.current = false;
       if (event.data?.robotCell === 'hidden' && !mutedRef.current) {
         a?.setMuted(true); setMuted(true); autoMuted.current = true;
       } else if (event.data?.robotCell === 'shown' && autoMuted.current) {

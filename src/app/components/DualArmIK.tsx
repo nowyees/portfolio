@@ -237,6 +237,7 @@ export default function DualArmIK({ className }: { className?: string }) {
     }).catch(error => { if (!disposed) { console.error('Dual-arm motion:', error); setStatus('Motion could not load. Please refresh.'); } });
 
     const tick = (now: number) => {
+      if (host.closest('[data-away]')) { frame = requestAnimationFrame(tick); return; }   // kept loaded, but idle while its sheet is off screen
       const dt = Math.min(.04, last ? (now - last) / 1000 : 0); last = now;
       for (const [side, path] of Object.entries(paths)) {
         const desired = (controls?.get(`arm_${side}`)[0] || 0) * (path.length - 1);

@@ -218,6 +218,7 @@ export default function HorseMotion({ className }: { className?: string }) {
     const pose: Pose = { p: new THREE.Vector3(), q: new THREE.Quaternion(), s: new THREE.Vector3() };
     const worlds = Array.from({ length: 16 }, () => new THREE.Matrix4()), pivot = new THREE.Matrix4(), hinge = new THREE.Matrix4(), ankleNow = new THREE.Vector3();
     const tick = (now: number) => {
+      if (host.closest('[data-away]')) { frame = requestAnimationFrame(tick); return; }   // kept loaded, but idle while its sheet is off screen
       const dt = document.hidden ? 0 : Math.min(.04, last ? (now - last) / 1000 : 0); last = now;
       if (shells.length) {
         let mode: 'move' | 'crouch' = 'move', amount = 0;
