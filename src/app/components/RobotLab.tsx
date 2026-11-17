@@ -266,7 +266,7 @@ export default function RobotLab() {
     const cablesReq = fetch('/models/robot_cell_cables.json').then((r) => r.json() as Promise<CableData[]>);
 
     loader.load(
-      '/models/robot_cell.glb?v=3',
+      '/models/robot_cell.glb?v=4',
       async (gltf) => {
         if (disposed) return;
         const root = gltf.scene;
