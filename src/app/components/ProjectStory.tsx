@@ -92,8 +92,9 @@ function Copy({ text, chapter }: { text: StoryText; chapter: string }) {
   </div>;
 }
 
-function BackgroundClip({ clip }: { clip: StoryClip }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
+// Plays a muted video while at least a quarter of it is on screen and pauses it once it leaves (or the tab is hidden).
+// A visitor's own pause is kept until they press play again.
+function useAutoPlay(videoRef: React.RefObject<HTMLVideoElement | null>, key: string) {
   useEffect(() => {
     const video = videoRef.current!;
     const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -120,7 +121,12 @@ function BackgroundClip({ clip }: { clip: StoryClip }) {
       video.removeEventListener('pause', onPause); video.removeEventListener('play', onPlay);
       video.pause();
     };
-  }, [clip.src]);
+  }, [key]);
+}
+
+function BackgroundClip({ clip }: { clip: StoryClip }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  useAutoPlay(videoRef, clip.src);
   return <figure className="story-reference-clip">
     <video ref={videoRef} src={clip.src} poster={clip.poster} width={clip.w} height={clip.h}
       muted loop playsInline controls preload="none" aria-label={clip.caption} />
@@ -345,6 +351,16 @@ function Part({ section, title, chapterNumber }: { section: StorySection; title:
   }
 }
 
+function FilmVideo({ film, label, style }: { film: Film; label: string; style?: React.CSSProperties }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  useAutoPlay(videoRef, film.url);
+  return <video ref={videoRef} src={film.url} poster={film.poster} controls muted playsInline
+    preload="metadata" aria-label={label} style={style}
+    onLoadedMetadata={({ currentTarget: video }) => {
+      if (video.videoWidth && video.videoHeight) video.style.aspectRatio = `${video.videoWidth} / ${video.videoHeight}`;
+    }} />;
+}
+
 export default function ProjectStory({ story: source, year, films: projectFilms = [] }: { story: Story; year?: string; films?: Film[] }) {
   // in English every Korean text of the story is swapped for its translation
   const lang = useLang(), story = useMemo(() => localize(source, lang), [source, lang]);
@@ -455,13 +471,7 @@ export default function ProjectStory({ story: source, year, films: projectFilms 
     {films.length > 0 && <section className="story-chapter" aria-label="Film">
       {head(chapters.length + 1, 'Film')}
       <div className="story-grid story-films">{films.map((film, i) =>
-        <video key={film.url} src={film.url} poster={film.poster} controls muted playsInline
-          preload="metadata" aria-label={`${story.name} film ${i + 1}`} style={content}
-          onLoadedMetadata={({ currentTarget: video }) => {
-            if (video.videoWidth && video.videoHeight) {
-              video.style.aspectRatio = `${video.videoWidth} / ${video.videoHeight}`;
-            }
-          }} />)}</div>
+        <FilmVideo key={film.url} film={film} label={`${story.name} film ${i + 1}`} style={content} />)}</div>
     </section>}
   </div>;
 }
