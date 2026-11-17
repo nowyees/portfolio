@@ -13,7 +13,7 @@ import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLigh
 import { mergeStatic } from '../../lib/mergeStatic';
 
 RectAreaLightUniformsLib.init();
-import { RobotCable, cableMaterial, type CableData } from '../../lib/robotCables';
+import { RobotCable, cableMaterial, mergeCables, type CableData } from '../../lib/robotCables';
 import { LabAudio } from '../../lib/labAudio';
 
 // Real-time version of the Blender "four robot arms designing a car" scene.
@@ -81,6 +81,22 @@ const FilmShader = {
       c.rgb += (h(vUv * 1000. + fract(uTime) * 91.7) - .5) * .045;
       gl_FragColor = c; }`,
 };
+
+// Trial (add ?fx to the address): tone mapping, vignette and grain in one pass instead of three.
+const FinalShader = {
+  uniforms: { tDiffuse: { value: null }, uTime: { value: 0 } },
+  vertexShader: SanitizeShader.vertexShader,
+  fragmentShader: `uniform sampler2D tDiffuse; uniform float uTime; varying vec2 vUv;
+    float h(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233))) * 43758.5453); }
+    void main(){ gl_FragColor = min(texture2D(tDiffuse, vUv), vec4(40.));
+      #include <tonemapping_fragment>
+      #include <colorspace_fragment>
+      vec2 d = vUv - .5; float vig = smoothstep(.85, .25, length(d * vec2(1.15, 1.)));
+      gl_FragColor.rgb *= mix(.12, 1., vig);
+      gl_FragColor.rgb += (h(vUv * 1000. + fract(uTime) * 91.7) - .5) * .045; }`,
+};
+// Options to compare before deciding: /lab/robot?lights (no accent light over each robot), ?fx (fewer full-screen passes)
+const TRY = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
 
 type Robot = {
   id: string;
@@ -225,11 +241,11 @@ export default function RobotLab() {
 
     const composer = new EffectComposer(renderer);
     composer.addPass(new RenderPass(scene, camera));
-    composer.addPass(new ShaderPass(SanitizeShader));
+    if (!TRY.has('fx')) composer.addPass(new ShaderPass(SanitizeShader));
     const bloom = new UnrealBloomPass(new THREE.Vector2(mount.clientWidth, mount.clientHeight), 0.24, 0.25, 1.0);
     composer.addPass(bloom);
-    composer.addPass(new OutputPass());
-    const film = new ShaderPass(FilmShader);
+    if (!TRY.has('fx')) composer.addPass(new OutputPass());
+    const film = new ShaderPass(TRY.has('fx') ? FinalShader : FilmShader);
     composer.addPass(film);
 
     // camera may go anywhere inside this box (filled from the wall meshes once loaded)
@@ -266,7 +282,7 @@ export default function RobotLab() {
     const cablesReq = fetch('/models/robot_cell_cables.json').then((r) => r.json() as Promise<CableData[]>);
 
     loader.load(
-      '/models/robot_cell.glb?v=4',
+      '/models/robot_cell.glb?v=5',
       async (gltf) => {
         if (disposed) return;
         const root = gltf.scene;
@@ -395,7 +411,7 @@ export default function RobotLab() {
           });
         }
 
-        robots.forEach((r) => {
+        if (!TRY.has('lights')) robots.forEach((r) => {
           const c = r.box.getCenter(new THREE.Vector3());
           const s = new THREE.SpotLight(0xffffff, 0, 9, 0.32, 0.6, 1.5);
           s.position.set(c.x, 6.2, c.z);
@@ -433,11 +449,8 @@ export default function RobotLab() {
         const cableData = await cablesReq;
         if (disposed) return;
         const matCache = new Map<string, THREE.Material>();
-        for (const c of cableData) {
-          const cable = new RobotCable(c, root, cableMaterial(c, matCache));
-          cables.push(cable);
-          scene.add(cable.mesh);
-        }
+        for (const c of cableData) cables.push(new RobotCable(c, root, cableMaterial(c, matCache)));
+        mergeCables(cables).forEach((m) => scene.add(m));
         root.updateMatrixWorld(true);
         cables.forEach((c) => c.update());
         setLoaded(true);

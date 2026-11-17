@@ -20,6 +20,10 @@ const RADIAL = 6;
 export class RobotCable {
   mesh: THREE.Mesh;
   robot: string;
+  // where this cable's vertices live: its own buffers at first, a shared one after mergeCables()
+  pos: THREE.BufferAttribute;
+  nor: THREE.BufferAttribute;
+  base = 0;
   private refs: { obj: THREE.Object3D | null; local: THREE.Vector3 }[] = [];
   private world: THREE.Vector3[] = [];
   private samples: THREE.Vector3[];
@@ -55,6 +59,8 @@ export class RobotCable {
     this.mesh.castShadow = true;
     this.mesh.frustumCulled = false;
     this.mesh.name = data.name;
+    this.pos = geo.attributes.position as THREE.BufferAttribute;
+    this.nor = geo.attributes.normal as THREE.BufferAttribute;
   }
 
   update() {
@@ -79,8 +85,7 @@ export class RobotCable {
       }
     }
     // tube with parallel-transport frames (no twisting)
-    const pos = this.mesh.geometry.attributes.position as THREE.BufferAttribute;
-    const nor = this.mesh.geometry.attributes.normal as THREE.BufferAttribute;
+    const pos = this.pos, nor = this.nor;
     const n = this.samples.length;
     const T = new THREE.Vector3(), N = new THREE.Vector3(), B = new THREE.Vector3(), prevT = new THREE.Vector3();
     const v = new THREE.Vector3(), q = new THREE.Quaternion();
@@ -104,7 +109,7 @@ export class RobotCable {
         const ang = (j / RADIAL) * Math.PI * 2;
         const cs = Math.cos(ang), sn = Math.sin(ang);
         v.set(cs * N.x + sn * B.x, cs * N.y + sn * B.y, cs * N.z + sn * B.z);
-        const o = i * (RADIAL + 1) + j;
+        const o = this.base + i * (RADIAL + 1) + j;
         nor.setXYZ(o, v.x, v.y, v.z);
         pos.setXYZ(o, P.x + v.x * this.radius, P.y + v.y * this.radius, P.z + v.z * this.radius);
       }
@@ -114,12 +119,49 @@ export class RobotCable {
   }
 }
 
+// One mesh per material instead of one per cable (33 -> a handful): fewer draw calls and buffer uploads each frame.
+export function mergeCables(cables: RobotCable[]) {
+  const groups = new Map<THREE.Material, RobotCable[]>();
+  for (const c of cables) {
+    const m = c.mesh.material as THREE.Material;
+    groups.set(m, [...(groups.get(m) ?? []), c]);
+  }
+  const meshes: THREE.Mesh[] = [];
+  for (const [material, list] of groups) {
+    const verts = list.reduce((s, c) => s + c.pos.count, 0);
+    const pos = new THREE.BufferAttribute(new Float32Array(verts * 3), 3);
+    const nor = new THREE.BufferAttribute(new Float32Array(verts * 3), 3);
+    const idx: number[] = [];
+    let base = 0;
+    for (const c of list) {
+      const own = c.mesh.geometry.index!;
+      for (let i = 0; i < own.count; i++) idx.push(own.getX(i) + base);
+      const n = c.pos.count;
+      c.mesh.geometry.dispose();
+      c.pos = pos; c.nor = nor; c.base = base;
+      base += n;
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', pos);
+    geo.setAttribute('normal', nor);
+    geo.setIndex(idx);
+    const mesh = new THREE.Mesh(geo, material);
+    mesh.castShadow = true;
+    mesh.frustumCulled = false;
+    mesh.name = `cables_${material.name}`;
+    list.forEach((c) => (c.mesh = mesh));
+    meshes.push(mesh);
+  }
+  return meshes;
+}
+
 export function cableMaterial(data: CableData, cache: Map<string, THREE.Material>) {
   const key = data.mat.name ?? 'default';
   let m = cache.get(key);
   if (!m) {
     const c = data.mat.color ?? [0.02, 0.02, 0.02];
     m = new THREE.MeshStandardMaterial({
+      name: key,
       color: new THREE.Color().setRGB(c[0], c[1], c[2]),
       metalness: data.mat.metal ?? 0,
       roughness: data.mat.rough ?? 0.5,
