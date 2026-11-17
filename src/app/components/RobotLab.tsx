@@ -249,6 +249,7 @@ export default function RobotLab() {
     let disposed = false;
 
     const draco = new DRACOLoader().setDecoderPath('/draco/');
+    draco.preload();   // fetch the decoder alongside the model, not after it
     const loader = new GLTFLoader().setDRACOLoader(draco);
     const cablesReq = fetch('/models/robot_cell_cables.json').then((r) => r.json() as Promise<CableData[]>);
 
@@ -256,6 +257,8 @@ export default function RobotLab() {
       '/models/robot_cell.glb?v=5',
       async (gltf) => {
         if (disposed) return;
+        const T0 = performance.now(); const lap = (k: string) => import.meta.env.DEV && console.info('[lab-load]', k, Math.round(performance.now() - T0), 'ms since model ready,', Math.round(performance.now()), 'since page start');
+        lap('model downloaded+decoded');
         const root = gltf.scene;
         root.traverse((o: any) => {
           if (o.name === 'Haze') o.visible = false; // Cycles volume box
@@ -306,6 +309,7 @@ export default function RobotLab() {
             m.needsUpdate = true;
           });
         });
+        lap('materials+normals');
         scene.add(root);
         root.updateMatrixWorld(true);
 
@@ -405,6 +409,7 @@ export default function RobotLab() {
         if (import.meta.env.DEV) console.info('[robot lab] meshes', merged.before, '->', merged.after);
         root.traverse((o: any) => { if (o.isMesh && HIDDEN_DETAIL.test(o.material?.name ?? '')) mirrorSkip.push(o); });
         renderer.shadowMap.needsUpdate = true;
+        lap('merged');
 
         // ---- live cables
         const cableData = await cablesReq;
@@ -414,6 +419,15 @@ export default function RobotLab() {
         mergeCables(cables).forEach((m) => scene.add(m));
         root.updateMatrixWorld(true);
         cables.forEach((c) => c.update());
+        lap('cables');
+        // Build every material's program up front, side by side, instead of one after another inside the first frame.
+        { const t = performance.now();
+          renderer.setRenderTarget(composer.readBuffer);
+          await renderer.compileAsync(scene, camera);
+          renderer.setRenderTarget(null);
+          if (disposed) return;
+          import.meta.env.DEV && console.info('[lab-load] compileAsync', Math.round(performance.now() - t), 'ms'); }
+        { const t = performance.now(); composer.render(); renderer.getContext().finish(); import.meta.env.DEV && console.info('[lab-load] first frame (shader compile)', Math.round(performance.now() - t), 'ms'); }
         setLoaded(true);
         if (import.meta.env.DEV) (window as any).__lab = { renderer, composer, scene, reflector, spot, camera, controls, orbitPos: () => orbitPos }; // profiling in dev only
       },
