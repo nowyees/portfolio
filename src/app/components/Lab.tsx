@@ -70,14 +70,6 @@ function Plate({ e }: { e: Experiment }) {
     io.observe(el);
     return () => io.disconnect();
   }, [seen, piece.frame]);
-  // trial: /lab?eink shows the three rigs as if on an e-paper panel
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || !seen || piece.web || piece.frame || !new URLSearchParams(location.search).has('eink')) return;
-    let stop: (() => void) | undefined, cancelled = false;
-    import('../../lib/eink').then(({ attachEInk }) => { if (!cancelled) stop = attachEInk(el); });
-    return () => { cancelled = true; stop?.(); };
-  }, [seen, piece.web, piece.frame]);
   return (
     <div ref={ref} data-away={near ? undefined : ''} className={'lab-sheet-plate is-live' + (piece.web ? ' is-web' : '') + (piece.frame ? ' is-frame' : '') + (e.media.fill ? ' is-fill' : '')}>
       {!(piece.web ? near : seen) ? <Media media={e.media} alt={e.name} />
