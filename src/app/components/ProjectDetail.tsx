@@ -8,6 +8,15 @@ import ProjectStory from './ProjectStory';
 import { editorialDrafts } from '../../lib/projectStoryDrafts';
 import { draftProjectById, editorialDraftCatalog } from '../../lib/editorialDraftCatalog';
 import { localize, useLang } from '../../lib/i18n';
+import { useAutoPlay } from '../../lib/useAutoPlay';
+
+// Films on plain project pages play muted while on screen, like the story films. They keep preload="metadata" because
+// these layouts take their size from the video itself (no fixed aspect ratio to hold the space).
+function AutoPlayVideo({ src, poster, label }: { src: string; poster?: string; label: string }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  useAutoPlay(videoRef, src);
+  return <video ref={videoRef} src={src} poster={poster} controls muted playsInline preload="metadata" aria-label={label} />;
+}
 
 export default function ProjectDetail() {
   const { category, id } = useParams();
@@ -99,7 +108,7 @@ export default function ProjectDetail() {
     const mediaIndex = startIndex + index;
     return <div className={'detail-media-item is-' + (item.layout || 'full')} key={item.url + mediaIndex}>
       {item.type === 'video' || isVideoUrl(item.url)
-        ? <video src={item.url} poster={item.thumbnailUrl} controls muted playsInline preload="metadata" aria-label={project.title + ' film ' + (mediaIndex + 1)} />
+        ? <AutoPlayVideo src={item.url} poster={item.thumbnailUrl} label={project.title + ' film ' + (mediaIndex + 1)} />
         : <img src={imageUrl(item.url, 2000)} alt={project.title + ' — ' + (mediaIndex + 1)} loading={mediaIndex === 0 ? 'eager' : 'lazy'} draggable={detailLayout !== 'gallery'} />}
     </div>;
   });

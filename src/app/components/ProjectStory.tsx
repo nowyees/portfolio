@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { localize, useLang } from '../../lib/i18n';
 import { PIN_STEP, pinnedStepIndex } from '../../lib/pinnedSteps';
+import { useAutoPlay } from '../../lib/useAutoPlay';
 import type { ProjectStory as Story, StoryClip, StoryImage, StoryRow, StorySection, StoryText } from '../../lib/projectStories';
 
 type Film = { url: string; poster?: string };
@@ -90,38 +91,6 @@ function Copy({ text, chapter }: { text: StoryText; chapter: string }) {
     {showTitle && <h3 className="story-rv">{text.title}</h3>}
     <p className="story-rv">{text.body}</p>
   </div>;
-}
-
-// Plays a muted video while at least a quarter of it is on screen and pauses it once it leaves (or the tab is hidden).
-// A visitor's own pause is kept until they press play again.
-function useAutoPlay(videoRef: React.RefObject<HTMLVideoElement | null>, key: string) {
-  useEffect(() => {
-    const video = videoRef.current!;
-    const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
-    let visible = false, userPaused = false, automaticPause = false;
-    const sync = () => {
-      if (visible && !motion.matches && !userPaused && !document.hidden) {
-        video.play().catch(() => { /* Native controls remain available if autoplay is blocked. */ });
-      } else if (!video.paused) {
-        automaticPause = true; video.pause();
-      }
-    };
-    const onPause = () => {
-      if (!automaticPause && visible && !document.hidden) userPaused = true;
-      automaticPause = false;
-    };
-    const onPlay = () => { userPaused = false; };
-    const observer = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting && entry.intersectionRatio >= .25; sync(); }, { threshold: [0, .25] });
-    observer.observe(video);
-    video.addEventListener('pause', onPause); video.addEventListener('play', onPlay);
-    motion.addEventListener('change', sync); document.addEventListener('visibilitychange', sync);
-    return () => {
-      observer.disconnect(); motion.removeEventListener('change', sync);
-      document.removeEventListener('visibilitychange', sync);
-      video.removeEventListener('pause', onPause); video.removeEventListener('play', onPlay);
-      video.pause();
-    };
-  }, [key]);
 }
 
 function BackgroundClip({ clip }: { clip: StoryClip }) {
@@ -355,7 +324,7 @@ function FilmVideo({ film, label, style }: { film: Film; label: string; style?: 
   const videoRef = useRef<HTMLVideoElement>(null);
   useAutoPlay(videoRef, film.url);
   return <video ref={videoRef} src={film.url} poster={film.poster} controls muted playsInline
-    preload="metadata" aria-label={label} style={style}
+    preload="none" aria-label={label} style={style}
     onLoadedMetadata={({ currentTarget: video }) => {
       if (video.videoWidth && video.videoHeight) video.style.aspectRatio = `${video.videoWidth} / ${video.videoHeight}`;
     }} />;
