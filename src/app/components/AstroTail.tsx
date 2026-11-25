@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { EINK_TRIAL } from '../../lib/einkFlag';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 
 /*
@@ -104,7 +105,7 @@ export default function AstroTail({ className }: { className?: string }) {
     const host = hostRef.current;
     if (!host) return;
     let disposed = false, frame = 0;
-    const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true, preserveDrawingBuffer: EINK_TRIAL });
     renderer.setClearColor(0x000000, 0);
     host.appendChild(renderer.domElement);
     // Hint beside the tail tip inviting the visitor to move the cursor; it stays, riding along with the tip.

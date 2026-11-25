@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { EINK_TRIAL } from '../../lib/einkFlag';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { creasedNormals } from '../../lib/creasedNormals';
 import { edgeShader, downsampleShader } from './AstroTail';
@@ -31,7 +32,7 @@ export default function DualArmIK({ className }: { className?: string }) {
     const host = hostRef.current!;
     let disposed = false, frame = 0, last = 0;
     let renderer: THREE.WebGLRenderer;
-    try { renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false }); }
+    try { renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false, preserveDrawingBuffer: EINK_TRIAL }); }
     catch { setStatus('3D is unavailable on this device.'); return; }
     renderer.setClearColor(0, 0);
     host.appendChild(renderer.domElement);
